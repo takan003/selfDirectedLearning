@@ -170,25 +170,50 @@ export default function SelfDirectedLearningSettingsPage() {
 
   const state = openStateOf(settings);
 
+  /** 重新讀取／儲存設定：標題列（上）與頁尾（下）共用同一組按鈕 */
+  const actionButtons = (
+    <div className="flex flex-wrap justify-end gap-3">
+      <button
+        type="button"
+        className="btn-theme h-10 px-6 text-sm cursor-pointer disabled:opacity-50"
+        onClick={() => void load()}
+        disabled={loading || saving}
+      >
+        重新讀取
+      </button>
+      <button
+        type="button"
+        className="btn-primary btn-theme h-10 px-6 text-sm cursor-pointer disabled:opacity-50"
+        onClick={() => void save()}
+        disabled={loading || saving}
+      >
+        {saving ? "儲存中…" : "儲存設定"}
+      </button>
+    </div>
+  );
+
   return (
     <section className="mx-auto content-width space-y-4 p-4 sm:p-6">
-      <header className="space-y-1">
-        <h1 className="text-xl text-t1">管理規則</h1>
-        <p className="text-t2 text-sm">
-          狀態：
-          <span
-            className={
-              !settings.enabled
-                ? "text-danger"
-                : state === "open"
-                  ? "text-success"
-                  : "text-t2"
-            }
-          >
-            {!settings.enabled ? "功能已關閉（維護中）" : STATE_LABEL[state]}
-          </span>
-          {settings.updatedAt > 0 ? ` ｜ 最後更新 ${formatDateTime(settings.updatedAt)}` : ""}
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-1">
+          <h1 className="text-xl text-t1">管理規則</h1>
+          <p className="text-t2 text-sm">
+            狀態：
+            <span
+              className={
+                !settings.enabled
+                  ? "text-danger"
+                  : state === "open"
+                    ? "text-success"
+                    : "text-t2"
+              }
+            >
+              {!settings.enabled ? "功能已關閉（維護中）" : STATE_LABEL[state]}
+            </span>
+            {settings.updatedAt > 0 ? ` ｜ 最後更新 ${formatDateTime(settings.updatedAt)}` : ""}
+          </p>
+        </div>
+        {actionButtons}
       </header>
 
       <details className="border-themed bg-card rounded-lg" open>
@@ -493,19 +518,7 @@ export default function SelfDirectedLearningSettingsPage() {
         </div>
       </details>
 
-      <div className="flex justify-end gap-3">
-        <button type="button" className="btn-theme px-6" onClick={() => void load()} disabled={loading || saving}>
-          重新讀取
-        </button>
-        <button
-          type="button"
-          className="btn-primary btn-theme px-6"
-          onClick={() => void save()}
-          disabled={loading || saving}
-        >
-          {saving ? "儲存中…" : "儲存設定"}
-        </button>
-      </div>
+      {actionButtons}
 
       <Toast message={toast} onClose={() => setToast(null)} />
     </section>
