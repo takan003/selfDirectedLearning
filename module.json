@@ -17,11 +17,34 @@
     "releasedAt": "2026-10-22"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
-  "routes": [],
+  "routes": [
+    { "kind": "page", "path": "/admin/self-directed-learning" },
+    { "kind": "api", "path": "/api/admin/self-directed-learning" },
+    { "kind": "page", "path": "/student/self-directed-learning" },
+    { "kind": "api", "path": "/api/student/self-directed-learning" },
+    { "kind": "page", "path": "/staff/self-directed-learning" },
+    { "kind": "api", "path": "/api/staff/self-directed-learning" },
+    { "kind": "page", "path": "/parent/self-directed-learning" },
+    { "kind": "api", "path": "/api/parent/self-directed-learning" }
+  ],
   "permission": { "mode": "new", "value": "selfDirectedLearning", "category": "校務資料" },
   "icon": "selfDirectedLearning",
-  "rateLimits": [],
-  "auditActions": [],
-  "dataCollections": [],
-  "hooks": []
+  "rateLimits": [
+    { "key": "SELF_DIRECTED_LEARNING_LIST", "limit": 120, "windowMs": 60000 },
+    { "key": "SELF_DIRECTED_LEARNING_STUDENT", "limit": 20, "windowMs": 60000 },
+    { "key": "SELF_DIRECTED_LEARNING_STAFF", "limit": 60, "windowMs": 60000 },
+    { "key": "SELF_DIRECTED_LEARNING_ADMIN", "limit": 60, "windowMs": 60000 }
+  ],
+  "auditActions": [
+    "self_directed_learning_settings_updated",
+    "self_directed_learning_plan_submitted",
+    "self_directed_learning_plan_reviewed",
+    "self_directed_learning_plan_archived"
+  ],
+  "dataCollections": [
+    "selfDirectedLearningSettings",
+    "selfDirectedLearningPlans",
+    "selfDirectedLearningReviews"
+  ],
+  "hooks": ["announcements", "calendar"]
 }

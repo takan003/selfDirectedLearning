@@ -29,7 +29,6 @@
 ## 待定案
 
 1. ~~`provides` 與四身分頁面範圍~~（已定案：學生、家長、教職員勾選入口；管理端暫啟用）
-2. `routes`（頁面與 API 掛載點）
-3. 權限模型（單一單位或 `managerPermissions` 子權限）
-4. `dataCollections` 資料集合、`rateLimits`／`auditActions` 前綴桶
-5. 是否使用掛勾（公告 `announcements`／行事曆 `calendar`）
+2. ~~`routes`、權限模型、`dataCollections`、掛勾~~（已定案，見 `docs/開發規劃書.md` 第四章）
+3. 流程細節的畫面與資料結構（節次行程、開放場域、審核人員欄位）
+4. 導師↔班級資料來源查證；匯出與省流閘門；契約測試 `tests/contract/`
