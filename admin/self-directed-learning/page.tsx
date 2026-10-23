@@ -285,6 +285,7 @@ export default function SelfDirectedLearningSettingsPage() {
                   {fullWeeks !== null
                     ? `根據學期設定，由程式自動判斷，本學期共 ${fullWeeks} 週。`
                     : "根據學期設定，由程式自動判斷（學校尚未設定上課日／學期起訖）。"}
+                  扣除國定假日與學校重要行程後，依實際週數為總週數。
                 </span>
               </span>
             </label>
@@ -299,7 +300,9 @@ export default function SelfDirectedLearningSettingsPage() {
               <span>
                 全學期採彈性週數填寫
                 <span className="text-t3 block text-xs">
-                  學生只要填寫學校規定的下限週數即可，未設上限。
+                  學生只要填寫學校規定的下限週數即可
+                  {fullWeeks !== null ? `，上限為程式判斷的總週數（${fullWeeks} 週）` : "，上限由程式判斷"}
+                  。扣除國定假日與學校重要行程後，依實際週數為總週數。
                 </span>
               </span>
             </label>

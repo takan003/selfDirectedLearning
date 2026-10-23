@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.5",
+    "version": "0.0.6",
     "releasedAt": "2026-10-23"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -48,6 +48,14 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.6",
+      "releasedAt": "2026-10-23",
+      "notes": [
+        "兩種週數形式的填寫上限統一為程式判斷的學期總週數（上課日／學期起訖自動推算）；彈性形式不再「未設上限」",
+        "管理端兩種形式的說明皆加註：扣除國定假日與學校重要行程後，依實際週數為總週數"
+      ]
+    },
     {
       "version": "0.0.5",
       "releasedAt": "2026-10-23",

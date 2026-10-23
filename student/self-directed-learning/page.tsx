@@ -45,7 +45,7 @@ const WINDOW_LABEL: Record<string, string> = {
 
 /**
  * 依設定補齊草稿週數：
- * 全學期形式＝補到自動判斷的全學期週數；彈性形式＝至少下限週數（無上限）。
+ * 全學期形式＝補到程式判斷的學期總週數；彈性形式＝夾在下限與總週數上限之間。
  */
 function fitWeeks(
   weeks: PlanWeek[],
@@ -55,7 +55,9 @@ function fitWeeks(
   const target =
     settings.weekMode === "full" && fullWeeks !== null
       ? fullWeeks
-      : Math.max(weeks.length, settings.minWeeks);
+      : fullWeeks !== null
+        ? Math.min(Math.max(weeks.length, settings.minWeeks), fullWeeks)
+        : Math.max(weeks.length, settings.minWeeks);
   const next = weeks.slice(0, target);
   while (next.length < target) {
     next.push({ week: next.length + 1, content: "", venue: "", timing: "flexible" });
@@ -281,11 +283,12 @@ export default function StudentSelfDirectedLearningPage() {
           <h2 className="text-t1 font-medium">逐週課程安排</h2>
           {settings.weekMode === "flexible" ? (
             <label className="text-t2 flex flex-wrap items-center gap-2 text-sm">
-              方案週數（至少 {settings.minWeeks} 週）
+              方案週數（至少 {settings.minWeeks} 週
+              {fullWeeks !== null ? `，至多 ${fullWeeks} 週` : ""}）
               <input
                 type="number"
                 min={settings.minWeeks}
-                max={MAX_PLAN_WEEKS}
+                max={fullWeeks ?? MAX_PLAN_WEEKS}
                 className="input-theme w-24 rounded px-3 py-2 text-sm"
                 value={draft.weeks.length}
                 disabled={locked}
@@ -293,7 +296,10 @@ export default function StudentSelfDirectedLearningPage() {
                   const parsed = Number(event.target.value);
                   if (Number.isInteger(parsed)) {
                     setWeekCount(
-                      Math.min(Math.max(parsed, settings.minWeeks), MAX_PLAN_WEEKS)
+                      Math.min(
+                        Math.max(parsed, settings.minWeeks),
+                        fullWeeks ?? MAX_PLAN_WEEKS
+                      )
                     );
                   }
                 }}

@@ -276,7 +276,7 @@ export type PlanParseResult =
 export function parsePlanDraft(
   raw: unknown,
   rules: Pick<SelfDirectedLearningSettings, "weekMode" | "minWeeks"> & {
-    /** 全學期形式的須填週數（由學期起訖自動判斷；null＝學校尚未設定起訖） */
+    /** 程式判斷的學期總週數（兩種形式的填寫上限；null＝學校尚未設定起訖） */
     fullWeeks: number | null;
   },
   action: "save" | "submit"
@@ -294,6 +294,13 @@ export function parsePlanDraft(
   }
   if (body.weeks.length > MAX_PLAN_WEEKS) {
     return { ok: false, message: `週數不得超過 ${MAX_PLAN_WEEKS} 週` };
+  }
+  // 兩種形式的填寫上限皆為程式判斷的學期總週數
+  if (action === "submit" && rules.fullWeeks !== null && body.weeks.length > rules.fullWeeks) {
+    return {
+      ok: false,
+      message: `週數不得超過程式判斷的學期總週數 ${rules.fullWeeks} 週（目前 ${body.weeks.length} 週）`,
+    };
   }
   if (action === "submit" && rules.weekMode === "full") {
     if (rules.fullWeeks === null) {
