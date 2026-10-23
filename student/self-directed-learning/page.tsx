@@ -303,7 +303,7 @@ export default function StudentSelfDirectedLearningPage() {
             <p className="text-t2 text-sm">
               {fullWeeks !== null
                 ? `全學期 ${fullWeeks} 週（全學期空白週數都須填寫）`
-                : "全學期形式：學校尚未設定學期起訖，暫無法判斷週數"}
+                : "全學期形式：學校尚未設定上課日／學期起訖，暫無法判斷週數"}
             </p>
           )}
         </div>

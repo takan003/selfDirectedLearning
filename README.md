@@ -6,7 +6,7 @@
 地點須在學校規範內。
 
 1. 開發者：[takan003](https://github.com/takan003)（`https://github.com/takan003/selfDirectedLearning`）
-2. 版本：0.0.3（`contractVersion` 1、`minHostVersion` 0.580）
+2. 版本：0.0.4（`contractVersion` 1、`minHostVersion` 0.580）
 3. 四身分入口：管理員（設定與總覽）、學生（填報送審）、教職員（審核／兼導師瀏覽全班）、家長（檢視）
 
 ## 功能摘要
@@ -14,7 +14,8 @@
 1. **管理端**（`/admin/self-directed-learning`）：「管理規則」頁設定功能總開關（關閉即全站
    維護中）、開放撰寫起訖、週數填寫形式（全學期全填／彈性下限）、下限週數、
    校內彈性學習節次行程、開放場域、審核人員名單、給學生的說明。
-   全學期形式的週數**不人工設定**，由系統依「學校基本設定 → 學期起訖設定」自動判斷。
+   全學期形式的週數**不人工設定**，由系統依「學校基本設定 → 學期起訖設定」的
+   **上課日起訖（優先）**或學期起訖自動判斷（週日～週六為一週，未滿七日仍計一週）。
 2. **學生端**（`/student/self-directed-learning`）：選主題與學群、填指導老師（非必填）、依
    週數形式完成逐週課程安排（全學期形式須填滿自動判斷的週數；彈性形式至少填到學校下限
    週數、無上限，場地＋彈性學習時間／課餘）、開放期間內送出審核、查看審查意見。
@@ -32,7 +33,8 @@
    `openAt`／`closeAt`（開放起訖 epoch ms）、`weekMode`（`full` 全學期全填／`flexible` 彈性
    下限）、`minWeeks`（彈性下限週數）、`slots`（節次行程）、`venues`（開放場域）、
    `reviewers`（審核人員 uid＋名稱）、`instructions`、`updatedAt`。
-   **不存全學期週數（`maxWeeks` 已移除）**：全學期形式的週數由主程式學期起訖自動推算。
+   **不存全學期週數（`maxWeeks` 已移除）**：全學期形式的週數由主程式上課日／學期起訖自動推算
+   （週日～週六為一週，台灣學校通常為 21 或 22 週）。
 2. `selfDirectedLearningPlans`：學生計畫（doc id＝`{學年學期}_{uid}`）——主題、學群、指導
    老師、逐週安排（`weeks[]`：週次／內容／場地／時段）、身分欄（班級等）、`status`、
    `submittedAt`、`updatedAt`。

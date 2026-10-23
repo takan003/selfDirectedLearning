@@ -49,8 +49,10 @@ export async function saveSettings(
 const FULL_WEEKS_CACHE_KEY = "selfDirectedLearning:fullWeeks";
 
 /**
- * 全學期形式的須填週數：依主程式「學校基本設定 → 學期起訖設定」的學期起訖
- * （優先）或學年度起訖自動推算；學校尚未設定起訖時回 null。
+ * 全學期形式的須填週數：依主程式「學校基本設定 → 學期起訖設定」推算——
+ * **優先上課日起訖**（實際授课期間，以週日～週六為一週、未滿七日仍計一週，
+ * 台灣學校通常為 21 或 22 週），其次學期起訖、再次學年度起訖；
+ * 學校尚未設定起訖時回 null。
  * 只讀主程式的 `settings/system` 日期欄位，不寫入。
  */
 export async function getFullWeeks(): Promise<number | null> {
@@ -59,6 +61,7 @@ export async function getFullWeeks(): Promise<number | null> {
     const data = (snap.exists ? snap.data() : {}) as Record<string, unknown>;
     const str = (value: unknown) => (typeof value === "string" ? value : "");
     return (
+      countWeeksBetween(str(data.classDayStart), str(data.classDayEnd)) ??
       countWeeksBetween(str(data.semesterStart), str(data.semesterEnd)) ??
       countWeeksBetween(str(data.academicYearStart), str(data.academicYearEnd))
     );

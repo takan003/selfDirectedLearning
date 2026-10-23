@@ -244,14 +244,26 @@ function isTiming(value: unknown): value is PlanTiming {
   return value === "flexible" || value === "afterSchool";
 }
 
-/** 由學期起訖日期（YYYY-MM-DD）推算週數（含頭尾，進位到整週）；不可用時回 null */
+/**
+ * 由起訖日期（YYYY-MM-DD）推算週數；不可用時回 null。
+ * 台灣公家機關週計算：每週第一日為星期日、最後一日為星期六；
+ * 第一週或最後一週未滿七日仍以一週計（先對齊到所在週的週日／週六再算整週）。
+ */
 export function countWeeksBetween(start: string, end: string): number | null {
   if (!DATE_PATTERN.test(start) || !DATE_PATTERN.test(end)) return null;
-  const startTime = new Date(`${start}T00:00:00`).getTime();
-  const endTime = new Date(`${end}T00:00:00`).getTime();
-  if (!Number.isFinite(startTime) || !Number.isFinite(endTime) || endTime < startTime) return null;
-  const days = Math.floor((endTime - startTime) / 86_400_000) + 1;
-  return Math.ceil(days / 7);
+  const startDate = new Date(`${start}T00:00:00`);
+  const endDate = new Date(`${end}T00:00:00`);
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()) || endDate < startDate) {
+    return null;
+  }
+  // getDay()：0=週日…6=週六。起日回退到該週週日、訖日進位到該週週六
+  const alignedStart = new Date(startDate);
+  alignedStart.setDate(startDate.getDate() - startDate.getDay());
+  const alignedEnd = new Date(endDate);
+  alignedEnd.setDate(endDate.getDate() + (6 - endDate.getDay()));
+  const days =
+    Math.round((alignedEnd.getTime() - alignedStart.getTime()) / 86_400_000) + 1;
+  return Math.round(days / 7);
 }
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -287,7 +299,7 @@ export function parsePlanDraft(
     if (rules.fullWeeks === null) {
       return {
         ok: false,
-        message: "學校尚未設定學期起訖，暫無法判斷全學期週數——請改用彈性形式，或請學校至「學校基本設定 → 學期起訖設定」填寫學期起訖",
+        message: "學校尚未設定上課日／學期起訖，暫無法判斷全學期週數——請改用彈性形式，或請學校至「學校基本設定 → 學期起訖設定」填寫上課日起訖",
       };
     }
     if (body.weeks.length !== rules.fullWeeks) {

@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.3",
+    "version": "0.0.4",
     "releasedAt": "2026-10-23"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -48,6 +48,14 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.4",
+      "releasedAt": "2026-10-23",
+      "notes": [
+        "全學期週數改為優先依「上課日」起訖推算（其次學期起訖、再次學年度起訖）——教師與學生的週數對齊實際授课期間",
+        "週計算改為台灣公家機關慣例：週日為每週第一日、週六為最後日，第一週或最後一週未滿七日仍以一週計（學校通常為 21 或 22 週，修正先前單純天數÷7 的偏差）"
+      ]
+    },
     {
       "version": "0.0.3",
       "releasedAt": "2026-10-23",
