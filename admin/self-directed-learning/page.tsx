@@ -354,10 +354,7 @@ export default function SelfDirectedLearningSettingsPage() {
             </p>
           ) : (
             <>
-              <p className="text-t3 text-sm">
-                橫排為上課日、直排為節次；勾選表示該日該節為校內彈性學習時間
-                （上課日取自課表作息設定，共 {schoolDays.length} 日 × {periodOptions.length} 節）。
-              </p>
+              <p className="text-t3 text-sm">勾選，表示該日該節為校內彈性學習時間。</p>
               <div className="border-themed bg-surface overflow-x-auto rounded-md">
                 <table className="w-full text-sm text-left">
                   <thead className="border-b border-themed">
