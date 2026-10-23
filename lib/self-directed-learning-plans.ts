@@ -1,6 +1,8 @@
 import "server-only";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { getCurrentPeriod } from "@/lib/settings-server";
+import { isActiveEntry } from "@/lib/roster";
+import { rosterCollection } from "@/types/roster";
 import {
   SELF_DIRECTED_LEARNING_PLANS_COLLECTION,
   SELF_DIRECTED_LEARNING_REVIEWS_COLLECTION,
@@ -261,4 +263,58 @@ export async function applyReview(input: {
     return { ok: false, status: 409, message: "此計畫不在待審核狀態" };
   }
   return { ok: true, plan: outcome.plan };
+}
+
+/* ——— 家長端：子女關聯 ——— */
+
+export interface LinkedChild {
+  uid: string;
+  name: string;
+  grade: string;
+  classCode: string;
+  className: string;
+}
+
+/**
+ * 家長→子女：以家長名冊條目的學號＋學期等值條件下推（1 筆查詢），
+ * 唯一有效匹配才回傳（照宿主 linkedStudentIdentityForParent 省流模式）。
+ */
+export async function linkedChildForParent(
+  parentEntry: Record<string, unknown>
+): Promise<LinkedChild | null> {
+  const studentId = typeof parentEntry.studentId === "string" ? parentEntry.studentId.trim() : "";
+  if (!studentId) return null;
+  const expectedGrade = typeof parentEntry.grade === "string" ? parentEntry.grade.trim() : "";
+  const expectedClass = typeof parentEntry.classCode === "string" ? parentEntry.classCode.trim() : "";
+  const period = await getCurrentPeriod();
+  const snapshot = await getAdminDb()
+    .collection(rosterCollection("student"))
+    .where("studentId", "==", studentId)
+    .where("academicYear", "==", period.academicYear)
+    .where("semester", "==", period.semester)
+    .get();
+
+  const matches: LinkedChild[] = [];
+  for (const doc of snapshot.docs) {
+    const entry = doc.data();
+    if (!isActiveEntry(entry)) continue;
+    const uid = typeof entry.uid === "string" ? entry.uid : "";
+    const grade = typeof entry.grade === "string" ? entry.grade.trim() : "";
+    const classCode = typeof entry.classCode === "string" ? entry.classCode.trim() : "";
+    if (
+      !uid ||
+      (expectedGrade && grade !== expectedGrade) ||
+      (expectedClass && classCode !== expectedClass)
+    ) {
+      continue;
+    }
+    matches.push({
+      uid,
+      name: typeof entry.name === "string" ? entry.name : "",
+      grade,
+      classCode,
+      className: typeof entry.className === "string" ? entry.className : classCode,
+    });
+  }
+  return matches.length === 1 ? matches[0] : null;
 }
