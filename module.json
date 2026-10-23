@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.4",
+    "version": "0.0.5",
     "releasedAt": "2026-10-23"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -48,6 +48,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.5",
+      "releasedAt": "2026-10-23",
+      "notes": [
+        "管理端全學期週數提示精簡：改為「根據學期設定，由程式自動判斷，本學期共 N 週」"
+      ]
+    },
     {
       "version": "0.0.4",
       "releasedAt": "2026-10-23",

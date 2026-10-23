@@ -282,10 +282,9 @@ export default function SelfDirectedLearningSettingsPage() {
               <span>
                 全學期空白週數都須填寫
                 <span className="text-t3 block text-xs">
-                  週數由系統依「學校基本設定 → 學期起訖設定」的上課日起訖（優先）或學期起訖自動判斷，
-                  以週日～週六為一週、未滿七日仍計一週
-                  {fullWeeks !== null ? `（目前為 ${fullWeeks} 週）` : "（學校尚未設定上課日／學期起訖）"}
-                  ，不需人工設定。
+                  {fullWeeks !== null
+                    ? `根據學期設定，由程式自動判斷，本學期共 ${fullWeeks} 週。`
+                    : "根據學期設定，由程式自動判斷（學校尚未設定上課日／學期起訖）。"}
                 </span>
               </span>
             </label>
