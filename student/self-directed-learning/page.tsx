@@ -141,7 +141,7 @@ export default function StudentSelfDirectedLearningPage() {
   const canSubmit = withinWindow && !locked && saving === null;
 
   return (
-    <section className="mx-auto w-full max-w-3xl space-y-4 p-4 sm:p-6">
+    <section className="mx-auto content-width space-y-4 p-4 sm:p-6">
       <header className="space-y-1">
         <h1 className="text-xl text-t1">自主學習計畫</h1>
         <p className="text-t2 flex flex-wrap items-center gap-2 text-sm">
@@ -188,7 +188,7 @@ export default function StudentSelfDirectedLearningPage() {
             <span>主題 *</span>
             <input
               type="text"
-              className="input-theme w-full"
+              className="input-theme w-full rounded px-3 py-2 text-sm"
               value={draft.topic}
               maxLength={100}
               disabled={locked}
@@ -200,7 +200,7 @@ export default function StudentSelfDirectedLearningPage() {
             <span>學群 *</span>
             <input
               type="text"
-              className="input-theme w-full"
+              className="input-theme w-full rounded px-3 py-2 text-sm"
               value={draft.studyGroup}
               maxLength={100}
               disabled={locked}
@@ -213,7 +213,7 @@ export default function StudentSelfDirectedLearningPage() {
           <span>指導老師（非必填）</span>
           <input
             type="text"
-            className="input-theme w-full sm:max-w-md"
+            className="input-theme w-full sm:max-w-md rounded px-3 py-2 text-sm"
             value={draft.advisor}
             maxLength={100}
             disabled={locked}
@@ -229,7 +229,7 @@ export default function StudentSelfDirectedLearningPage() {
           <label className="text-t2 flex items-center gap-2 text-sm">
             方案週數
             <select
-              className="input-theme"
+              className="input-theme rounded px-3 py-2 text-sm"
               value={draft.weeks.length}
               disabled={locked}
               onChange={(event) => setWeekCount(Number(event.target.value))}
@@ -259,7 +259,7 @@ export default function StudentSelfDirectedLearningPage() {
                 <label className="text-t2 block space-y-1 text-sm">
                   <span>學習安排</span>
                   <textarea
-                    className="input-theme min-h-20 w-full"
+                    className="input-theme min-h-20 w-full rounded px-3 py-2 text-sm"
                     value={week.content}
                     maxLength={600}
                     disabled={locked}
@@ -272,7 +272,7 @@ export default function StudentSelfDirectedLearningPage() {
                     <span>場地</span>
                     <input
                       type="text"
-                      className="input-theme w-full"
+                      className="input-theme w-full rounded px-3 py-2 text-sm"
                       value={week.venue}
                       list="sdl-venues"
                       maxLength={120}
@@ -284,7 +284,7 @@ export default function StudentSelfDirectedLearningPage() {
                   <label className="text-t2 block space-y-1 text-sm">
                     <span>時段</span>
                     <select
-                      className="input-theme w-full"
+                      className="input-theme w-full rounded px-3 py-2 text-sm"
                       value={week.timing}
                       disabled={locked}
                       onChange={(event) =>

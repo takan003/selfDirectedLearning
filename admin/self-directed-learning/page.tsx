@@ -169,7 +169,7 @@ export default function SelfDirectedLearningSettingsPage() {
   const state = openStateOf(settings);
 
   return (
-    <section className="mx-auto w-full max-w-3xl space-y-4 p-4 sm:p-6">
+    <section className="mx-auto content-width space-y-4 p-4 sm:p-6">
       <header className="space-y-1">
         <h1 className="text-xl text-t1">自主學習計畫－設定</h1>
         <p className="text-t2 text-sm">
@@ -190,7 +190,7 @@ export default function SelfDirectedLearningSettingsPage() {
               <span>開始時間</span>
               <input
                 type="datetime-local"
-                className="input-theme w-full"
+                className="input-theme w-full rounded px-3 py-2 text-sm"
                 value={toDateTimeLocal(settings.openAt)}
                 onChange={(event) => patch({ openAt: fromDateTimeLocal(event.target.value) })}
               />
@@ -199,7 +199,7 @@ export default function SelfDirectedLearningSettingsPage() {
               <span>截止時間</span>
               <input
                 type="datetime-local"
-                className="input-theme w-full"
+                className="input-theme w-full rounded px-3 py-2 text-sm"
                 value={toDateTimeLocal(settings.closeAt)}
                 onChange={(event) => patch({ closeAt: fromDateTimeLocal(event.target.value) })}
               />
@@ -214,7 +214,7 @@ export default function SelfDirectedLearningSettingsPage() {
               type="number"
               min={1}
               max={52}
-              className="input-theme w-32"
+              className="input-theme w-32 rounded px-3 py-2 text-sm"
               value={settings.maxWeeks}
               onChange={(event) => patch({ maxWeeks: Number(event.target.value) })}
             />
@@ -255,7 +255,7 @@ export default function SelfDirectedLearningSettingsPage() {
             <label className="text-t2 block space-y-1 text-sm">
               <span>星期</span>
               <select
-                className="input-theme"
+                className="input-theme rounded px-3 py-2 text-sm"
                 value={slotDay}
                 onChange={(event) => setSlotDay(Number(event.target.value))}
               >
@@ -270,7 +270,7 @@ export default function SelfDirectedLearningSettingsPage() {
               <span>節次（可用頓號或逗號分隔，如：第 5 節、第 6 節）</span>
               <input
                 type="text"
-                className="input-theme w-full"
+                className="input-theme w-full rounded px-3 py-2 text-sm"
                 value={slotPeriods}
                 onChange={(event) => setSlotPeriods(event.target.value)}
                 placeholder="第 5 節、第 6 節"
@@ -316,7 +316,7 @@ export default function SelfDirectedLearningSettingsPage() {
               <span>新增場域（如：圖書館自習室、電腦教室）</span>
               <input
                 type="text"
-                className="input-theme w-full"
+                className="input-theme w-full rounded px-3 py-2 text-sm"
                 value={venueInput}
                 onChange={(event) => setVenueInput(event.target.value)}
               />
@@ -363,7 +363,7 @@ export default function SelfDirectedLearningSettingsPage() {
               <span>帳號 uid</span>
               <input
                 type="text"
-                className="input-theme w-56"
+                className="input-theme w-56 rounded px-3 py-2 text-sm"
                 value={reviewerUid}
                 onChange={(event) => setReviewerUid(event.target.value)}
                 placeholder="uid"
@@ -373,7 +373,7 @@ export default function SelfDirectedLearningSettingsPage() {
               <span>顯示名稱</span>
               <input
                 type="text"
-                className="input-theme w-40"
+                className="input-theme w-40 rounded px-3 py-2 text-sm"
                 value={reviewerName}
                 onChange={(event) => setReviewerName(event.target.value)}
                 placeholder="王老師"
@@ -394,7 +394,7 @@ export default function SelfDirectedLearningSettingsPage() {
         </summary>
         <div className="px-4 pb-4">
           <textarea
-            className="input-theme min-h-32 w-full"
+            className="input-theme min-h-32 w-full rounded px-3 py-2 text-sm"
             value={settings.instructions}
             onChange={(event) => patch({ instructions: event.target.value })}
             placeholder="說明撰寫原則、送審流程與注意事項…"

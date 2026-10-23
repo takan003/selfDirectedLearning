@@ -55,7 +55,7 @@ export default function ParentSelfDirectedLearningPage() {
   }, [load]);
 
   return (
-    <section className="mx-auto w-full max-w-3xl space-y-4 p-4 sm:p-6">
+    <section className="mx-auto content-width space-y-4 p-4 sm:p-6">
       <header className="space-y-1">
         <h1 className="text-xl text-t1">自主學習計畫</h1>
         {child && (
