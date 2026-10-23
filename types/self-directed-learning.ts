@@ -139,3 +139,122 @@ export function openStateOf(
   if (now > settings.closeAt) return "ended";
   return "open";
 }
+
+/* ——— 學生計畫（selfDirectedLearningPlans） ——— */
+
+export const SELF_DIRECTED_LEARNING_PLANS_COLLECTION = "selfDirectedLearningPlans";
+export const SELF_DIRECTED_LEARNING_REVIEWS_COLLECTION = "selfDirectedLearningReviews";
+
+/** 安排時段：學校彈性學習時間／課餘時間（課綱） */
+export type PlanTiming = "flexible" | "afterSchool";
+
+/** draft 草稿 → submitted 審核中 → approved 通過／returned 退回修改 */
+export type PlanStatus = "draft" | "submitted" | "approved" | "returned";
+
+export const PLAN_STATUS_LABELS: Record<PlanStatus, string> = {
+  draft: "草稿",
+  submitted: "審核中",
+  approved: "已通過",
+  returned: "退回修改",
+};
+
+export const PLAN_TIMING_LABELS: Record<PlanTiming, string> = {
+  flexible: "學校彈性學習時間",
+  afterSchool: "課餘時間",
+};
+
+/** 每週課程安排 */
+export interface PlanWeek {
+  week: number;
+  content: string;
+  venue: string;
+  timing: PlanTiming;
+}
+
+export interface SelfDirectedLearningPlan {
+  /** doc id＝`${period}_${studentUid}` */
+  id: string;
+  /** 學期識別（如 `115-1`） */
+  period: string;
+  studentUid: string;
+  studentName: string;
+  grade: string;
+  classCode: string;
+  className: string;
+  /** 主題 */
+  topic: string;
+  /** 學群 */
+  studyGroup: string;
+  /** 指導老師（非必填） */
+  advisor: string;
+  weeks: PlanWeek[];
+  status: PlanStatus;
+  submittedAt: number | null;
+  updatedAt: number;
+}
+
+/** 審查意見（staff 端寫入；學生端讀最新一筆） */
+export interface PlanReview {
+  id: string;
+  planId: string;
+  reviewerUid: string;
+  reviewerName: string;
+  /** "approved" | "returned" */
+  decision: "approved" | "returned";
+  note: string;
+  reviewedAt: number;
+}
+
+export function periodLabelOf(period: { academicYear: number; semester: number }): string {
+  return `${period.academicYear}-${period.semester}`;
+}
+
+export function planDocIdOf(period: string, studentUid: string): string {
+  return `${period}_${studentUid}`;
+}
+
+function isTiming(value: unknown): value is PlanTiming {
+  return value === "flexible" || value === "afterSchool";
+}
+
+export type PlanParseResult =
+  | { ok: true; value: Omit<SelfDirectedLearningPlan, "id" | "period" | "studentUid" | "studentName" | "grade" | "classCode" | "className" | "status" | "submittedAt" | "updatedAt"> }
+  | { ok: false; message: string };
+
+/** 學生計畫草稿輸入驗證（送審與草稿共用） */
+export function parsePlanDraft(raw: unknown, maxWeeks: number): PlanParseResult {
+  if (!raw || typeof raw !== "object") return { ok: false, message: "請求內容格式錯誤" };
+  const body = raw as Record<string, unknown>;
+  const topic = typeof body.topic === "string" ? body.topic.trim().slice(0, 100) : "";
+  const studyGroup = typeof body.studyGroup === "string" ? body.studyGroup.trim().slice(0, 100) : "";
+  const advisor = typeof body.advisor === "string" ? body.advisor.trim().slice(0, 100) : "";
+  if (!topic) return { ok: false, message: "請填寫主題" };
+  if (!studyGroup) return { ok: false, message: "請填寫學群" };
+
+  if (!Array.isArray(body.weeks) || body.weeks.length < 1) {
+    return { ok: false, message: "請至少填寫一週的課程安排" };
+  }
+  if (body.weeks.length > maxWeeks) {
+    return { ok: false, message: `週數不得超過學校設定的 ${maxWeeks} 週` };
+  }
+  const weeks: PlanWeek[] = [];
+  const seen = new Set<number>();
+  for (const item of body.weeks) {
+    if (!item || typeof item !== "object") return { ok: false, message: "每週安排格式錯誤" };
+    const week = item as Record<string, unknown>;
+    const weekNo = typeof week.week === "number" ? week.week : NaN;
+    if (!Number.isInteger(weekNo) || weekNo < 1 || weekNo > maxWeeks) {
+      return { ok: false, message: "週次編號不合法" };
+    }
+    if (seen.has(weekNo)) return { ok: false, message: `第 ${weekNo} 週重複` };
+    seen.add(weekNo);
+    const content = typeof week.content === "string" ? week.content.trim().slice(0, 600) : "";
+    if (!content) return { ok: false, message: `第 ${weekNo} 週未填寫學習安排` };
+    const venue = typeof week.venue === "string" ? week.venue.trim().slice(0, 120) : "";
+    if (!venue) return { ok: false, message: `第 ${weekNo} 週未填寫場地` };
+    const timing: PlanTiming = isTiming(week.timing) ? week.timing : "flexible";
+    weeks.push({ week: weekNo, content, venue, timing });
+  }
+  weeks.sort((a, b) => a.week - b.week);
+  return { ok: true, value: { topic, studyGroup, advisor, weeks } };
+}
