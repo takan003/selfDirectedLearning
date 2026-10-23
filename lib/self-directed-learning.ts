@@ -1,7 +1,8 @@
 import "server-only";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { cachedRead, invalidateReadCache } from "@/lib/read-cache";
-import { getCacheTtlSeconds } from "@/lib/settings-server";
+import { getCacheTtlSeconds, getCurrentPeriod } from "@/lib/settings-server";
+import { isActiveEntry, loadPeriodEntries } from "@/lib/roster";
 import { readSchoolPeriods, DEFAULT_SCHOOL_DAYS } from "@/types/school-periods";
 import { readSpaceStructure } from "@/types/school-spaces";
 import {
@@ -13,6 +14,7 @@ import {
   type PeriodOption,
   type SelfDirectedLearningSettings,
   type SpaceOption,
+  type StaffCandidate,
 } from "../types/self-directed-learning";
 
 const SETTINGS_CACHE_KEY = "selfDirectedLearning:settings";
@@ -75,6 +77,7 @@ export async function getFullWeeks(): Promise<number | null> {
 const PERIOD_OPTIONS_CACHE_KEY = "selfDirectedLearning:periodOptions";
 const SPACE_OPTIONS_CACHE_KEY = "selfDirectedLearning:spaceOptions";
 const SCHOOL_DAYS_CACHE_KEY = "selfDirectedLearning:schoolDays";
+const STAFF_CANDIDATES_CACHE_KEY = "selfDirectedLearning:staffCandidates";
 
 /** 學校作息：上課星期（1=週一…7=週日）與節次候選（只讀主程式課表作息） */
 export interface SchoolScheduleOptions {
@@ -111,5 +114,24 @@ export async function getSpaceOptions(): Promise<SpaceOption[]> {
     return structure.units
       .filter((unit) => !hasChild.has(unit.code) && unit.name)
       .map((unit) => ({ name: unit.name, floor: unit.floor }));
+  });
+}
+
+/** 當期教職員名冊候選人（有效條目，不依屬性過濾）；審核人員選擇用 */
+export async function getStaffCandidates(): Promise<StaffCandidate[]> {
+  return cachedRead(STAFF_CANDIDATES_CACHE_KEY, await settingsTtlMs(), async () => {
+    const period = await getCurrentPeriod();
+    const entries = await loadPeriodEntries(period, "staff");
+    const list: StaffCandidate[] = [];
+    for (const entry of entries.values()) {
+      if (!isActiveEntry(entry)) continue;
+      const uid = typeof entry.uid === "string" ? entry.uid : "";
+      if (!uid) continue;
+      const name = typeof entry.name === "string" ? entry.name.trim() : "";
+      const attribute = typeof entry.attribute === "string" ? entry.attribute.trim() : "";
+      list.push({ uid, name, attribute });
+    }
+    list.sort((a, b) => a.name.localeCompare(b.name, "zh-Hant"));
+    return list;
   });
 }

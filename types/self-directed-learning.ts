@@ -5,10 +5,18 @@ export const SELF_DIRECTED_LEARNING_SETTINGS_DOC_ID = "global";
 
 export const WEEKDAY_LABELS = ["週一", "週二", "週三", "週四", "週五", "週六", "週日"] as const;
 
-/** 審核人員（v1 手動輸入 uid＋名稱；uid 供 staff 端鑑權比對，v1.1 擬改帳號選擇器） */
+/** 審核人員（候選取自當期教職員名冊；uid 供 staff 端鑑權比對） */
 export interface ReviewerEntry {
   uid: string;
   name: string;
+}
+
+/** 教職員名冊候選人（審核人員選擇用） */
+export interface StaffCandidate {
+  uid: string;
+  name: string;
+  /** 名冊屬性（如專任教師、兼導師）；候選不依此過濾 */
+  attribute: string;
 }
 
 /** 彈性學習節次行程：週幾（1=週一…7=週日）＋該日節次文字（如「第 5 節」） */

@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.9",
+    "version": "0.0.10",
     "releasedAt": "2026-10-23"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -48,6 +48,11 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.10",
+      "releasedAt": "2026-10-23",
+      "notes": ["審核人員改為當期教職員名冊選擇（不依屬性過濾），移除手動輸入 uid"]
+    },
     {
       "version": "0.0.9",
       "releasedAt": "2026-10-23",

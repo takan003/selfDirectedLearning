@@ -12,6 +12,7 @@ import {
   type ReviewerEntry,
   type SelfDirectedLearningSettings,
   type SpaceOption,
+  type StaffCandidate,
 } from "../../types/self-directed-learning";
 
 function toDateTimeLocal(epoch: number | null): string {
@@ -49,8 +50,10 @@ export default function SelfDirectedLearningSettingsPage() {
   const [toast, setToast] = useState<ToastMessage | null>(null);
 
   const [venueInput, setVenueInput] = useState("");
-  const [reviewerUid, setReviewerUid] = useState("");
-  const [reviewerName, setReviewerName] = useState("");
+  /** 選擇中的教職員候選 uid（審核人員） */
+  const [selectedStaffUid, setSelectedStaffUid] = useState("");
+  /** 當期教職員名冊候選人 */
+  const [staffCandidates, setStaffCandidates] = useState<StaffCandidate[]>([]);
   /** 節次候選（主程式課表作息） */
   const [periodOptions, setPeriodOptions] = useState<PeriodOption[]>([]);
   /** 上課日星期（主程式課表作息；1=週一…7=週日） */
@@ -77,6 +80,9 @@ export default function SelfDirectedLearningSettingsPage() {
           : [1, 2, 3, 4, 5]
       );
       setSpaceOptions(Array.isArray(data.spaceOptions) ? (data.spaceOptions as SpaceOption[]) : []);
+      setStaffCandidates(
+        Array.isArray(data.staffCandidates) ? (data.staffCandidates as StaffCandidate[]) : []
+      );
     } catch {
       setToast({ kind: "error", text: "讀取設定失敗" });
     } finally {
@@ -130,20 +136,18 @@ export default function SelfDirectedLearningSettingsPage() {
   };
 
   const addReviewer = () => {
-    const uid = reviewerUid.trim();
-    const name = reviewerName.trim();
-    if (!uid || !name) {
-      setToast({ kind: "error", text: "審核人員需填 uid 與名稱" });
+    const candidate = staffCandidates.find((item) => item.uid === selectedStaffUid);
+    if (!candidate) {
+      setToast({ kind: "error", text: "請先選擇教職員" });
       return;
     }
-    if (settings.reviewers.some((reviewer) => reviewer.uid === uid)) {
-      setToast({ kind: "error", text: "此 uid 已在名單中" });
+    if (settings.reviewers.some((reviewer) => reviewer.uid === candidate.uid)) {
+      setToast({ kind: "error", text: "此人已在名單中" });
       return;
     }
-    const entry: ReviewerEntry = { uid, name };
+    const entry: ReviewerEntry = { uid: candidate.uid, name: candidate.name || candidate.uid };
     patch({ reviewers: [...settings.reviewers, entry] });
-    setReviewerUid("");
-    setReviewerName("");
+    setSelectedStaffUid("");
   };
 
   const removeReviewer = (uid: string) => {
@@ -508,30 +512,29 @@ export default function SelfDirectedLearningSettingsPage() {
           )}
           <div className="flex flex-wrap items-end gap-2">
             <label className="text-t2 block space-y-1 text-sm">
-              <span>帳號 uid</span>
-              <input
-                type="text"
-                className="input-theme w-56 rounded px-3 py-2 text-sm"
-                value={reviewerUid}
-                onChange={(event) => setReviewerUid(event.target.value)}
-                placeholder="uid"
-              />
-            </label>
-            <label className="text-t2 block space-y-1 text-sm">
-              <span>顯示名稱</span>
-              <input
-                type="text"
-                className="input-theme w-40 rounded px-3 py-2 text-sm"
-                value={reviewerName}
-                onChange={(event) => setReviewerName(event.target.value)}
-                placeholder="王老師"
-              />
+              <span>選擇教職員</span>
+              <select
+                className="input-theme w-64 rounded px-3 py-2 text-sm"
+                value={selectedStaffUid}
+                onChange={(event) => setSelectedStaffUid(event.target.value)}
+              >
+                <option value="">
+                  {staffCandidates.length ? "請選擇…" : "（當期名冊無教職員）"}
+                </option>
+                {staffCandidates
+                  .filter((candidate) => !settings.reviewers.some((r) => r.uid === candidate.uid))
+                  .map((candidate) => (
+                    <option key={candidate.uid} value={candidate.uid}>
+                      {candidate.name || candidate.uid}
+                      {candidate.attribute ? `（${candidate.attribute}）` : ""}
+                    </option>
+                  ))}
+              </select>
             </label>
             <button type="button" className="btn-theme h-10 px-4 text-sm" onClick={addReviewer}>
               加入
             </button>
           </div>
-          <p className="text-t3 text-xs">v1 以手動輸入 uid＋名稱建立名單；帳號選擇器列後續版本。</p>
         </div>
       </details>
 

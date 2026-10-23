@@ -8,7 +8,7 @@ import { publishFromModule, updateFromModule } from "@/lib/announcements";
 import { publishScheduleFromModule } from "@/lib/calendar";
 import { getCurrentPeriod } from "@/lib/settings-server";
 import { schoolWideAudience } from "@/types/announcements";
-import { getFullWeeks, getSchoolScheduleOptions, getSettings, getSpaceOptions, saveSettings } from "../../../lib/self-directed-learning";
+import { getFullWeeks, getSchoolScheduleOptions, getSettings, getSpaceOptions, getStaffCandidates, saveSettings } from "../../../lib/self-directed-learning";
 import { parseSettingsInput } from "../../../types/self-directed-learning";
 
 const noStore = { "Cache-Control": "no-store" };
@@ -123,10 +123,11 @@ export async function GET(request: NextRequest) {
     if (denial) return toAuthResponse(denial);
 
     const settings = await getSettings();
-    const [fullWeeks, scheduleOptions, spaceOptions] = await Promise.all([
+    const [fullWeeks, scheduleOptions, spaceOptions, staffCandidates] = await Promise.all([
       getFullWeeks(),
       getSchoolScheduleOptions(),
       getSpaceOptions(),
+      getStaffCandidates(),
     ]);
     return NextResponse.json(
       {
@@ -136,6 +137,7 @@ export async function GET(request: NextRequest) {
         periodOptions: scheduleOptions.periods,
         schoolDays: scheduleOptions.schoolDays,
         spaceOptions,
+        staffCandidates,
       },
       { headers: noStore }
     );
