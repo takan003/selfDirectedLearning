@@ -2,13 +2,17 @@ import "server-only";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { cachedRead, invalidateReadCache } from "@/lib/read-cache";
 import { getCacheTtlSeconds } from "@/lib/settings-server";
+import { readSchoolPeriods } from "@/types/school-periods";
+import { readSpaceStructure } from "@/types/school-spaces";
 import {
   DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS,
   SELF_DIRECTED_LEARNING_SETTINGS_COLLECTION,
   SELF_DIRECTED_LEARNING_SETTINGS_DOC_ID,
   countWeeksBetween,
   normalizeSettings,
+  type PeriodOption,
   type SelfDirectedLearningSettings,
+  type SpaceOption,
 } from "../types/self-directed-learning";
 
 const SETTINGS_CACHE_KEY = "selfDirectedLearning:settings";
@@ -65,5 +69,31 @@ export async function getFullWeeks(): Promise<number | null> {
       countWeeksBetween(str(data.semesterStart), str(data.semesterEnd)) ??
       countWeeksBetween(str(data.academicYearStart), str(data.academicYearEnd))
     );
+  });
+}
+
+const PERIOD_OPTIONS_CACHE_KEY = "selfDirectedLearning:periodOptions";
+const SPACE_OPTIONS_CACHE_KEY = "selfDirectedLearning:spaceOptions";
+
+/** 節次候選清單：主程式「學校基本設定 → 課表作息時間」（文件缺漏時回內建預設八節＋午休） */
+export async function getPeriodOptions(): Promise<PeriodOption[]> {
+  return cachedRead(PERIOD_OPTIONS_CACHE_KEY, await settingsTtlMs(), async () => {
+    const snap = await getAdminDb().collection("settings").doc("schoolPeriods").get();
+    const setting = readSchoolPeriods(snap.exists ? snap.data() : null);
+    return setting.periods.map((row) => ({ code: row.code, name: row.name, period: row.period }));
+  });
+}
+
+/** 場域候選清單：主程式「學校基本設定 → 樓層空間設定」的葉子空間（無下層者） */
+export async function getSpaceOptions(): Promise<SpaceOption[]> {
+  return cachedRead(SPACE_OPTIONS_CACHE_KEY, await settingsTtlMs(), async () => {
+    const snap = await getAdminDb().collection("settings").doc("spaces").get();
+    const structure = readSpaceStructure(snap.exists ? snap.data() : null);
+    const hasChild = new Set(
+      structure.units.filter((unit) => unit.parent !== null).map((unit) => unit.parent as string)
+    );
+    return structure.units
+      .filter((unit) => !hasChild.has(unit.code) && unit.name)
+      .map((unit) => ({ name: unit.name, floor: unit.floor }));
   });
 }

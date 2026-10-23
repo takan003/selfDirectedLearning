@@ -25,6 +25,19 @@ export const MAX_PLAN_WEEKS = 104;
 /** 週數填寫形式：full＝全學期（空白週數都須填寫，週數自動判斷）；flexible＝彈性（至少下限週數） */
 export type WeekMode = "full" | "flexible";
 
+/** 節次候選（取自主程式課表作息；管理端節次行程選擇用） */
+export interface PeriodOption {
+  code: string;
+  name: string;
+  period: number;
+}
+
+/** 場域候選（取自主程式樓層空間設定的葉子空間；管理端開放場域選擇用） */
+export interface SpaceOption {
+  name: string;
+  floor: string;
+}
+
 /** 總開關關閉時，非管理端一律只見此說明（頁面標題與 API 錯誤訊息共用） */
 export const MAINTENANCE_TITLE = "目前此功能關閉維護中";
 export const MAINTENANCE_HINT =

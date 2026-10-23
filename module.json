@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.6",
+    "version": "0.0.7",
     "releasedAt": "2026-10-23"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -48,6 +48,14 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.7",
+      "releasedAt": "2026-10-23",
+      "notes": [
+        "管理端「節次行程」改為依主程式「學校基本設定 → 課表作息時間」勾選節次（不再手打文字）；尚未建立作息時提示先去建立",
+        "管理端「開放場域」新增場域時以主程式「樓層空間設定」的葉子空間為下拉建議，仍可自行輸入自訂場域名稱"
+      ]
+    },
     {
       "version": "0.0.6",
       "releasedAt": "2026-10-23",

@@ -8,8 +8,10 @@ import {
   WEEKDAY_LABELS,
   openStateOf,
   type FlexibleSlot,
+  type PeriodOption,
   type ReviewerEntry,
   type SelfDirectedLearningSettings,
+  type SpaceOption,
 } from "../../types/self-directed-learning";
 
 function toDateTimeLocal(epoch: number | null): string {
@@ -47,10 +49,15 @@ export default function SelfDirectedLearningSettingsPage() {
   const [toast, setToast] = useState<ToastMessage | null>(null);
 
   const [slotDay, setSlotDay] = useState(1);
-  const [slotPeriods, setSlotPeriods] = useState("");
+  /** 勾選中的節次名稱（候選取自主程式課表作息） */
+  const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
   const [venueInput, setVenueInput] = useState("");
   const [reviewerUid, setReviewerUid] = useState("");
   const [reviewerName, setReviewerName] = useState("");
+  /** 節次候選（主程式課表作息） */
+  const [periodOptions, setPeriodOptions] = useState<PeriodOption[]>([]);
+  /** 場域候選（主程式樓層空間設定的葉子空間） */
+  const [spaceOptions, setSpaceOptions] = useState<SpaceOption[]>([]);
   /** 下限週數輸入框的暫存字串：允許清空後重打，失焦時回復現值 */
   const [minWeeksInput, setMinWeeksInput] = useState<string | null>(null);
 
@@ -64,6 +71,8 @@ export default function SelfDirectedLearningSettingsPage() {
       }
       setSettings(data.settings as SelfDirectedLearningSettings);
       setFullWeeks(typeof data.fullWeeks === "number" ? data.fullWeeks : null);
+      setPeriodOptions(Array.isArray(data.periodOptions) ? (data.periodOptions as PeriodOption[]) : []);
+      setSpaceOptions(Array.isArray(data.spaceOptions) ? (data.spaceOptions as SpaceOption[]) : []);
     } catch {
       setToast({ kind: "error", text: "讀取設定失敗" });
     } finally {
@@ -80,22 +89,25 @@ export default function SelfDirectedLearningSettingsPage() {
   };
 
   const addSlot = () => {
-    const periods = slotPeriods
-      .split(/[、,，\s]+/)
-      .map((item) => item.trim())
-      .filter(Boolean)
-      .slice(0, 10);
-    if (!periods.length) {
-      setToast({ kind: "error", text: "請輸入節次（如：第 5 節）" });
+    // 依作息表順序排列勾選的節次
+    const ordered = periodOptions
+      .filter((option) => selectedPeriods.includes(option.name))
+      .map((option) => option.name);
+    if (!ordered.length) {
+      setToast({ kind: "error", text: "請選擇節次" });
       return;
     }
     if (settings.slots.some((slot) => slot.day === slotDay)) {
       setToast({ kind: "error", text: "該星期已有節次行程，請先移除再新增" });
       return;
     }
-    const next: FlexibleSlot = { day: slotDay, periods };
+    const next: FlexibleSlot = { day: slotDay, periods: ordered };
     patch({ slots: [...settings.slots, next].sort((a, b) => a.day - b.day) });
-    setSlotPeriods("");
+    setSelectedPeriods([]);
+  };
+
+  const togglePeriod = (name: string, checked: boolean) => {
+    setSelectedPeriods((prev) => (checked ? [...prev, name] : prev.filter((item) => item !== name)));
   };
 
   const removeSlot = (day: number) => {
@@ -374,16 +386,30 @@ export default function SelfDirectedLearningSettingsPage() {
                 ))}
               </select>
             </label>
-            <label className="text-t2 block min-w-40 flex-1 space-y-1 text-sm">
-              <span>節次（可用頓號或逗號分隔，如：第 5 節、第 6 節）</span>
-              <input
-                type="text"
-                className="input-theme w-full rounded px-3 py-2 text-sm"
-                value={slotPeriods}
-                onChange={(event) => setSlotPeriods(event.target.value)}
-                placeholder="第 5 節、第 6 節"
-              />
-            </label>
+            <div className="min-w-40 flex-1 space-y-1 text-sm">
+              <span className="text-t2 block">節次（依學校課表作息勾選）</span>
+              {periodOptions.length === 0 ? (
+                <p className="text-t3 text-xs">
+                  尚無作息資料，請先至「學校基本設定 → 課表作息時間」建立節次。
+                </p>
+              ) : (
+                <div className="border-themed bg-surface max-h-40 overflow-y-auto rounded-md p-2">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1">
+                    {periodOptions.map((option) => (
+                      <label key={option.code} className="text-t1 flex cursor-pointer items-center gap-1.5 text-sm">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 cursor-pointer"
+                          checked={selectedPeriods.includes(option.name)}
+                          onChange={(event) => togglePeriod(option.name, event.target.checked)}
+                        />
+                        {option.name}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
             <button type="button" className="btn-theme h-10 px-4 text-sm" onClick={addSlot}>
               加入
             </button>
@@ -421,13 +447,25 @@ export default function SelfDirectedLearningSettingsPage() {
           )}
           <div className="flex flex-wrap items-end gap-2">
             <label className="text-t2 block min-w-48 flex-1 space-y-1 text-sm">
-              <span>新增場域（如：圖書館自習室、電腦教室）</span>
+              <span>新增場域（可點選樓層空間建議，或自行輸入名稱）</span>
               <input
                 type="text"
                 className="input-theme w-full rounded px-3 py-2 text-sm"
                 value={venueInput}
+                list="sdl-admin-space-options"
                 onChange={(event) => setVenueInput(event.target.value)}
+                placeholder="如：圖書館自習室、電腦教室"
               />
+              <datalist id="sdl-admin-space-options">
+                {spaceOptions.map((option) => (
+                  <option
+                    key={`${option.name}-${option.floor}`}
+                    value={option.name}
+                  >
+                    {option.floor ? `${option.name}（${option.floor}）` : option.name}
+                  </option>
+                ))}
+              </datalist>
             </label>
             <button type="button" className="btn-theme h-10 px-4 text-sm" onClick={addVenue}>
               加入
