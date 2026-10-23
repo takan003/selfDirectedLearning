@@ -1,0 +1,27 @@
+{
+  "value": "selfDirectedLearning",
+  "label": "自主學習計畫",
+  "kind": "optional",
+  "status": "building",
+  "description": "自主學習計畫的申請、審核與進度紀錄。（開發中）",
+  "href": "",
+  "contractVersion": 1,
+  "minHostVersion": "0.580",
+  "license": "MIT",
+  "repository": "https://github.com/takan003/selfDirectedLearning",
+  "keywords": ["自主學習", "學習計畫"],
+  "author": {
+    "author": "takan003",
+    "authorUrl": "https://github.com/takan003",
+    "version": "0.0.1",
+    "releasedAt": "2026-10-22"
+  },
+  "provides": { "student": false, "parent": false, "staff": false, "admin": false },
+  "routes": [],
+  "permission": { "mode": "new", "value": "selfDirectedLearning", "category": "校務資料" },
+  "icon": "selfDirectedLearning",
+  "rateLimits": [],
+  "auditActions": [],
+  "dataCollections": [],
+  "hooks": []
+}
