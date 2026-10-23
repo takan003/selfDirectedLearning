@@ -16,7 +16,7 @@
     "version": "0.0.1",
     "releasedAt": "2026-10-22"
   },
-  "provides": { "student": false, "parent": false, "staff": false, "admin": false },
+  "provides": { "student": true, "parent": true, "staff": true, "admin": true },
   "routes": [],
   "permission": { "mode": "new", "value": "selfDirectedLearning", "category": "校務資料" },
   "icon": "selfDirectedLearning",
