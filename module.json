@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "releasedAt": "2026-10-23"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -48,6 +48,15 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.3",
+      "releasedAt": "2026-10-23",
+      "notes": [
+        "移除「全學期週數（課綱為 21 或 22 週）」人工設定——上限週數受假期與定期考試影響並不固定；全學期形式的週數改由系統依「學校基本設定 → 學期起訖設定」的學期起訖自動推算（getFullWeeks），設定檔不再有 maxWeeks 欄位（舊值自動忽略）",
+        "保留「全學期空白週數都須填寫」與「全學期採彈性週數填寫」兩種形式；彈性形式仍有下限週數進階欄位，且未設填寫上限（伺服器防濫用硬上限 104 週）",
+        "學校尚未設定學期起訖時，全學期形式無法送出審核，訊息會提示改用彈性形式或先填寫學期起訖"
+      ]
+    },
     {
       "version": "0.0.2",
       "releasedAt": "2026-10-23",

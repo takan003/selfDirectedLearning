@@ -40,6 +40,8 @@ const STATE_LABEL: Record<string, string> = {
 
 export default function SelfDirectedLearningSettingsPage() {
   const [settings, setSettings] = useState<SelfDirectedLearningSettings>(DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS);
+  /** 全學期形式的須填週數（由學期起訖自動判斷；null＝學校尚未設定起訖） */
+  const [fullWeeks, setFullWeeks] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
@@ -61,6 +63,7 @@ export default function SelfDirectedLearningSettingsPage() {
         return;
       }
       setSettings(data.settings as SelfDirectedLearningSettings);
+      setFullWeeks(typeof data.fullWeeks === "number" ? data.fullWeeks : null);
     } catch {
       setToast({ kind: "error", text: "讀取設定失敗" });
     } finally {
@@ -265,7 +268,7 @@ export default function SelfDirectedLearningSettingsPage() {
             目前設定：{formatDateTime(settings.openAt)} ～ {formatDateTime(settings.closeAt)}
           </p>
 
-          {/* 週數填寫形式：全學期全填 vs 彈性下限 */}
+          {/* 週數填寫形式：全學期全填（週數自動判斷）vs 彈性下限 */}
           <div className="space-y-2">
             <span className="text-t1 block text-sm font-medium">週數填寫形式</span>
             <label className="text-t2 flex cursor-pointer items-start gap-2 text-sm">
@@ -279,7 +282,9 @@ export default function SelfDirectedLearningSettingsPage() {
               <span>
                 全學期空白週數都須填寫
                 <span className="text-t3 block text-xs">
-                  學校彈性時間未安排活動的週，學生也必須填寫；週數＝下方「全學期週數」。
+                  週數由系統依「學校基本設定 → 學期起訖設定」的學期起訖自動判斷
+                  {fullWeeks !== null ? `（目前為 ${fullWeeks} 週）` : "（學校尚未設定學期起訖）"}
+                  ，不需人工設定。
                 </span>
               </span>
             </label>
@@ -294,7 +299,7 @@ export default function SelfDirectedLearningSettingsPage() {
               <span>
                 全學期採彈性週數填寫
                 <span className="text-t3 block text-xs">
-                  學生只要填寫學校規定的下限週數即可（上限仍為全學期週數）。
+                  學生只要填寫學校規定的下限週數即可，未設上限。
                 </span>
               </span>
             </label>
@@ -304,7 +309,6 @@ export default function SelfDirectedLearningSettingsPage() {
                 <input
                   type="number"
                   min={1}
-                  max={settings.maxWeeks}
                   className="input-theme w-32 rounded px-3 py-2 text-sm"
                   value={minWeeksInput ?? String(settings.minWeeks)}
                   onChange={(event) => {
@@ -320,21 +324,6 @@ export default function SelfDirectedLearningSettingsPage() {
               </label>
             )}
           </div>
-
-          <label className="text-t2 block space-y-1 text-sm">
-            <span>全學期週數（課綱為 21 或 22 週）</span>
-            <input
-              type="number"
-              min={1}
-              max={52}
-              className="input-theme w-32 rounded px-3 py-2 text-sm"
-              value={settings.maxWeeks}
-              onChange={(event) => patch({ maxWeeks: Number(event.target.value) })}
-            />
-            <span className="text-t3 block text-xs">
-              全學期形式＝學生須全數填寫的週數；彈性形式＝可填寫的上限。
-            </span>
-          </label>
         </div>
       </details>
 

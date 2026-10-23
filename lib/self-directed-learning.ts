@@ -6,6 +6,7 @@ import {
   DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS,
   SELF_DIRECTED_LEARNING_SETTINGS_COLLECTION,
   SELF_DIRECTED_LEARNING_SETTINGS_DOC_ID,
+  countWeeksBetween,
   normalizeSettings,
   type SelfDirectedLearningSettings,
 } from "../types/self-directed-learning";
@@ -43,4 +44,23 @@ export async function saveSettings(
   await settingsRef().set(next, { merge: true });
   invalidateReadCache(SETTINGS_CACHE_KEY);
   return next;
+}
+
+const FULL_WEEKS_CACHE_KEY = "selfDirectedLearning:fullWeeks";
+
+/**
+ * 全學期形式的須填週數：依主程式「學校基本設定 → 學期起訖設定」的學期起訖
+ * （優先）或學年度起訖自動推算；學校尚未設定起訖時回 null。
+ * 只讀主程式的 `settings/system` 日期欄位，不寫入。
+ */
+export async function getFullWeeks(): Promise<number | null> {
+  return cachedRead(FULL_WEEKS_CACHE_KEY, await settingsTtlMs(), async () => {
+    const snap = await getAdminDb().collection("settings").doc("system").get();
+    const data = (snap.exists ? snap.data() : {}) as Record<string, unknown>;
+    const str = (value: unknown) => (typeof value === "string" ? value : "");
+    return (
+      countWeeksBetween(str(data.semesterStart), str(data.semesterEnd)) ??
+      countWeeksBetween(str(data.academicYearStart), str(data.academicYearEnd))
+    );
+  });
 }
