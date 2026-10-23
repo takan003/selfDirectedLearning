@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import Toast, { type ToastMessage } from "@/components/Toast";
 import DisclosureArrow from "@/components/DisclosureArrow";
 import {
+  MAINTENANCE_HINT,
+  MAINTENANCE_TITLE,
   PLAN_STATUS_LABELS,
   PLAN_TIMING_LABELS,
   type SelfDirectedLearningPlan,
@@ -44,6 +46,8 @@ export default function StaffSelfDirectedLearningPage() {
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [pending, setPending] = useState<PendingReview | null>(null);
   const [toast, setToast] = useState<ToastMessage | null>(null);
+  /** 總開關關閉：只顯示維護說明 */
+  const [maintenance, setMaintenance] = useState(false);
 
   const load = useCallback(async (mode: Tab) => {
     try {
@@ -57,7 +61,8 @@ export default function StaffSelfDirectedLearningPage() {
         setPlans([]);
         return;
       }
-      setRoles(data.roles as StaffRoles);
+      setRoles((data.roles as StaffRoles) ?? null);
+      setMaintenance(Boolean(data.maintenance));
       setPlans((data.plans as SelfDirectedLearningPlan[]) || []);
     } catch {
       setToast({ kind: "error", text: "讀取資料失敗" });
@@ -109,13 +114,27 @@ export default function StaffSelfDirectedLearningPage() {
 
   const hasAnyRole = Boolean(roles?.isReviewer || roles?.isTutor);
 
+  // 總開關關閉：只見維護說明（計畫清單不呈現、審核不開放）
+  if (!loading && maintenance) {
+    return (
+      <section className="mx-auto content-width space-y-4 p-4 sm:p-6">
+        <h1 className="text-xl text-t1">自主學習計畫－審核與檢視</h1>
+        <div className="border-themed bg-card space-y-2 rounded-lg p-6 text-center">
+          <p className="text-t1 text-lg font-medium">{MAINTENANCE_TITLE}</p>
+          <p className="text-t2 text-sm">{MAINTENANCE_HINT}</p>
+        </div>
+        <Toast message={toast} onClose={() => setToast(null)} />
+      </section>
+    );
+  }
+
   if (!loading && !hasAnyRole) {
     return (
       <section className="mx-auto content-width space-y-4 p-4 sm:p-6">
         <h1 className="text-xl text-t1">自主學習計畫－審核與檢視</h1>
         <div className="border-themed bg-card text-t2 rounded-lg p-4 text-sm">
           你的帳號不在本模組的審核人員名單內，也未具兼導師身分。
-          若需審核權限，請洽管理員在「自主學習計畫－設定」中加入審核人員名單。
+          若需審核權限，請洽管理員在「管理規則」中加入審核人員名單。
         </div>
         <Toast message={toast} onClose={() => setToast(null)} />
       </section>

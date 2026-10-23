@@ -49,6 +49,8 @@ export default function SelfDirectedLearningSettingsPage() {
   const [venueInput, setVenueInput] = useState("");
   const [reviewerUid, setReviewerUid] = useState("");
   const [reviewerName, setReviewerName] = useState("");
+  /** 下限週數輸入框的暫存字串：允許清空後重打，失焦時回復現值 */
+  const [minWeeksInput, setMinWeeksInput] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -171,10 +173,20 @@ export default function SelfDirectedLearningSettingsPage() {
   return (
     <section className="mx-auto content-width space-y-4 p-4 sm:p-6">
       <header className="space-y-1">
-        <h1 className="text-xl text-t1">自主學習計畫－設定</h1>
+        <h1 className="text-xl text-t1">管理規則</h1>
         <p className="text-t2 text-sm">
           狀態：
-          <span className={state === "open" ? "text-success" : "text-t2"}>{STATE_LABEL[state]}</span>
+          <span
+            className={
+              !settings.enabled
+                ? "text-danger"
+                : state === "open"
+                  ? "text-success"
+                  : "text-t2"
+            }
+          >
+            {!settings.enabled ? "功能已關閉（維護中）" : STATE_LABEL[state]}
+          </span>
           {settings.updatedAt > 0 ? ` ｜ 最後更新 ${formatDateTime(settings.updatedAt)}` : ""}
         </p>
       </header>
@@ -185,6 +197,25 @@ export default function SelfDirectedLearningSettingsPage() {
           開放撰寫時間
         </summary>
         <div className="space-y-4 px-4 pb-4">
+          {/* 功能總開關：關閉即全站維護中（管理端不受影響） */}
+          <label className="border-themed bg-surface flex flex-wrap items-start gap-3 rounded-md p-3">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 cursor-pointer"
+              checked={settings.enabled}
+              onChange={(event) => patch({ enabled: event.target.checked })}
+            />
+            <span className="min-w-56 flex-1">
+              <span className="text-t1 block text-sm font-medium">
+                功能總開關（{settings.enabled ? "開啟中" : "關閉維護中"}）
+              </span>
+              <span className="text-t3 block text-xs">
+                關閉後，學生／教職員／家長頁面一律只顯示「目前此功能關閉維護中」，
+                並暫停填報與審核；管理端不受影響，可隨時改回開啟。
+              </span>
+            </span>
+          </label>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="text-t2 block space-y-1 text-sm">
               <span>開始時間</span>
@@ -208,8 +239,65 @@ export default function SelfDirectedLearningSettingsPage() {
           <p className="text-t3 text-sm">
             目前設定：{formatDateTime(settings.openAt)} ～ {formatDateTime(settings.closeAt)}
           </p>
+
+          {/* 週數填寫形式：全學期全填 vs 彈性下限 */}
+          <div className="space-y-2">
+            <span className="text-t1 block text-sm font-medium">週數填寫形式</span>
+            <label className="text-t2 flex cursor-pointer items-start gap-2 text-sm">
+              <input
+                type="radio"
+                name="weekMode"
+                className="mt-1 h-4 w-4 cursor-pointer"
+                checked={settings.weekMode === "full"}
+                onChange={() => patch({ weekMode: "full" })}
+              />
+              <span>
+                全學期空白週數都須填寫
+                <span className="text-t3 block text-xs">
+                  學校彈性時間未安排活動的週，學生也必須填寫；週數＝下方「全學期週數」。
+                </span>
+              </span>
+            </label>
+            <label className="text-t2 flex cursor-pointer items-start gap-2 text-sm">
+              <input
+                type="radio"
+                name="weekMode"
+                className="mt-1 h-4 w-4 cursor-pointer"
+                checked={settings.weekMode === "flexible"}
+                onChange={() => patch({ weekMode: "flexible" })}
+              />
+              <span>
+                全學期採彈性週數填寫
+                <span className="text-t3 block text-xs">
+                  學生只要填寫學校規定的下限週數即可（上限仍為全學期週數）。
+                </span>
+              </span>
+            </label>
+            {settings.weekMode === "flexible" && (
+              <label className="text-t2 block space-y-1 text-sm">
+                <span>下限週數（學生至少須填寫；建議至少 6 週）</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={settings.maxWeeks}
+                  className="input-theme w-32 rounded px-3 py-2 text-sm"
+                  value={minWeeksInput ?? String(settings.minWeeks)}
+                  onChange={(event) => {
+                    const text = event.target.value;
+                    setMinWeeksInput(text);
+                    const parsed = Number(text);
+                    if (text.trim() !== "" && Number.isInteger(parsed)) {
+                      patch({ minWeeks: parsed });
+                    }
+                  }}
+                  onBlur={() => setMinWeeksInput(null)}
+                />
+              </label>
+            )}
+          </div>
+
           <label className="text-t2 block space-y-1 text-sm">
-            <span>方案可填寫週數上限（課綱為 21 或 22 週）</span>
+            <span>全學期週數（課綱為 21 或 22 週）</span>
             <input
               type="number"
               min={1}
@@ -218,6 +306,9 @@ export default function SelfDirectedLearningSettingsPage() {
               value={settings.maxWeeks}
               onChange={(event) => patch({ maxWeeks: Number(event.target.value) })}
             />
+            <span className="text-t3 block text-xs">
+              全學期形式＝學生須全數填寫的週數；彈性形式＝可填寫的上限。
+            </span>
           </label>
         </div>
       </details>
