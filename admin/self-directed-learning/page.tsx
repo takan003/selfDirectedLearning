@@ -48,14 +48,13 @@ export default function SelfDirectedLearningSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
 
-  const [slotDay, setSlotDay] = useState(1);
-  /** 勾選中的節次名稱（候選取自主程式課表作息） */
-  const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
   const [venueInput, setVenueInput] = useState("");
   const [reviewerUid, setReviewerUid] = useState("");
   const [reviewerName, setReviewerName] = useState("");
   /** 節次候選（主程式課表作息） */
   const [periodOptions, setPeriodOptions] = useState<PeriodOption[]>([]);
+  /** 上課日星期（主程式課表作息；1=週一…7=週日） */
+  const [schoolDays, setSchoolDays] = useState<number[]>([1, 2, 3, 4, 5]);
   /** 場域候選（主程式樓層空間設定的葉子空間） */
   const [spaceOptions, setSpaceOptions] = useState<SpaceOption[]>([]);
   /** 下限週數輸入框的暫存字串：允許清空後重打，失焦時回復現值 */
@@ -72,6 +71,11 @@ export default function SelfDirectedLearningSettingsPage() {
       setSettings(data.settings as SelfDirectedLearningSettings);
       setFullWeeks(typeof data.fullWeeks === "number" ? data.fullWeeks : null);
       setPeriodOptions(Array.isArray(data.periodOptions) ? (data.periodOptions as PeriodOption[]) : []);
+      setSchoolDays(
+        Array.isArray(data.schoolDays) && data.schoolDays.length
+          ? (data.schoolDays as number[]).filter((day) => Number.isInteger(day) && day >= 1 && day <= 7)
+          : [1, 2, 3, 4, 5]
+      );
       setSpaceOptions(Array.isArray(data.spaceOptions) ? (data.spaceOptions as SpaceOption[]) : []);
     } catch {
       setToast({ kind: "error", text: "讀取設定失敗" });
@@ -88,26 +92,22 @@ export default function SelfDirectedLearningSettingsPage() {
     setSettings((prev) => ({ ...prev, ...partial }));
   };
 
-  const addSlot = () => {
-    // 依作息表順序排列勾選的節次
+  /** 格狀表格勾選：day=星期代碼、periodName=節次名稱，即時寫入 slots */
+  const toggleScheduleCell = (day: number, periodName: string, checked: boolean) => {
+    const existing = settings.slots.find((slot) => slot.day === day);
+    const current = existing ? existing.periods : [];
+    const merged = checked
+      ? [...current, periodName]
+      : current.filter((name) => name !== periodName);
+    // 依作息表順序排列該日節次
     const ordered = periodOptions
-      .filter((option) => selectedPeriods.includes(option.name))
+      .filter((option) => merged.includes(option.name))
       .map((option) => option.name);
-    if (!ordered.length) {
-      setToast({ kind: "error", text: "請選擇節次" });
-      return;
-    }
-    if (settings.slots.some((slot) => slot.day === slotDay)) {
-      setToast({ kind: "error", text: "該星期已有節次行程，請先移除再新增" });
-      return;
-    }
-    const next: FlexibleSlot = { day: slotDay, periods: ordered };
-    patch({ slots: [...settings.slots, next].sort((a, b) => a.day - b.day) });
-    setSelectedPeriods([]);
-  };
-
-  const togglePeriod = (name: string, checked: boolean) => {
-    setSelectedPeriods((prev) => (checked ? [...prev, name] : prev.filter((item) => item !== name)));
+    const rest = settings.slots.filter((slot) => slot.day !== day);
+    const next: FlexibleSlot[] = ordered.length
+      ? [...rest, { day, periods: ordered }].sort((a, b) => a.day - b.day)
+      : rest;
+    patch({ slots: next });
   };
 
   const removeSlot = (day: number) => {
@@ -348,9 +348,57 @@ export default function SelfDirectedLearningSettingsPage() {
           校內彈性學習節次行程
         </summary>
         <div className="space-y-4 px-4 pb-4">
-          {settings.slots.length === 0 ? (
-            <p className="text-t3 text-sm">尚未設定節次行程。</p>
+          {periodOptions.length === 0 ? (
+            <p className="text-t3 text-sm">
+              尚無作息資料，請先至「學校基本設定 → 課表作息時間」建立節次。
+            </p>
           ) : (
+            <>
+              <p className="text-t3 text-sm">
+                橫排為上課日、直排為節次；勾選表示該日該節為校內彈性學習時間
+                （上課日取自課表作息設定，共 {schoolDays.length} 日 × {periodOptions.length} 節）。
+              </p>
+              <div className="border-themed bg-surface overflow-x-auto rounded-md">
+                <table className="w-full text-sm text-left">
+                  <thead className="border-b border-themed">
+                    <tr>
+                      <th className="px-3 py-2 font-medium whitespace-nowrap text-t2">節次 ＼ 星期</th>
+                      {schoolDays.map((day) => (
+                        <th key={day} className="px-3 py-2 font-medium whitespace-nowrap text-t1 text-center">
+                          {WEEKDAY_LABELS[day - 1]}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {periodOptions.map((period) => (
+                      <tr key={period.code} className="border-b border-themed last:border-0">
+                        <td className="px-3 py-2 whitespace-nowrap text-t1">{period.name}</td>
+                        {schoolDays.map((day) => {
+                          const slot = settings.slots.find((item) => item.day === day);
+                          const checked = slot ? slot.periods.includes(period.name) : false;
+                          return (
+                            <td key={day} className="px-3 py-2 text-center">
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4 cursor-pointer"
+                                checked={checked}
+                                aria-label={`${WEEKDAY_LABELS[day - 1]} ${period.name}`}
+                                onChange={(event) =>
+                                  toggleScheduleCell(day, period.name, event.target.checked)
+                                }
+                              />
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+          {settings.slots.length > 0 && (
             <ul className="space-y-2">
               {settings.slots.map((slot) => (
                 <li
@@ -365,55 +413,12 @@ export default function SelfDirectedLearningSettingsPage() {
                     className="btn-danger btn-theme h-8 px-3 text-sm"
                     onClick={() => removeSlot(slot.day)}
                   >
-                    移除
+                    清除該日
                   </button>
                 </li>
               ))}
             </ul>
           )}
-          <div className="flex flex-wrap items-end gap-2">
-            <label className="text-t2 block space-y-1 text-sm">
-              <span>星期</span>
-              <select
-                className="input-theme rounded px-3 py-2 text-sm"
-                value={slotDay}
-                onChange={(event) => setSlotDay(Number(event.target.value))}
-              >
-                {WEEKDAY_LABELS.map((label, index) => (
-                  <option key={label} value={index + 1}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="min-w-40 flex-1 space-y-1 text-sm">
-              <span className="text-t2 block">節次（依學校課表作息勾選）</span>
-              {periodOptions.length === 0 ? (
-                <p className="text-t3 text-xs">
-                  尚無作息資料，請先至「學校基本設定 → 課表作息時間」建立節次。
-                </p>
-              ) : (
-                <div className="border-themed bg-surface max-h-40 overflow-y-auto rounded-md p-2">
-                  <div className="flex flex-wrap gap-x-4 gap-y-1">
-                    {periodOptions.map((option) => (
-                      <label key={option.code} className="text-t1 flex cursor-pointer items-center gap-1.5 text-sm">
-                        <input
-                          type="checkbox"
-                          className="h-4 w-4 cursor-pointer"
-                          checked={selectedPeriods.includes(option.name)}
-                          onChange={(event) => togglePeriod(option.name, event.target.checked)}
-                        />
-                        {option.name}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-            <button type="button" className="btn-theme h-10 px-4 text-sm" onClick={addSlot}>
-              加入
-            </button>
-          </div>
         </div>
       </details>
 

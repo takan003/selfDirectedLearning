@@ -2,7 +2,7 @@ import "server-only";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { cachedRead, invalidateReadCache } from "@/lib/read-cache";
 import { getCacheTtlSeconds } from "@/lib/settings-server";
-import { readSchoolPeriods } from "@/types/school-periods";
+import { readSchoolPeriods, DEFAULT_SCHOOL_DAYS } from "@/types/school-periods";
 import { readSpaceStructure } from "@/types/school-spaces";
 import {
   DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS,
@@ -74,13 +74,29 @@ export async function getFullWeeks(): Promise<number | null> {
 
 const PERIOD_OPTIONS_CACHE_KEY = "selfDirectedLearning:periodOptions";
 const SPACE_OPTIONS_CACHE_KEY = "selfDirectedLearning:spaceOptions";
+const SCHOOL_DAYS_CACHE_KEY = "selfDirectedLearning:schoolDays";
 
-/** 節次候選清單：主程式「學校基本設定 → 課表作息時間」（文件缺漏時回內建預設八節＋午休） */
-export async function getPeriodOptions(): Promise<PeriodOption[]> {
+/** 學校作息：上課星期（1=週一…7=週日）與節次候選（只讀主程式課表作息） */
+export interface SchoolScheduleOptions {
+  /** 上課日的星期代碼（升冪；至少一天） */
+  schoolDays: number[];
+  /** 節次候選（作息表順序） */
+  periods: PeriodOption[];
+}
+
+/** 學校作息候選：主程式「學校基本設定 → 課表作息時間」（文件缺漏時回內建預設） */
+export async function getSchoolScheduleOptions(): Promise<SchoolScheduleOptions> {
   return cachedRead(PERIOD_OPTIONS_CACHE_KEY, await settingsTtlMs(), async () => {
     const snap = await getAdminDb().collection("settings").doc("schoolPeriods").get();
     const setting = readSchoolPeriods(snap.exists ? snap.data() : null);
-    return setting.periods.map((row) => ({ code: row.code, name: row.name, period: row.period }));
+    return {
+      schoolDays: setting.schoolDays.length ? [...setting.schoolDays] : [...DEFAULT_SCHOOL_DAYS],
+      periods: setting.periods.map((row) => ({
+        code: row.code,
+        name: row.name,
+        period: row.period,
+      })),
+    };
   });
 }
 
