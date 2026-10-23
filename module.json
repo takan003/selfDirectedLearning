@@ -4,7 +4,7 @@
   "kind": "optional",
   "status": "building",
   "description": "自主學習計畫的申請、審核與進度紀錄。（開發中）",
-  "href": "",
+  "href": "/admin/self-directed-learning",
   "contractVersion": 1,
   "minHostVersion": "0.580",
   "license": "MIT",
