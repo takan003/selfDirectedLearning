@@ -2,7 +2,7 @@
   "value": "selfDirectedLearning",
   "label": "自主學習計畫",
   "kind": "optional",
-  "status": "building",
+  "status": "live",
   "description": "自主學習計畫的申請、審核與進度紀錄。（開發中）",
   "href": "/admin/self-directed-learning",
   "contractVersion": 1,
@@ -46,5 +46,17 @@
     "selfDirectedLearningPlans",
     "selfDirectedLearningReviews"
   ],
-  "hooks": ["announcements", "calendar"]
+  "hooks": ["announcements", "calendar"],
+  "changelog": [
+    {
+      "version": "0.0.1",
+      "releasedAt": "2026-10-23",
+      "notes": [
+        "首版：四身分頁面（管理端設定、學生填報送審、教職員審核與兼導師瀏覽全班、家長檢視）",
+        "狀態機草稿→審核中→通過／退回，審查意見保留多輪歷程",
+        "管理端儲存設定同步公告與行事曆（開放時間掛勾）",
+        "資料集合：selfDirectedLearningSettings／Plans／Reviews；限流 4 桶、稽核 4 項"
+      ]
+    }
+  ]
 }

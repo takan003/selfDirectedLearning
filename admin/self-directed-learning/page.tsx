@@ -154,7 +154,11 @@ export default function SelfDirectedLearningSettingsPage() {
         return;
       }
       setSettings(data.settings as SelfDirectedLearningSettings);
-      setToast({ kind: "success", text: "已儲存" });
+      if (data.hookWarning) {
+        setToast({ kind: "error", text: String(data.hookWarning) });
+      } else {
+        setToast({ kind: "success", text: "已儲存" });
+      }
     } catch {
       setToast({ kind: "error", text: "儲存失敗" });
     } finally {
