@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Toast, { type ToastMessage } from "@/components/Toast";
 import DisclosureArrow from "@/components/DisclosureArrow";
 import {
@@ -54,6 +54,9 @@ export default function SelfDirectedLearningSettingsPage() {
   const [selectedStaffUid, setSelectedStaffUid] = useState("");
   /** 當期教職員名冊候選人 */
   const [staffCandidates, setStaffCandidates] = useState<StaffCandidate[]>([]);
+  /** 屬性過濾（""＝全部）與姓名搜尋 */
+  const [staffAttribute, setStaffAttribute] = useState("");
+  const [staffNameQuery, setStaffNameQuery] = useState("");
   /** 節次候選（主程式課表作息） */
   const [periodOptions, setPeriodOptions] = useState<PeriodOption[]>([]);
   /** 上課日星期（主程式課表作息；1=週一…7=週日） */
@@ -97,6 +100,29 @@ export default function SelfDirectedLearningSettingsPage() {
   const patch = (partial: Partial<SelfDirectedLearningSettings>) => {
     setSettings((prev) => ({ ...prev, ...partial }));
   };
+
+  /** 屬性選項（名冊中出現過的，去重保序） */
+  const staffAttributeOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const options: string[] = [];
+    for (const candidate of staffCandidates) {
+      if (!candidate.attribute || seen.has(candidate.attribute)) continue;
+      seen.add(candidate.attribute);
+      options.push(candidate.attribute);
+    }
+    return options;
+  }, [staffCandidates]);
+
+  /** 依屬性與姓名過濾後的候選（已加入者除外） */
+  const filteredStaffCandidates = useMemo(() => {
+    const query = staffNameQuery.trim().toLowerCase();
+    return staffCandidates.filter((candidate) => {
+      if (settings.reviewers.some((reviewer) => reviewer.uid === candidate.uid)) return false;
+      if (staffAttribute && candidate.attribute !== staffAttribute) return false;
+      if (query && !candidate.name.toLowerCase().includes(query)) return false;
+      return true;
+    });
+  }, [staffCandidates, settings.reviewers, staffAttribute, staffNameQuery]);
 
   /** 格狀表格勾選：day=星期代碼、periodName=節次名稱，即時寫入 slots */
   const toggleScheduleCell = (day: number, periodName: string, checked: boolean) => {
@@ -512,6 +538,37 @@ export default function SelfDirectedLearningSettingsPage() {
           )}
           <div className="flex flex-wrap items-end gap-2">
             <label className="text-t2 block space-y-1 text-sm">
+              <span>屬性</span>
+              <select
+                className="input-theme w-40 rounded px-3 py-2 text-sm"
+                value={staffAttribute}
+                onChange={(event) => {
+                  setStaffAttribute(event.target.value);
+                  setSelectedStaffUid("");
+                }}
+              >
+                <option value="">全部</option>
+                {staffAttributeOptions.map((attribute) => (
+                  <option key={attribute} value={attribute}>
+                    {attribute}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-t2 block space-y-1 text-sm">
+              <span>搜尋姓名</span>
+              <input
+                type="search"
+                className="input-theme w-40 rounded px-3 py-2 text-sm"
+                value={staffNameQuery}
+                onChange={(event) => {
+                  setStaffNameQuery(event.target.value);
+                  setSelectedStaffUid("");
+                }}
+                placeholder="姓名關鍵字"
+              />
+            </label>
+            <label className="text-t2 block space-y-1 text-sm">
               <span>選擇教職員</span>
               <select
                 className="input-theme w-64 rounded px-3 py-2 text-sm"
@@ -519,16 +576,14 @@ export default function SelfDirectedLearningSettingsPage() {
                 onChange={(event) => setSelectedStaffUid(event.target.value)}
               >
                 <option value="">
-                  {staffCandidates.length ? "請選擇…" : "（當期名冊無教職員）"}
+                  {filteredStaffCandidates.length ? "請選擇…" : "（無符合的教職員）"}
                 </option>
-                {staffCandidates
-                  .filter((candidate) => !settings.reviewers.some((r) => r.uid === candidate.uid))
-                  .map((candidate) => (
-                    <option key={candidate.uid} value={candidate.uid}>
-                      {candidate.name || candidate.uid}
-                      {candidate.attribute ? `（${candidate.attribute}）` : ""}
-                    </option>
-                  ))}
+                {filteredStaffCandidates.map((candidate) => (
+                  <option key={candidate.uid} value={candidate.uid}>
+                    {candidate.name || candidate.uid}
+                    {candidate.attribute ? `（${candidate.attribute}）` : ""}
+                  </option>
+                ))}
               </select>
             </label>
             <button type="button" className="btn-theme h-10 px-4 text-sm" onClick={addReviewer}>
