@@ -258,3 +258,28 @@ export function parsePlanDraft(raw: unknown, maxWeeks: number): PlanParseResult 
   weeks.sort((a, b) => a.week - b.week);
   return { ok: true, value: { topic, studyGroup, advisor, weeks } };
 }
+
+/* ——— 教職員審核 ——— */
+
+export type ReviewAction = "approve" | "return";
+
+export type ReviewParseResult =
+  | { ok: true; value: { planId: string; action: ReviewAction; note: string } }
+  | { ok: false; message: string };
+
+/** 審核輸入驗證（退回必填審查意見） */
+export function parseReviewInput(raw: unknown): ReviewParseResult {
+  if (!raw || typeof raw !== "object") return { ok: false, message: "請求內容格式錯誤" };
+  const body = raw as Record<string, unknown>;
+  const planId = typeof body.planId === "string" ? body.planId.trim() : "";
+  if (!planId) return { ok: false, message: "缺少計畫識別" };
+  const isApprove = body.action === "approve";
+  const isReturn = body.action === "return";
+  if (!isApprove && !isReturn) return { ok: false, message: "審核動作不合法" };
+  const action: ReviewAction = isApprove ? "approve" : "return";
+  const note = typeof body.note === "string" ? body.note.trim().slice(0, 1000) : "";
+  if (action === "return" && !note) {
+    return { ok: false, message: "退回時必須填寫審查意見" };
+  }
+  return { ok: true, value: { planId, action, note } };
+}

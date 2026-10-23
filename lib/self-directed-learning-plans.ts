@@ -170,3 +170,95 @@ export async function saveStudentPlan(input: {
   await plansRef().doc(id).set(next, { merge: true });
   return { ok: true, plan: next };
 }
+
+/* ——— 教職員端：審核佇列與全班瀏覽 ——— */
+
+function readPlansFromSnapshot(snap: {
+  docs: { id: string; data: () => Record<string, unknown> | undefined }[];
+}): SelfDirectedLearningPlan[] {
+  return snap.docs
+    .map((doc) => readPlan(doc.id, (doc.data() || {}) as Record<string, unknown>))
+    .filter((plan) => plan.id);
+}
+
+/** 待審核佇列（當期 submitted；雙 equality 條件、limit 有界） */
+export async function listSubmittedPlans(
+  period: string,
+  limit = 100
+): Promise<SelfDirectedLearningPlan[]> {
+  const snap = await plansRef()
+    .where("period", "==", period)
+    .where("status", "==", "submitted")
+    .limit(limit)
+    .get();
+  const plans = readPlansFromSnapshot(snap);
+  plans.sort((a, b) => (a.submittedAt || 0) - (b.submittedAt || 0));
+  return plans;
+}
+
+/** 兼導師瀏覽全班（當期＋班級代碼，limit 有界） */
+export async function listClassPlans(
+  period: string,
+  classCode: string,
+  limit = 100
+): Promise<SelfDirectedLearningPlan[]> {
+  const snap = await plansRef()
+    .where("period", "==", period)
+    .where("classCode", "==", classCode)
+    .limit(limit)
+    .get();
+  const plans = readPlansFromSnapshot(snap);
+  plans.sort((a, b) => a.studentName.localeCompare(b.studentName, "zh-Hant"));
+  return plans;
+}
+
+export type ApplyReviewResult =
+  | { ok: true; plan: SelfDirectedLearningPlan }
+  | { ok: false; status: 404 | 409; message: string };
+
+/**
+ * 套用審核結果（transaction：僅 submitted 可審，寫 review＋更新狀態）。
+ * 審核不受開放期間限制。
+ */
+export async function applyReview(input: {
+  planId: string;
+  action: "approve" | "return";
+  note: string;
+  reviewerUid: string;
+  reviewerName: string;
+}): Promise<ApplyReviewResult> {
+  const db = getAdminDb();
+  const planRef = plansRef().doc(input.planId);
+  const reviewRef = db.collection(SELF_DIRECTED_LEARNING_REVIEWS_COLLECTION).doc();
+
+  const outcome = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(planRef);
+    if (!snap.exists) return { kind: "missing" as const };
+    const current = readPlan(planRef.id, (snap.data() || {}) as Record<string, unknown>);
+    if (current.status !== "submitted") return { kind: "badStatus" as const };
+    const now = Date.now();
+    const status: SelfDirectedLearningPlan["status"] =
+      input.action === "approve" ? "approved" : "returned";
+    tx.set(planRef, { status, updatedAt: now }, { merge: true });
+    tx.set(reviewRef, {
+      planId: input.planId,
+      reviewerUid: input.reviewerUid,
+      reviewerName: input.reviewerName,
+      decision: input.action === "approve" ? "approved" : "returned",
+      note: input.note,
+      reviewedAt: now,
+    });
+    return {
+      kind: "ok" as const,
+      plan: { ...current, status, updatedAt: now },
+    };
+  });
+
+  if (outcome.kind === "missing") {
+    return { ok: false, status: 404, message: "查無此計畫" };
+  }
+  if (outcome.kind === "badStatus") {
+    return { ok: false, status: 409, message: "此計畫不在待審核狀態" };
+  }
+  return { ok: true, plan: outcome.plan };
+}
