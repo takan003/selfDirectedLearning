@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.16",
+    "version": "0.0.17",
     "releasedAt": "2026-10-24"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -53,6 +53,14 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.17",
+      "releasedAt": "2026-10-24",
+      "notes": [
+        "系統公告與行事曆改為分開設定（兩個獨立開關），管理人員可分別決定是否同步發布",
+        "公告與行事曆的發送對象皆包含教職員（學生、家長、教職員）；未勾選的項目完全不自動發送"
+      ]
+    },
     {
       "version": "0.0.16",
       "releasedAt": "2026-10-24",
