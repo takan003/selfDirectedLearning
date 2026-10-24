@@ -5,10 +5,64 @@ export const SELF_DIRECTED_LEARNING_SETTINGS_DOC_ID = "global";
 
 export const WEEKDAY_LABELS = ["週一", "週二", "週三", "週四", "週五", "週六", "週日"] as const;
 
+/** 指定審查的個別學生（denormalize 姓名與班級，省去顯示時的額外讀取） */
+export interface ReviewerStudentRef {
+  uid: string;
+  name: string;
+  classCode: string;
+}
+
+/** 審查對象：all＝全校（預設）、classes＝指定班級、students＝指定個人 */
+export type ReviewerScopeMode = "all" | "classes" | "students";
+
 /** 審核人員（候選取自當期教職員名冊；uid 供 staff 端鑑權比對） */
 export interface ReviewerEntry {
   uid: string;
   name: string;
+  /** 審查對象模式；舊資料缺省視為 all */
+  scope?: ReviewerScopeMode;
+  /** scope＝classes 時審查的班級代碼 */
+  classCodes?: string[];
+  /** scope＝students 時審查的個別學生 */
+  students?: ReviewerStudentRef[];
+}
+
+/** 審查範圍（供 staff 端查詢與審核權限檢查使用） */
+export interface ReviewScope {
+  mode: ReviewerScopeMode;
+  classCodes: string[];
+  studentUids: string[];
+}
+
+/** 由審核人員設定解析出實際審查範圍（未設定或指定為空＝全校） */
+export function reviewerScopeOf(reviewer: ReviewerEntry | null | undefined): ReviewScope {
+  if (reviewer?.scope === "classes" && (reviewer.classCodes?.length ?? 0) > 0) {
+    return { mode: "classes", classCodes: [...reviewer.classCodes!], studentUids: [] };
+  }
+  if (reviewer?.scope === "students" && (reviewer.students?.length ?? 0) > 0) {
+    return {
+      mode: "students",
+      classCodes: [],
+      studentUids: reviewer.students!.map((student) => student.uid),
+    };
+  }
+  return { mode: "all", classCodes: [], studentUids: [] };
+}
+
+/** 名冊班級候選（審查對象「班級」與「個人」選擇用） */
+export interface ClassOption {
+  code: string;
+  name: string;
+  grade: string;
+}
+
+/** 名冊學生候選（審查對象「個人」選擇用；僅載入指定班級） */
+export interface StudentOption {
+  uid: string;
+  name: string;
+  classCode: string;
+  className: string;
+  grade: string;
 }
 
 /** 教職員名冊候選人（審核人員選擇用） */
@@ -107,6 +161,27 @@ function asEpoch(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : null;
 }
 
+function asReviewerStudents(value: unknown): ReviewerStudentRef[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const students: ReviewerStudentRef[] = [];
+  for (const item of value) {
+    if (students.length >= 100) break;
+    if (!item || typeof item !== "object") continue;
+    const student = item as Record<string, unknown>;
+    const uid = typeof student.uid === "string" ? student.uid.trim() : "";
+    if (!uid || seen.has(uid)) continue;
+    seen.add(uid);
+    students.push({
+      uid: uid.slice(0, 128),
+      name: (typeof student.name === "string" ? student.name.trim() : "").slice(0, 128),
+      classCode:
+        typeof student.classCode === "string" ? student.classCode.trim().slice(0, 20) : "",
+    });
+  }
+  return students;
+}
+
 /** 讀 Firestore 原始資料後正規化（防欄位缺漏／型別損毀） */
 export function normalizeSettings(raw: unknown): SelfDirectedLearningSettings {
   const source = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
@@ -130,7 +205,21 @@ export function normalizeSettings(raw: unknown): SelfDirectedLearningSettings {
           const uid = typeof reviewer.uid === "string" ? reviewer.uid.trim() : "";
           if (!uid) return null;
           const name = typeof reviewer.name === "string" ? reviewer.name.trim() : "";
-          return { uid: uid.slice(0, 128), name: name.slice(0, 128) };
+          const classCodes = asStringArray(reviewer.classCodes, 30, 20);
+          const students = asReviewerStudents(reviewer.students);
+          const scope: ReviewerScopeMode =
+            reviewer.scope === "classes" && classCodes.length > 0
+              ? "classes"
+              : reviewer.scope === "students" && students.length > 0
+                ? "students"
+                : "all";
+          return {
+            uid: uid.slice(0, 128),
+            name: name.slice(0, 128),
+            scope,
+            classCodes: scope === "classes" ? classCodes : [],
+            students: scope === "students" ? students : [],
+          };
         })
         .filter((reviewer): reviewer is ReviewerEntry => reviewer !== null)
         .slice(0, 50)

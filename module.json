@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.19",
+    "version": "0.0.20",
     "releasedAt": "2026-10-24"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -25,6 +25,7 @@
   "routes": [
     { "kind": "page", "path": "/admin/self-directed-learning" },
     { "kind": "api", "path": "/api/admin/self-directed-learning" },
+    { "kind": "api", "path": "/api/admin/self-directed-learning/students" },
     { "kind": "page", "path": "/student/self-directed-learning" },
     { "kind": "api", "path": "/api/student/self-directed-learning" },
     { "kind": "page", "path": "/staff/self-directed-learning" },
@@ -53,6 +54,15 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.20",
+      "releasedAt": "2026-10-24",
+      "notes": [
+        "審核人員卡片改為先搜尋再加入，加入後可設定審查對象：全校、指定班級（可多選）或指定個人（先選班級再勾選學生）",
+        "省流機制：班級審查以各班的 period／status／classCode 等值查詢精準載入待審計畫；個人審查以計畫 doc id 精準讀取指定學生；管理端只在選擇班級時載入該班學生並在記憶體快取，不一次讀取全校名冊",
+        "審核 API 於交易內比對審查範圍，範圍外的計畫無法以 planId 直接審核；舊資料未設定範圍者維持全校"
+      ]
+    },
     {
       "version": "0.0.19",
       "releasedAt": "2026-10-24",
