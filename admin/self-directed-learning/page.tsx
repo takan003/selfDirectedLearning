@@ -11,7 +11,6 @@ import {
   type FlexibleSlot,
   type PeriodOption,
   type ReviewerEntry,
-  type ReviewerScopeMode,
   type ReviewerStudentRef,
   type SelfDirectedLearningSettings,
   type SpaceOption,
@@ -214,8 +213,9 @@ export default function SelfDirectedLearningSettingsPage({
     const entry: ReviewerEntry = {
       uid: candidate.uid,
       name: candidate.name || candidate.uid,
-      scope: "all",
+      classScoped: false,
       classCodes: [],
+      studentScoped: false,
       students: [],
     };
     patch({ reviewers: [...settings.reviewers, entry] });
@@ -242,12 +242,12 @@ export default function SelfDirectedLearningSettingsPage({
     setStudentError("");
   };
 
-  const changeReviewerScope = (reviewer: ReviewerEntry, mode: ReviewerScopeMode) => {
-    patchReviewer(reviewer.uid, {
-      scope: mode,
-      classCodes: mode === "classes" ? (reviewer.classCodes ?? []) : [],
-      students: mode === "students" ? (reviewer.students ?? []) : [],
-    });
+  const toggleReviewerClassScope = (reviewer: ReviewerEntry) => {
+    patchReviewer(reviewer.uid, { classScoped: !reviewer.classScoped });
+  };
+
+  const toggleReviewerStudentScope = (reviewer: ReviewerEntry) => {
+    patchReviewer(reviewer.uid, { studentScoped: !reviewer.studentScoped });
     setStudentError("");
   };
 
@@ -317,17 +317,20 @@ export default function SelfDirectedLearningSettingsPage({
   };
 
   const reviewerScopeLabel = (reviewer: ReviewerEntry): string => {
-    if (reviewer.scope === "classes") {
+    const parts: string[] = [];
+    if (reviewer.classScoped) {
       const codes = reviewer.classCodes ?? [];
-      if (codes.length === 0) return "指定班級（尚未選擇）";
-      return `班級：${codes.map(classLabelOf).join("、")}`;
+      parts.push(codes.length ? `班級：${codes.map(classLabelOf).join("、")}` : "班級（尚未選擇）");
     }
-    if (reviewer.scope === "students") {
+    if (reviewer.studentScoped) {
       const students = reviewer.students ?? [];
-      if (students.length === 0) return "指定個人（尚未選擇）";
-      return `個人：${students.map((student) => student.name || student.uid).join("、")}`;
+      parts.push(
+        students.length
+          ? `個人：${students.map((student) => student.name || student.uid).join("、")}`
+          : "個人（尚未選擇）"
+      );
     }
-    return "全校";
+    return parts.length ? parts.join("；") : "全校";
   };
 
   const setInstructions = (value: string) => {
@@ -337,8 +340,8 @@ export default function SelfDirectedLearningSettingsPage({
   const save = async () => {
     const emptyScopeReviewer = settings.reviewers.find(
       (reviewer) =>
-        (reviewer.scope === "classes" && (reviewer.classCodes ?? []).length === 0) ||
-        (reviewer.scope === "students" && (reviewer.students ?? []).length === 0)
+        (reviewer.classScoped && (reviewer.classCodes ?? []).length === 0) ||
+        (reviewer.studentScoped && (reviewer.students ?? []).length === 0)
     );
     if (emptyScopeReviewer) {
       setToast({
@@ -826,40 +829,33 @@ export default function SelfDirectedLearningSettingsPage({
 
                   {scopeEditorUid === reviewer.uid && (
                     <div className="border-themed space-y-3 rounded-md p-3">
-                      <div className="flex flex-wrap items-center gap-4">
-                        <label className="text-t2 flex items-center gap-2 text-sm">
-                          <input
-                            type="radio"
-                            name={`reviewer-scope-${reviewer.uid}`}
-                            className="h-4 w-4 cursor-pointer"
-                            checked={(reviewer.scope ?? "all") === "all"}
-                            onChange={() => changeReviewerScope(reviewer, "all")}
-                          />
-                          全校
-                        </label>
-                        <label className="text-t2 flex items-center gap-2 text-sm">
-                          <input
-                            type="radio"
-                            name={`reviewer-scope-${reviewer.uid}`}
-                            className="h-4 w-4 cursor-pointer"
-                            checked={reviewer.scope === "classes"}
-                            onChange={() => changeReviewerScope(reviewer, "classes")}
-                          />
-                          指定班級
-                        </label>
-                        <label className="text-t2 flex items-center gap-2 text-sm">
-                          <input
-                            type="radio"
-                            name={`reviewer-scope-${reviewer.uid}`}
-                            className="h-4 w-4 cursor-pointer"
-                            checked={reviewer.scope === "students"}
-                            onChange={() => changeReviewerScope(reviewer, "students")}
-                          />
-                          指定個人
-                        </label>
+                      <div className="space-y-1">
+                        <div className="flex flex-wrap items-center gap-4">
+                          <label className="text-t2 flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 cursor-pointer"
+                              checked={reviewer.classScoped === true}
+                              onChange={() => toggleReviewerClassScope(reviewer)}
+                            />
+                            指定審查班級
+                          </label>
+                          <label className="text-t2 flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 cursor-pointer"
+                              checked={reviewer.studentScoped === true}
+                              onChange={() => toggleReviewerStudentScope(reviewer)}
+                            />
+                            另指定個別學生（例外需求）
+                          </label>
+                        </div>
+                        <p className="text-t3 text-xs">
+                          未勾選以上項目＝全校。原則上以班級指派；個別學生僅供特殊需求使用。
+                        </p>
                       </div>
 
-                      {reviewer.scope === "classes" && (
+                      {reviewer.classScoped && (
                         <div className="space-y-2">
                           {classOptions.length === 0 ? (
                             <p className="text-t3 text-sm">
@@ -893,7 +889,7 @@ export default function SelfDirectedLearningSettingsPage({
                         </div>
                       )}
 
-                      {reviewer.scope === "students" && (
+                      {reviewer.studentScoped && (
                         <div className="space-y-2">
                           <div className="flex flex-wrap items-end gap-2">
                             <label className="text-t2 block space-y-1 text-sm">

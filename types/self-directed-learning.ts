@@ -12,41 +12,39 @@ export interface ReviewerStudentRef {
   classCode: string;
 }
 
-/** 審查對象：all＝全校（預設）、classes＝指定班級、students＝指定個人 */
-export type ReviewerScopeMode = "all" | "classes" | "students";
-
 /** 審核人員（候選取自當期教職員名冊；uid 供 staff 端鑑權比對） */
 export interface ReviewerEntry {
   uid: string;
   name: string;
-  /** 審查對象模式；舊資料缺省視為 all */
-  scope?: ReviewerScopeMode;
-  /** scope＝classes 時審查的班級代碼 */
+  /** 指定審查班級（勾選後才顯示班級清單；未勾選且未指定個人＝全校） */
+  classScoped?: boolean;
+  /** classScoped＝true 時審查的班級代碼 */
   classCodes?: string[];
-  /** scope＝students 時審查的個別學生 */
+  /** 另指定個別學生（例外需求；勾選後才顯示學生選擇） */
+  studentScoped?: boolean;
+  /** studentScoped＝true 時審查的個別學生 */
   students?: ReviewerStudentRef[];
 }
 
 /** 審查範圍（供 staff 端查詢與審核權限檢查使用） */
 export interface ReviewScope {
-  mode: ReviewerScopeMode;
+  /** true＝全校（不限制） */
+  all: boolean;
   classCodes: string[];
   studentUids: string[];
 }
 
-/** 由審核人員設定解析出實際審查範圍（未設定或指定為空＝全校） */
+/** 由審核人員設定解析出實際審查範圍（未勾選任何指定＝全校） */
 export function reviewerScopeOf(reviewer: ReviewerEntry | null | undefined): ReviewScope {
-  if (reviewer?.scope === "classes" && (reviewer.classCodes?.length ?? 0) > 0) {
-    return { mode: "classes", classCodes: [...reviewer.classCodes!], studentUids: [] };
-  }
-  if (reviewer?.scope === "students" && (reviewer.students?.length ?? 0) > 0) {
-    return {
-      mode: "students",
-      classCodes: [],
-      studentUids: reviewer.students!.map((student) => student.uid),
-    };
-  }
-  return { mode: "all", classCodes: [], studentUids: [] };
+  const classCodes = reviewer?.classScoped ? (reviewer.classCodes ?? []) : [];
+  const studentUids = reviewer?.studentScoped
+    ? (reviewer.students ?? []).map((student) => student.uid)
+    : [];
+  return {
+    all: !reviewer?.classScoped && !reviewer?.studentScoped,
+    classCodes: [...classCodes],
+    studentUids,
+  };
 }
 
 /** 名冊班級候選（審查對象「班級」與「個人」選擇用） */
@@ -207,18 +205,22 @@ export function normalizeSettings(raw: unknown): SelfDirectedLearningSettings {
           const name = typeof reviewer.name === "string" ? reviewer.name.trim() : "";
           const classCodes = asStringArray(reviewer.classCodes, 30, 20);
           const students = asReviewerStudents(reviewer.students);
-          const scope: ReviewerScopeMode =
-            reviewer.scope === "classes" && classCodes.length > 0
-              ? "classes"
-              : reviewer.scope === "students" && students.length > 0
-                ? "students"
-                : "all";
+          // 相容 0.0.20 以前的單一 scope 欄位（classes／students／all）
+          const classScoped =
+            typeof reviewer.classScoped === "boolean"
+              ? reviewer.classScoped
+              : reviewer.scope === "classes";
+          const studentScoped =
+            typeof reviewer.studentScoped === "boolean"
+              ? reviewer.studentScoped
+              : reviewer.scope === "students";
           return {
             uid: uid.slice(0, 128),
             name: name.slice(0, 128),
-            scope,
-            classCodes: scope === "classes" ? classCodes : [],
-            students: scope === "students" ? students : [],
+            classScoped,
+            classCodes,
+            studentScoped,
+            students,
           };
         })
         .filter((reviewer): reviewer is ReviewerEntry => reviewer !== null)

@@ -201,18 +201,21 @@ export async function listSubmittedPlans(
 
 /**
  * 依審查範圍載入待審計畫（省流）：
- * - classes：每個指定班級各下一筆等值查詢（不掃全校），合併去重。
- * - students：以計畫 doc id（period_uid）精準 getAll，只讀指定學生的計畫。
- * - all：沿用既有全校待審查詢。
+ * - 班級：每個指定班級各下一筆等值查詢（不掃全校）。
+ * - 個人（例外）：以計畫 doc id（period_uid）精準 getAll，只讀指定學生的計畫。
+ * - 兩者同時指定時取聯集去重；未限制＝沿用既有全校待審查詢。
  */
 export async function listSubmittedPlansForScope(
   period: string,
   scope: ReviewScope,
   limit = 100
 ): Promise<SelfDirectedLearningPlan[]> {
-  if (scope.mode === "classes") {
-    const classCodes = [...new Set(scope.classCodes)].slice(0, 30);
-    if (classCodes.length === 0) return [];
+  if (scope.all) return listSubmittedPlans(period, limit);
+
+  const merged = new Map<string, SelfDirectedLearningPlan>();
+
+  const classCodes = [...new Set(scope.classCodes)].slice(0, 30);
+  if (classCodes.length > 0) {
     const snaps = await Promise.all(
       classCodes.map((classCode) =>
         plansRef()
@@ -223,41 +226,33 @@ export async function listSubmittedPlansForScope(
           .get()
       )
     );
-    const merged = new Map<string, SelfDirectedLearningPlan>();
     for (const snap of snaps) {
       for (const plan of readPlansFromSnapshot(snap)) merged.set(plan.id, plan);
     }
-    return [...merged.values()]
-      .sort((a, b) => (a.submittedAt || 0) - (b.submittedAt || 0))
-      .slice(0, limit);
   }
-  if (scope.mode === "students") {
-    const uids = [...new Set(scope.studentUids)].slice(0, 100);
-    if (uids.length === 0) return [];
-    const plans: SelfDirectedLearningPlan[] = [];
-    for (let index = 0; index < uids.length; index += 30) {
-      const chunk = uids.slice(index, index + 30);
-      const docs = await getAdminDb().getAll(
-        ...chunk.map((uid) => plansRef().doc(planDocIdOf(period, uid)))
-      );
-      for (const doc of docs) {
-        if (!doc.exists) continue;
-        const plan = readPlan(doc.id, (doc.data() || {}) as Record<string, unknown>);
-        if (plan.status === "submitted") plans.push(plan);
-      }
+
+  const uids = [...new Set(scope.studentUids)].slice(0, 100);
+  for (let index = 0; index < uids.length; index += 30) {
+    const chunk = uids.slice(index, index + 30);
+    const docs = await getAdminDb().getAll(
+      ...chunk.map((uid) => plansRef().doc(planDocIdOf(period, uid)))
+    );
+    for (const doc of docs) {
+      if (!doc.exists) continue;
+      const plan = readPlan(doc.id, (doc.data() || {}) as Record<string, unknown>);
+      if (plan.status === "submitted") merged.set(plan.id, plan);
     }
-    return plans
-      .sort((a, b) => (a.submittedAt || 0) - (b.submittedAt || 0))
-      .slice(0, limit);
   }
-  return listSubmittedPlans(period, limit);
+
+  return [...merged.values()]
+    .sort((a, b) => (a.submittedAt || 0) - (b.submittedAt || 0))
+    .slice(0, limit);
 }
 
 /** 計畫是否落在審查範圍內 */
 export function planInReviewScope(plan: SelfDirectedLearningPlan, scope: ReviewScope): boolean {
-  if (scope.mode === "classes") return scope.classCodes.includes(plan.classCode);
-  if (scope.mode === "students") return scope.studentUids.includes(plan.studentUid);
-  return true;
+  if (scope.all) return true;
+  return scope.classCodes.includes(plan.classCode) || scope.studentUids.includes(plan.studentUid);
 }
 
 /** 兼導師瀏覽全班（當期＋班級代碼，limit 有界） */
