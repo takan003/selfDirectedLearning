@@ -13,8 +13,8 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.13",
-    "releasedAt": "2026-10-23"
+    "version": "0.0.14",
+    "releasedAt": "2026-10-24"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
   "managerPermissions": [
@@ -53,6 +53,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.14",
+      "releasedAt": "2026-10-24",
+      "notes": [
+        "修正儲存設定時誤判為跨來源請求（assertSameOrigin 回傳值判斷反向）：同源請求可正常儲存，跨來源請求改由主程式 CSRF 檢查正確拒絕"
+      ]
+    },
     {
       "version": "0.0.13",
       "releasedAt": "2026-10-23",
