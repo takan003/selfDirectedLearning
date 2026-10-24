@@ -484,7 +484,7 @@ export default function SelfDirectedLearningSettingsPage({
         className="border border-warning/60 bg-warning/10 text-warning space-y-1 rounded-lg p-3 text-sm"
       >
         <p className="font-medium">
-          管理員僅負責本頁的規則設定，請在下方「審核人員」指定教職員負責審查與管理。
+          管理員僅負責功能的規則設定，計畫審核、管理等請授權給指定的管理人員。
         </p>
       </div>
 

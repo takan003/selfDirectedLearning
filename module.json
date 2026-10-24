@@ -13,8 +13,8 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.30",
-    "releasedAt": "2026-10-24"
+    "version": "0.0.31",
+    "releasedAt": "2026-10-25"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
   "managerPermissions": [
@@ -54,6 +54,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.31",
+      "releasedAt": "2026-10-25",
+      "notes": [
+        "調整管理規則頁提示文字為：管理員僅負責功能的規則設定，計畫審核、管理等請授權給指定的管理人員"
+      ]
+    },
     {
       "version": "0.0.30",
       "releasedAt": "2026-10-24",
