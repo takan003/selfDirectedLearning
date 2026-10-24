@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.17",
+    "version": "0.0.18",
     "releasedAt": "2026-10-24"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -53,6 +53,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.18",
+      "releasedAt": "2026-10-24",
+      "notes": [
+        "移除對主程式 school-periods／school-spaces 型別的 import，改由模組自行寬容讀取課表作息與樓層空間；module:check 靜態掃描通過，可上架市集"
+      ]
+    },
     {
       "version": "0.0.17",
       "releasedAt": "2026-10-24",
