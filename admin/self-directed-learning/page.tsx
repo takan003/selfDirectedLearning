@@ -479,6 +479,16 @@ export default function SelfDirectedLearningSettingsPage({
         {actionButtons}
       </header>
 
+      <div
+        role="note"
+        className="border border-warning/60 bg-warning/10 text-warning space-y-1 rounded-lg p-3 text-sm"
+      >
+        <p className="font-medium">管理員不負責審查與管理自主學習計畫</p>
+        <p>
+          請在下方「審核人員」指定教職員負責審查；管理員僅負責本頁的規則設定。
+        </p>
+      </div>
+
       <details className="border-themed bg-card rounded-lg" open>
         <summary className="text-t1 flex cursor-pointer items-center gap-2 p-4 font-medium">
           <DisclosureArrow />
