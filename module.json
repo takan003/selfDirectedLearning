@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.20",
+    "version": "0.0.21",
     "releasedAt": "2026-10-24"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -54,6 +54,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.21",
+      "releasedAt": "2026-10-24",
+      "notes": [
+        "儲存管理規則前檢查審查對象：選擇「指定班級／指定個人」但未勾選任何對象時阻擋儲存，避免空範圍被回退為全校"
+      ]
+    },
     {
       "version": "0.0.20",
       "releasedAt": "2026-10-24",

@@ -335,6 +335,18 @@ export default function SelfDirectedLearningSettingsPage({
   };
 
   const save = async () => {
+    const emptyScopeReviewer = settings.reviewers.find(
+      (reviewer) =>
+        (reviewer.scope === "classes" && (reviewer.classCodes ?? []).length === 0) ||
+        (reviewer.scope === "students" && (reviewer.students ?? []).length === 0)
+    );
+    if (emptyScopeReviewer) {
+      setToast({
+        kind: "error",
+        text: `${emptyScopeReviewer.name} 已選擇指定對象，但尚未勾選任何班級或學生`,
+      });
+      return;
+    }
     const openAt = fromDateTimeLocal(toDateTimeLocal(settings.openAt));
     const closeAt = fromDateTimeLocal(toDateTimeLocal(settings.closeAt));
     const payload = {
