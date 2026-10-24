@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.31",
+    "version": "0.0.32",
     "releasedAt": "2026-10-25"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -54,6 +54,15 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.32",
+      "releasedAt": "2026-10-25",
+      "notes": [
+        "學生端改為「我的計畫」（上）與「撰寫計畫」（下，預設隱藏）兩個區塊；我的計畫分開列出正式計畫（已通過）與草稿計畫（未送審、審核中、退回修改），並可展開查看內容",
+        "開放撰寫期間且本學期尚無正式計畫時可發起新計畫；點「發起新計畫」或草稿的「編輯」才展開撰寫表單",
+        "同一學期可有多筆草稿，正式計畫僅一份：送審與審核通過時都會檢查；計畫 doc id 改為可容納多筆（舊資料仍相容）"
+      ]
+    },
     {
       "version": "0.0.31",
       "releasedAt": "2026-10-25",
