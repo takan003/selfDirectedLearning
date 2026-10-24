@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.23",
+    "version": "0.0.24",
     "releasedAt": "2026-10-24"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -54,6 +54,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.24",
+      "releasedAt": "2026-10-24",
+      "notes": [
+        "單一審核人員可指派的班級上限由 30 提高至 100（全校範圍建議使用預設「全校」，以單一查詢載入，較逐班查詢省流）"
+      ]
+    },
     {
       "version": "0.0.23",
       "releasedAt": "2026-10-24",

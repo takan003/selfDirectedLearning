@@ -4,6 +4,7 @@ import { getCurrentPeriod } from "@/lib/settings-server";
 import { isActiveEntry } from "@/lib/roster";
 import { rosterCollection } from "@/types/roster";
 import {
+  MAX_REVIEWER_CLASSES,
   SELF_DIRECTED_LEARNING_PLANS_COLLECTION,
   SELF_DIRECTED_LEARNING_REVIEWS_COLLECTION,
   periodLabelOf,
@@ -214,7 +215,7 @@ export async function listSubmittedPlansForScope(
 
   const merged = new Map<string, SelfDirectedLearningPlan>();
 
-  const classCodes = [...new Set(scope.classCodes)].slice(0, 30);
+  const classCodes = [...new Set(scope.classCodes)].slice(0, MAX_REVIEWER_CLASSES);
   if (classCodes.length > 0) {
     const snaps = await Promise.all(
       classCodes.map((classCode) =>

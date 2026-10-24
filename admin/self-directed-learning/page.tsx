@@ -5,6 +5,7 @@ import Toast, { type ToastMessage } from "@/components/Toast";
 import DisclosureArrow from "@/components/DisclosureArrow";
 import {
   DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS,
+  MAX_REVIEWER_CLASSES,
   WEEKDAY_LABELS,
   openStateOf,
   type ClassOption,
@@ -268,11 +269,11 @@ export default function SelfDirectedLearningSettingsPage({
     patchReviewer(reviewer.uid, {
       classCodes: current.includes(classCode)
         ? current.filter((code) => code !== classCode)
-        : [...current, classCode].slice(0, 30),
+        : [...current, classCode].slice(0, MAX_REVIEWER_CLASSES),
     });
   };
 
-  /** 整年級全選／取消（受 30 班上限限制） */
+  /** 整年級全選／取消（受指派上限限制） */
   const toggleReviewerGrade = (reviewer: ReviewerEntry, classes: ClassOption[]) => {
     const current = new Set(reviewer.classCodes ?? []);
     const allSelected = classes.every((option) => current.has(option.code));
@@ -281,7 +282,9 @@ export default function SelfDirectedLearningSettingsPage({
     } else {
       for (const option of classes) current.add(option.code);
     }
-    patchReviewer(reviewer.uid, { classCodes: [...current].slice(0, 30) });
+    patchReviewer(reviewer.uid, {
+      classCodes: [...current].slice(0, MAX_REVIEWER_CLASSES),
+    });
   };
 
   const toggleReviewerStudent = (reviewer: ReviewerEntry, student: StudentOption) => {
@@ -946,7 +949,7 @@ export default function SelfDirectedLearningSettingsPage({
                             </div>
                           )}
                           <p className="text-t3 text-xs">
-                            已選 {(reviewer.classCodes ?? []).length} 班（最多 30 班）。
+                            已選 {(reviewer.classCodes ?? []).length} 班（最多 {MAX_REVIEWER_CLASSES} 班；全校請改用上方不勾選指定）。
                           </p>
                         </div>
                       )}
