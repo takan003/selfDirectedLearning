@@ -13,14 +13,14 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.29",
+    "version": "0.0.30",
     "releasedAt": "2026-10-24"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
   "managerPermissions": [
     { "value": "configure", "label": "管理規則（開放時間、週數、節次行程、場域、審核名單、說明）" },
     { "value": "review", "label": "審核計畫（通過／退回）" },
-    { "value": "viewPlans", "label": "查看計畫清單" }
+    { "value": "viewPlans", "label": "查看、管理計畫清單" }
   ],
   "routes": [
     { "kind": "page", "path": "/admin/self-directed-learning" },
@@ -54,6 +54,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.30",
+      "releasedAt": "2026-10-24",
+      "notes": [
+        "管理權限「查看計畫清單」更名為「查看、管理計畫清單」"
+      ]
+    },
     {
       "version": "0.0.29",
       "releasedAt": "2026-10-24",
