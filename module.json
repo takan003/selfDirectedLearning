@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.26",
+    "version": "0.0.27",
     "releasedAt": "2026-10-24"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -54,6 +54,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.27",
+      "releasedAt": "2026-10-24",
+      "notes": [
+        "移除審查人員改為先跳出一般等級的確認視窗（取消／確定移除），避免誤刪"
+      ]
+    },
     {
       "version": "0.0.26",
       "releasedAt": "2026-10-24",

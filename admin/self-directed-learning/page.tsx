@@ -127,6 +127,10 @@ export default function SelfDirectedLearningSettingsPage({
   const [scopeEditorUid, setScopeEditorUid] = useState<string | null>(null);
   /** 正在檢視對象名單的審核人員 uid（彈出視窗） */
   const [targetViewerUid, setTargetViewerUid] = useState<string | null>(null);
+  /** 等待確認移除的審核人員 */
+  const [confirmRemoveReviewer, setConfirmRemoveReviewer] = useState<ReviewerEntry | null>(
+    null
+  );
   /** 個人模式目前選取載入的班級 */
   const [targetClassCode, setTargetClassCode] = useState("");
   /** 已載入的班級學生（按班級快取，避免重複讀取） */
@@ -871,7 +875,7 @@ export default function SelfDirectedLearningSettingsPage({
                         type="button"
                         title="移除"
                         aria-label={`移除 ${reviewer.name}`}
-                        onClick={() => removeReviewer(reviewer.uid)}
+                        onClick={() => setConfirmRemoveReviewer(reviewer)}
                         className="cursor-pointer rounded p-1 text-t3 transition hover:bg-hover hover:text-danger"
                       >
                         <RemoveIcon />
@@ -1157,6 +1161,43 @@ export default function SelfDirectedLearningSettingsPage({
                 onClick={() => setTargetViewerUid(null)}
               >
                 關閉
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmRemoveReviewer && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.4)] p-4"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="reviewer-remove-title"
+        >
+          <div className="border border-themed bg-card w-full max-w-sm rounded-xl p-5 shadow-lg">
+            <h2 id="reviewer-remove-title" className="text-t1 mb-2 font-semibold">
+              移除審查人員
+            </h2>
+            <p className="text-t2 mb-4 text-sm">
+              確定要移除「{confirmRemoveReviewer.name}」嗎？移除後將不再出現在審查人員名單。
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                className="btn-theme h-9 px-4 text-sm"
+                onClick={() => setConfirmRemoveReviewer(null)}
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                className="btn-theme h-9 px-4 text-sm"
+                onClick={() => {
+                  removeReviewer(confirmRemoveReviewer.uid);
+                  setConfirmRemoveReviewer(null);
+                }}
+              >
+                確定移除
               </button>
             </div>
           </div>
