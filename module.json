@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.18",
+    "version": "0.0.19",
     "releasedAt": "2026-10-24"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -53,6 +53,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.19",
+      "releasedAt": "2026-10-24",
+      "notes": [
+        "教職員端自主學習計畫頁版面比照「升學考試與模擬考校內報名」教職員頁：系統抬頭、功能標題與兼導師班級副標、上下操作按鈕、分隔線、管理功能面板位置、廣告與版權一致；內容顯示區維持原審核與檢視功能"
+      ]
+    },
     {
       "version": "0.0.18",
       "releasedAt": "2026-10-24",
