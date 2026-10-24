@@ -400,7 +400,7 @@ export default function StudentSelfDirectedLearningPage() {
         <details className="border-themed bg-card rounded-lg">
           <summary className="text-t1 flex cursor-pointer items-center gap-2 p-4 font-medium">
             <DisclosureArrow />
-            學校說明
+            自主學習實施說明
           </summary>
           <p className="text-t2 px-4 pb-4 whitespace-pre-wrap text-sm">{settings.instructions}</p>
         </details>
@@ -467,6 +467,15 @@ export default function StudentSelfDirectedLearningPage() {
               取消
             </button>
           </div>
+
+          {settings.writingInstructions.trim() && (
+            <div className="border-themed bg-surface space-y-1 rounded-md p-3">
+              <p className="text-t1 text-sm font-medium">自主學習計畫撰寫說明</p>
+              <p className="text-t2 whitespace-pre-wrap text-sm">
+                {settings.writingInstructions}
+              </p>
+            </div>
+          )}
 
           <div className="space-y-4">
             <h3 className="text-t1 text-sm font-medium">計畫內容</h3>

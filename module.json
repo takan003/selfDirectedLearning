@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.32",
+    "version": "0.0.33",
     "releasedAt": "2026-10-25"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -54,6 +54,15 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.33",
+      "releasedAt": "2026-10-25",
+      "notes": [
+        "管理規則的說明拆成兩類：「自主學習實施說明」給學生與家長的總說明；「自主學習計畫撰寫說明」給學生發起新計畫、編輯草稿時的撰寫說明",
+        "學生端在「撰寫計畫」區塊顯示撰寫說明；家長端新增顯示實施說明",
+        "舊版單一說明（instructions）相容對應為自主學習實施說明"
+      ]
+    },
     {
       "version": "0.0.32",
       "releasedAt": "2026-10-25",

@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     const settings = await getSettings();
     if (!settings.enabled) {
       return NextResponse.json(
-        { success: true, maintenance: true, child: null, plan: null, latestReview: null, withinWindow: false },
+        { success: true, maintenance: true, child: null, plan: null, latestReview: null, instructions: "", withinWindow: false },
         { headers: noStore }
       );
     }
@@ -79,6 +79,7 @@ export async function GET(request: NextRequest) {
         child,
         plan,
         latestReview,
+        instructions: settings.instructions,
         withinWindow: openStateOf(settings) === "open",
       },
       { headers: noStore }
