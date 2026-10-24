@@ -163,6 +163,18 @@ export default function SelfDirectedLearningSettingsPage({
     });
   }, [staffCandidates, settings.reviewers, staffAttribute, staffNameQuery]);
 
+  /** 班級依年級分組（維持主程式年段順序）；避免每個班級都重複顯示年級名稱 */
+  const classGroups = useMemo(() => {
+    const groups = new Map<string, ClassOption[]>();
+    for (const option of classOptions) {
+      const key = option.grade || "其他";
+      const list = groups.get(key) ?? [];
+      list.push(option);
+      groups.set(key, list);
+    }
+    return [...groups.entries()].map(([grade, classes]) => ({ grade, classes }));
+  }, [classOptions]);
+
   /** 格狀表格勾選：day=星期代碼、periodName=節次名稱，即時寫入 slots */
   const toggleScheduleCell = (day: number, periodName: string, checked: boolean) => {
     const existing = settings.slots.find((slot) => slot.day === day);
@@ -260,6 +272,18 @@ export default function SelfDirectedLearningSettingsPage({
     });
   };
 
+  /** 整年級全選／取消（受 30 班上限限制） */
+  const toggleReviewerGrade = (reviewer: ReviewerEntry, classes: ClassOption[]) => {
+    const current = new Set(reviewer.classCodes ?? []);
+    const allSelected = classes.every((option) => current.has(option.code));
+    if (allSelected) {
+      for (const option of classes) current.delete(option.code);
+    } else {
+      for (const option of classes) current.add(option.code);
+    }
+    patchReviewer(reviewer.uid, { classCodes: [...current].slice(0, 30) });
+  };
+
   const toggleReviewerStudent = (reviewer: ReviewerEntry, student: StudentOption) => {
     const current = reviewer.students ?? [];
     const exists = current.some((item) => item.uid === student.uid);
@@ -310,17 +334,27 @@ export default function SelfDirectedLearningSettingsPage({
     }
   };
 
-  const classLabelOf = (code: string): string => {
-    const option = classOptions.find((item) => item.code === code);
-    if (!option) return code;
-    return `${option.grade ? `${option.grade} ` : ""}${option.name || option.code}`;
-  };
-
   const reviewerScopeLabel = (reviewer: ReviewerEntry): string => {
     const parts: string[] = [];
     if (reviewer.classScoped) {
       const codes = reviewer.classCodes ?? [];
-      parts.push(codes.length ? `班級：${codes.map(classLabelOf).join("、")}` : "班級（尚未選擇）");
+      if (codes.length === 0) {
+        parts.push("班級（尚未選擇）");
+      } else {
+        const grouped = new Map<string, string[]>();
+        for (const code of codes) {
+          const option = classOptions.find((item) => item.code === code);
+          const grade = option?.grade || "其他";
+          const names = grouped.get(grade) ?? [];
+          names.push(option ? option.name || option.code : code);
+          grouped.set(grade, names);
+        }
+        parts.push(
+          `班級：${[...grouped.entries()]
+            .map(([grade, names]) => `${grade}：${names.join("、")}`)
+            .join("；")}`
+        );
+      }
     }
     if (reviewer.studentScoped) {
       const students = reviewer.students ?? [];
@@ -828,7 +862,7 @@ export default function SelfDirectedLearningSettingsPage({
                   </div>
 
                   {scopeEditorUid === reviewer.uid && (
-                    <div className="border-themed space-y-3 rounded-md p-3">
+                    <div className="border border-themed space-y-3 rounded-md p-3">
                       <div className="space-y-1">
                         <div className="flex flex-wrap items-center gap-4">
                           <label className="text-t2 flex items-center gap-2 text-sm">
@@ -862,25 +896,53 @@ export default function SelfDirectedLearningSettingsPage({
                               尚無班級資料，請先至「學校基本設定 → 年段班級設定」建立班級。
                             </p>
                           ) : (
-                            <div className="border-themed grid max-h-56 gap-1 overflow-y-auto rounded-md p-2 sm:grid-cols-2 lg:grid-cols-3">
-                              {classOptions.map((option) => (
-                                <label
-                                  key={option.code}
-                                  className="text-t2 flex items-center gap-2 text-sm"
-                                >
-                                  <input
-                                    type="checkbox"
-                                    className="h-4 w-4 cursor-pointer"
-                                    checked={(reviewer.classCodes ?? []).includes(option.code)}
-                                    onChange={() => toggleReviewerClass(reviewer, option.code)}
-                                  />
-                                  <span className="min-w-0 truncate">
-                                    {option.grade ? `${option.grade} ` : ""}
-                                    {option.name || option.code}
-                                    <span className="text-t3 text-xs">（{option.code}）</span>
-                                  </span>
-                                </label>
-                              ))}
+                            <div className="max-h-80 space-y-2 overflow-y-auto pr-1">
+                              {classGroups.map(({ grade, classes }) => {
+                                const selectedCount = classes.filter((option) =>
+                                  (reviewer.classCodes ?? []).includes(option.code)
+                                ).length;
+                                const allSelected = selectedCount === classes.length;
+                                return (
+                                  <div key={grade} className="border border-themed rounded-md p-3">
+                                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                                      <span className="text-t1 text-sm font-medium">
+                                        {grade}
+                                        <span className="text-t3 ml-1 text-xs">
+                                          （{classes.length} 班，已選 {selectedCount}）
+                                        </span>
+                                      </span>
+                                      <label className="text-t2 flex cursor-pointer items-center gap-2 text-xs">
+                                        <input
+                                          type="checkbox"
+                                          className="h-4 w-4 cursor-pointer"
+                                          checked={allSelected}
+                                          onChange={() => toggleReviewerGrade(reviewer, classes)}
+                                        />
+                                        全選
+                                      </label>
+                                    </div>
+                                    <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3">
+                                      {classes.map((option) => (
+                                        <label
+                                          key={option.code}
+                                          className="text-t2 flex items-center gap-2 text-sm"
+                                        >
+                                          <input
+                                            type="checkbox"
+                                            className="h-4 w-4 cursor-pointer"
+                                            checked={(reviewer.classCodes ?? []).includes(option.code)}
+                                            onChange={() => toggleReviewerClass(reviewer, option.code)}
+                                          />
+                                          <span className="min-w-0 truncate">
+                                            {option.name || option.code}
+                                            <span className="text-t3 text-xs">（{option.code}）</span>
+                                          </span>
+                                        </label>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              })}
                             </div>
                           )}
                           <p className="text-t3 text-xs">
@@ -900,11 +962,14 @@ export default function SelfDirectedLearningSettingsPage({
                                 onChange={(event) => void loadClassStudents(event.target.value)}
                               >
                                 <option value="">請選擇班級…</option>
-                                {classOptions.map((option) => (
-                                  <option key={option.code} value={option.code}>
-                                    {option.grade ? `${option.grade} ` : ""}
-                                    {option.name || option.code}（{option.code}）
-                                  </option>
+                                {classGroups.map(({ grade, classes }) => (
+                                  <optgroup key={grade} label={grade}>
+                                    {classes.map((option) => (
+                                      <option key={option.code} value={option.code}>
+                                        {option.name || option.code}（{option.code}）
+                                      </option>
+                                    ))}
+                                  </optgroup>
                                 ))}
                               </select>
                             </label>
@@ -917,7 +982,7 @@ export default function SelfDirectedLearningSettingsPage({
                               {(reviewer.students ?? []).map((student) => (
                                 <span
                                   key={student.uid}
-                                  className="border-themed text-t2 inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs"
+                                  className="border border-themed text-t2 inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs"
                                 >
                                   {student.name || student.uid}
                                   <button
@@ -934,7 +999,7 @@ export default function SelfDirectedLearningSettingsPage({
                           )}
 
                           {targetClassCode && classStudents[targetClassCode] && (
-                            <div className="border-themed grid max-h-56 gap-1 overflow-y-auto rounded-md p-2 sm:grid-cols-2 lg:grid-cols-3">
+                            <div className="border border-themed grid max-h-56 gap-1 overflow-y-auto rounded-md p-2 sm:grid-cols-2 lg:grid-cols-3">
                               {classStudents[targetClassCode].map((student) => (
                                 <label
                                   key={student.uid}

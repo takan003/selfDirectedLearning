@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.22",
+    "version": "0.0.23",
     "releasedAt": "2026-10-24"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -54,6 +54,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.23",
+      "releasedAt": "2026-10-24",
+      "notes": [
+        "審查對象的班級清單改依年級分組，每年級獨立區塊並提供「全選」；個人模式的班級下拉改用年級群組，避免年級名稱重複出現干擾閱讀"
+      ]
+    },
     {
       "version": "0.0.22",
       "releasedAt": "2026-10-24",
