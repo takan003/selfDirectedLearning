@@ -71,6 +71,8 @@ export interface SelfDirectedLearningSettings {
   reviewers: ReviewerEntry[];
   /** 給學生的說明文字 */
   instructions: string;
+  /** 儲存設定時是否同步發布（或更新）系統公告與行事曆行程（由管理人員勾選，預設不自動發送） */
+  syncAnnouncementAndCalendar: boolean;
   updatedAt: number;
 }
 
@@ -84,6 +86,7 @@ export const DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS: SelfDirectedLearningSettin
   venues: [],
   reviewers: [],
   instructions: "",
+  syncAnnouncementAndCalendar: false,
   updatedAt: 0,
 };
 
@@ -147,6 +150,10 @@ export function normalizeSettings(raw: unknown): SelfDirectedLearningSettings {
     reviewers,
     instructions:
       typeof source.instructions === "string" ? source.instructions.slice(0, 4000) : "",
+    syncAnnouncementAndCalendar:
+      typeof source.syncAnnouncementAndCalendar === "boolean"
+        ? source.syncAnnouncementAndCalendar
+        : DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS.syncAnnouncementAndCalendar,
     updatedAt: typeof source.updatedAt === "number" ? source.updatedAt : 0,
   };
 }
@@ -173,6 +180,12 @@ export function parseSettingsInput(raw: unknown): ParseResult {
   }
   if ("minWeeks" in body && typeof body.minWeeks === "number" && !Number.isInteger(body.minWeeks)) {
     return { ok: false, message: "下限週數必須是整數" };
+  }
+  if (
+    "syncAnnouncementAndCalendar" in body &&
+    typeof body.syncAnnouncementAndCalendar !== "boolean"
+  ) {
+    return { ok: false, message: "公告與行事曆同步設定格式錯誤" };
   }
   return { ok: true, value };
 }

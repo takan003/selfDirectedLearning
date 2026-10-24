@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.15",
+    "version": "0.0.16",
     "releasedAt": "2026-10-24"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -53,6 +53,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.16",
+      "releasedAt": "2026-10-24",
+      "notes": [
+        "管理規則新增「公告與行事曆」區塊：由管理人員勾選儲存設定時是否同步發布（或更新）系統公告與行事曆行程；未勾選不再於背後自動發送，也不更動既有公告與行程"
+      ]
+    },
     {
       "version": "0.0.15",
       "releasedAt": "2026-10-24",

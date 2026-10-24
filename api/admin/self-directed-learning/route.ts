@@ -170,17 +170,22 @@ export async function POST(request: NextRequest) {
     }
 
     const settings = await saveSettings(parsed.value);
-    const hookWarning = await syncWindowHooks(settings, {
-      uid: session.uid,
-      name: session.displayName || session.account,
-      role: session.role === "admin" ? "admin" : "staff",
-    });
+    // 公告與行事曆只由管理人員勾選後才同步；未勾選一律不自動發送
+    const hookWarning = settings.syncAnnouncementAndCalendar
+      ? await syncWindowHooks(settings, {
+          uid: session.uid,
+          name: session.displayName || session.account,
+          role: session.role === "admin" ? "admin" : "staff",
+        })
+      : null;
     await logActivity({
       userId: session.uid,
       role: session.role,
       action: "self_directed_learning_settings_updated",
       ip: getClientIp(request),
-      details: "更新管理規則（總開關、開放時間、週數形式與審核設定）",
+      details: `更新管理規則（總開關、開放時間、週數形式與審核設定；公告與行事曆同步：${
+        settings.syncAnnouncementAndCalendar ? "是" : "否"
+      }）`,
     });
     return NextResponse.json(
       { success: true, settings, ...(hookWarning ? { hookWarning } : {}) },
