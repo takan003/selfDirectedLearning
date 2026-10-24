@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.28",
+    "version": "0.0.29",
     "releasedAt": "2026-10-24"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -54,6 +54,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.29",
+      "releasedAt": "2026-10-24",
+      "notes": [
+        "調整管理規則頁提示文字為：管理員僅負責本頁的規則設定，請在下方「審核人員」指定教職員負責審查與管理"
+      ]
+    },
     {
       "version": "0.0.28",
       "releasedAt": "2026-10-24",

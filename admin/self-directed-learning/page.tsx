@@ -483,9 +483,8 @@ export default function SelfDirectedLearningSettingsPage({
         role="note"
         className="border border-warning/60 bg-warning/10 text-warning space-y-1 rounded-lg p-3 text-sm"
       >
-        <p className="font-medium">管理員不負責審查與管理自主學習計畫</p>
-        <p>
-          請在下方「審核人員」指定教職員負責審查；管理員僅負責本頁的規則設定。
+        <p className="font-medium">
+          管理員僅負責本頁的規則設定，請在下方「審核人員」指定教職員負責審查與管理。
         </p>
       </div>
 
