@@ -580,6 +580,7 @@ export default function StudentSelfDirectedLearningPage() {
 
             <p className="text-t3 text-xs">
               週次日期依學校學期起訖與彈性學習節次推算；與學校活動衝堂的週次會標示活動名稱，不提供撰寫，也不列入必填。課餘時間的學習安排另行處理。
+              {!settings.venueEditable && "場地由學校安排，無須填寫。"}
             </p>
 
             <div className="overflow-x-auto">
@@ -648,7 +649,7 @@ export default function StudentSelfDirectedLearningPage() {
                           <>
                             <td className="min-w-[20rem] px-2 py-3">
                               <textarea
-                                className="input-theme min-h-20 w-full rounded px-3 py-2 text-sm"
+                                className="input-theme min-h-20 w-full resize rounded px-3 py-2 text-sm"
                                 value={week.content}
                                 maxLength={600}
                                 disabled={locked}
@@ -664,14 +665,16 @@ export default function StudentSelfDirectedLearningPage() {
                                 type="text"
                                 className="input-theme w-full rounded px-3 py-2 text-sm"
                                 value={week.venue}
-                                list="sdl-venues"
+                                list={settings.venueEditable ? "sdl-venues" : undefined}
                                 maxLength={120}
-                                disabled={locked}
+                                disabled={locked || !settings.venueEditable}
                                 onChange={(event) =>
                                   patchWeek(week.week, { venue: event.target.value })
                                 }
-                                placeholder="圖書館自習室"
-                                aria-label={`第 ${week.week} 週場地`}
+                                placeholder={settings.venueEditable ? "圖書館自習室" : "由學校安排"}
+                                aria-label={`第 ${week.week} 週場地${
+                                  settings.venueEditable ? "" : "（由學校安排）"
+                                }`}
                               />
                             </td>
                           </>

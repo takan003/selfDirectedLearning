@@ -6,14 +6,15 @@
 地點須在學校規範內。
 
 1. 開發者：[takan003](https://github.com/takan003)（`https://github.com/takan003/selfDirectedLearning`）
-2. 版本：0.0.35（`contractVersion` 1、`minHostVersion` 0.580）
+2. 版本：0.0.36（`contractVersion` 1、`minHostVersion` 0.580）
 3. 四身分入口：管理員（設定與總覽）、學生（填報送審）、教職員（審核／兼導師瀏覽全班）、家長（檢視）
 
 ## 功能摘要
 
 1. **管理端**（`/admin/self-directed-learning`）：「管理規則」頁設定功能總開關（關閉即全站
    維護中）、開放撰寫起訖、週數填寫形式（全學期全填／彈性下限）、下限週數、
-   校內彈性學習節次行程（橫排上課日、直排節次的格狀勾選，取自學校課表作息）、開放場域（樓層空間建議＋可自訂）、
+   校內彈性學習節次行程（橫排上課日、直排節次的格狀勾選，取自學校課表作息）、開放場域（樓層空間建議＋可自訂；
+   另可設定是否開放學生自行輸入場地）、
    審核人員名單、自主學習實施說明（給學生、家長的總說明）與自主學習計畫撰寫說明（發起新計畫、編輯草稿時顯示）。
    全學期形式的週數**不人工設定**，由系統依「學校基本設定 → 學期起訖設定」的
    **上課日起訖（優先）**或學期起訖自動判斷（週日～週六為一週，未滿七日仍計一週）。
@@ -43,6 +44,7 @@
 1. `selfDirectedLearningSettings`（doc `global`）：模組設定單文件——`enabled`（功能總開關）、
    `openAt`／`closeAt`（開放起訖 epoch ms）、`weekMode`（`full` 全學期全填／`flexible` 彈性
    下限）、`minWeeks`（彈性下限週數）、`slots`（節次行程）、`venues`（開放場域）、
+   `venueEditable`（是否開放學生自行輸入場地；false＝唯讀、由學校安排且送審不檢查場地）、
    `reviewers`（審核人員 uid＋名稱）、`instructions`（自主學習實施說明）、
    `writingInstructions`（自主學習計畫撰寫說明）、`updatedAt`。
    **不存全學期週數（`maxWeeks` 已移除）**：全學期形式的週數由主程式上課日／學期起訖自動推算

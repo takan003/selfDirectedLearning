@@ -164,7 +164,12 @@ export async function POST(request: NextRequest) {
     const blockedWeeks = weekSchedule.filter((week) => week.blocked).map((week) => week.week);
     const parsed = parsePlanDraft(
       body?.draft,
-      { ...settings, fullWeeks, blockedWeeks },
+      {
+        ...settings,
+        fullWeeks,
+        blockedWeeks,
+        venueRequired: settings.venueEditable,
+      },
       action
     );
     if (!parsed.ok) {

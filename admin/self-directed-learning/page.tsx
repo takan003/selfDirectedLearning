@@ -741,6 +741,23 @@ export default function SelfDirectedLearningSettingsPage({
           開放場域
         </summary>
         <div className="space-y-4 px-4 pb-4">
+          <label className="border-themed bg-surface flex flex-wrap items-start gap-3 rounded-md p-3">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 cursor-pointer"
+              checked={settings.venueEditable}
+              onChange={(event) => patch({ venueEditable: event.target.checked })}
+            />
+            <span className="min-w-56 flex-1">
+              <span className="text-t1 block text-sm font-medium">
+                開放學生自行輸入場地（{settings.venueEditable ? "開啟" : "關閉"}）
+              </span>
+              <span className="text-t3 block text-xs">
+                勾選後學生可在場地欄自行輸入，並提示下方開放場域；取消勾選時場地欄為唯讀、
+                顯示「由學校安排」，送出審核也不檢查場地。
+              </span>
+            </span>
+          </label>
           {settings.venues.length === 0 ? (
             <p className="text-t3 text-sm">尚未設定開放場域。</p>
           ) : (

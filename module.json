@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.35",
+    "version": "0.0.36",
     "releasedAt": "2026-10-25"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -54,6 +54,15 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.36",
+      "releasedAt": "2026-10-25",
+      "notes": [
+        "管理規則新增「開放學生自行輸入場地」開關：關閉時學生端場地欄為唯讀並顯示「由學校安排」，送出審核不檢查場地（既有資料的場地值保留）",
+        "學生端場地欄無論開放與否都使用同一個響應式輸入框（寬度隨欄位與畫面調整，不因唯讀而縮小）",
+        "學習安排的多行文字框可上下左右拖曳調整大小"
+      ]
+    },
     {
       "version": "0.0.35",
       "releasedAt": "2026-10-25",

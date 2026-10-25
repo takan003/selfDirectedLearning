@@ -129,6 +129,8 @@ export interface SelfDirectedLearningSettings {
   slots: FlexibleSlot[];
   /** 開放場域 */
   venues: string[];
+  /** 是否開放學生自行輸入場地（false＝場地欄唯讀、由學校安排，送出審核不檢查場地） */
+  venueEditable: boolean;
   /** 審核人員名單 */
   reviewers: ReviewerEntry[];
   /** 自主學習實施說明（給學生、家長的總說明） */
@@ -150,6 +152,7 @@ export const DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS: SelfDirectedLearningSettin
   minWeeks: 6,
   slots: [],
   venues: [],
+  venueEditable: true,
   reviewers: [],
   instructions: "",
   writingInstructions: "",
@@ -254,6 +257,10 @@ export function normalizeSettings(raw: unknown): SelfDirectedLearningSettings {
     minWeeks: Math.min(Math.max(minWeeksRaw, 1), MAX_PLAN_WEEKS),
     slots,
     venues: asStringArray(source.venues, 60, 80),
+    venueEditable:
+      typeof source.venueEditable === "boolean"
+        ? source.venueEditable
+        : DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS.venueEditable,
     reviewers,
     instructions:
       typeof source.instructions === "string" ? source.instructions.slice(0, 4000) : "",
@@ -306,6 +313,9 @@ export function parseSettingsInput(raw: unknown): ParseResult {
   }
   if ("publishCalendar" in body && typeof body.publishCalendar !== "boolean") {
     return { ok: false, message: "行事曆同步設定格式錯誤" };
+  }
+  if ("venueEditable" in body && typeof body.venueEditable !== "boolean") {
+    return { ok: false, message: "場地輸入設定格式錯誤" };
   }
   return { ok: true, value };
 }
@@ -590,6 +600,8 @@ export function parsePlanDraft(
     fullWeeks: number | null;
     /** 與學校活動衝堂、不提供撰寫的週次（送審時不列入必填） */
     blockedWeeks?: number[];
+    /** 是否要求填寫場地（預設 true；管理端關閉「開放學生自行輸入場地」時為 false） */
+    venueRequired?: boolean;
   },
   action: "save" | "submit"
 ): PlanParseResult {
@@ -637,6 +649,7 @@ export function parsePlanDraft(
   const weeks: PlanWeek[] = [];
   const seen = new Set<number>();
   const blockedWeeks = new Set(rules.blockedWeeks ?? []);
+  const venueRequired = rules.venueRequired !== false;
   for (const item of body.weeks) {
     if (!item || typeof item !== "object") return { ok: false, message: "每週安排格式錯誤" };
     const week = item as Record<string, unknown>;
@@ -654,7 +667,7 @@ export function parsePlanDraft(
     if (action === "submit" && !blocked && !content) {
       return { ok: false, message: `第 ${weekNo} 週未填寫學習安排` };
     }
-    if (action === "submit" && !blocked && !venue) {
+    if (action === "submit" && !blocked && !venue && venueRequired) {
       return { ok: false, message: `第 ${weekNo} 週未填寫場地` };
     }
     const timing: PlanTiming = isTiming(week.timing) ? week.timing : "flexible";
