@@ -96,6 +96,10 @@ export interface PeriodOption {
   code: string;
   name: string;
   period: number;
+  /** 開始 `HH:MM`（學生端逐週時段推算用） */
+  start: string;
+  /** 結束 `HH:MM` */
+  end: string;
 }
 
 /** 場域候選（取自主程式樓層空間設定的葉子空間；管理端開放場域選擇用） */
@@ -418,6 +422,162 @@ export function countWeeksBetween(start: string, end: string): number | null {
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
+/* ——— 逐週彈性學習時間（日期／節次）與學校活動衝堂 ——— */
+
+/** 節次的起訖時鐘（取自主程式課表作息） */
+export interface PeriodClock {
+  /** 節次名稱（管理端節次行程勾選的就是這個名稱） */
+  name: string;
+  /** 開始 `HH:MM` */
+  start: string;
+  /** 結束 `HH:MM` */
+  end: string;
+}
+
+/** 衝堂比對用的行事曆學校活動（只取必要欄位，避免相依主程式型別） */
+export interface SchoolActivityOccurrence {
+  title: string;
+  startAt: number;
+  endAt: number | null;
+  /** true＝全校 */
+  school: boolean;
+  /** 適用年級與班級（classCodes 空＝該年級全年級） */
+  grades: { grade: string; classCodes: string[] }[];
+}
+
+/** 某一週的單一彈性學習時段（日期＋節次） */
+export interface WeekSlotSchedule {
+  /** 1=週一…7=週日 */
+  day: number;
+  /** 實際日期 `YYYY-MM-DD` */
+  date: string;
+  /** 節次名稱（管理端勾選的顯示文字；可能為空） */
+  periods: string[];
+  /** 衝堂的學校活動名稱；null＝可用 */
+  blockedBy: string | null;
+}
+
+/** 某一週的彈性學習時間；日期由學期起訖與節次行程推算 */
+export interface WeekSchedule {
+  week: number;
+  /** 該週週日／週六 `YYYY-MM-DD`（與 `countWeeksBetween` 的週計算一致） */
+  startDate: string;
+  endDate: string;
+  slots: WeekSlotSchedule[];
+  /** 該週所有彈性學習時段皆與學校活動衝堂（整週不提供撰寫、不列入必填） */
+  blocked: boolean;
+}
+
+const MS_PER_DAY = 86_400_000;
+const CLOCK_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+function dateOnlyMs(value: string): number | null {
+  if (!DATE_PATTERN.test(value)) return null;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  return Number.isNaN(date.getTime()) ? null : date.getTime();
+}
+
+function formatDateOnly(ms: number): string {
+  const date = new Date(ms);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function clockMs(date: string, clock: string): number | null {
+  if (!CLOCK_PATTERN.test(clock)) return null;
+  const base = dateOnlyMs(date);
+  if (base === null) return null;
+  const date_ = new Date(base);
+  const [hour, minute] = clock.split(":").map(Number);
+  date_.setHours(hour, minute, 0, 0);
+  return date_.getTime();
+}
+
+/** 學校活動是否涵蓋該學生（全校，或該年級／該班級） */
+function coversStudent(
+  event: SchoolActivityOccurrence,
+  grade: string,
+  classCode: string
+): boolean {
+  if (event.school) return true;
+  return event.grades.some((entry) => {
+    if (entry.grade !== grade) return false;
+    if (entry.classCodes.length === 0) return true;
+    return Boolean(classCode) && entry.classCodes.includes(classCode);
+  });
+}
+
+/**
+ * 推算逐週的彈性學習時間（日期＋節次），並比對行事曆的學校活動衝堂。
+ *
+ * - 週次與 `countWeeksBetween` 一致：每週以週日～週六為一週，第一週回退到所在週的週日。
+ * - 節次行程以「週幾＋節次名稱」設定；名稱對應課表作息後換算成實際起訖時間。
+ * - 只比對有學校活動層級且涵蓋該學生（全校／年級／班級）的行事曆行程；
+ *   該週所有時段皆衝堂時 `blocked=true`（該週不提供撰寫）。
+ * - 學期起訖未設定或格式錯誤時回空陣列（前端顯示為無法推算）。
+ */
+export function buildWeekSchedule(input: {
+  semesterStart: string;
+  semesterEnd: string;
+  weeks: number;
+  slots: FlexibleSlot[];
+  periods: PeriodClock[];
+  events: SchoolActivityOccurrence[];
+  grade: string;
+  classCode: string;
+}): WeekSchedule[] {
+  const startMs = dateOnlyMs(input.semesterStart);
+  const endMs = dateOnlyMs(input.semesterEnd);
+  if (startMs === null || endMs === null || endMs < startMs) return [];
+  const totalWeeks = Math.min(Math.max(Math.round(input.weeks) || 0, 0), MAX_PLAN_WEEKS);
+  if (totalWeeks === 0) return [];
+
+  const weekOneSunday = startMs - new Date(startMs).getDay() * MS_PER_DAY;
+  const applicable = input.events.filter((event) =>
+    coversStudent(event, input.grade, input.classCode)
+  );
+  const clockByName = new Map(input.periods.map((period) => [period.name, period]));
+  const orderedSlots = [...input.slots].sort((a, b) => a.day - b.day);
+
+  const rows: WeekSchedule[] = [];
+  for (let index = 0; index < totalWeeks; index += 1) {
+    const sundayMs = weekOneSunday + index * 7 * MS_PER_DAY;
+    const slots: WeekSlotSchedule[] = [];
+    for (const slot of orderedSlots) {
+      // day：1=週一…7=週日；該週由週日起算，故週日（7）偏移 0、週一偏移 1
+      const dateMs = sundayMs + (slot.day % 7) * MS_PER_DAY;
+      if (dateMs < startMs || dateMs > endMs) continue;
+      const date = formatDateOnly(dateMs);
+      let blockedBy: string | null = null;
+      for (const periodName of slot.periods) {
+        const clock = clockByName.get(periodName);
+        if (!clock) continue;
+        const slotStart = clockMs(date, clock.start);
+        const slotEnd = clockMs(date, clock.end);
+        if (slotStart === null || slotEnd === null) continue;
+        for (const event of applicable) {
+          const eventEnd = Math.max(event.endAt ?? event.startAt, event.startAt + 60_000);
+          if (slotStart < eventEnd && event.startAt < slotEnd) {
+            blockedBy = event.title;
+            break;
+          }
+        }
+        if (blockedBy) break;
+      }
+      slots.push({ day: slot.day, date, periods: [...slot.periods], blockedBy });
+    }
+    rows.push({
+      week: index + 1,
+      startDate: formatDateOnly(sundayMs),
+      endDate: formatDateOnly(sundayMs + 6 * MS_PER_DAY),
+      slots,
+      blocked: slots.length > 0 && slots.every((slot) => slot.blockedBy !== null),
+    });
+  }
+  return rows;
+}
+
 export type PlanParseResult =
   | { ok: true; value: Omit<SelfDirectedLearningPlan, "id" | "period" | "studentUid" | "studentName" | "grade" | "classCode" | "className" | "status" | "submittedAt" | "updatedAt"> }
   | { ok: false; message: string };
@@ -428,6 +588,8 @@ export function parsePlanDraft(
   rules: Pick<SelfDirectedLearningSettings, "weekMode" | "minWeeks"> & {
     /** 程式判斷的學期總週數（兩種形式的填寫上限；null＝學校尚未設定起訖） */
     fullWeeks: number | null;
+    /** 與學校活動衝堂、不提供撰寫的週次（送審時不列入必填） */
+    blockedWeeks?: number[];
   },
   action: "save" | "submit"
 ): PlanParseResult {
@@ -474,6 +636,7 @@ export function parsePlanDraft(
   }
   const weeks: PlanWeek[] = [];
   const seen = new Set<number>();
+  const blockedWeeks = new Set(rules.blockedWeeks ?? []);
   for (const item of body.weeks) {
     if (!item || typeof item !== "object") return { ok: false, message: "每週安排格式錯誤" };
     const week = item as Record<string, unknown>;
@@ -485,9 +648,15 @@ export function parsePlanDraft(
     seen.add(weekNo);
     const content = typeof week.content === "string" ? week.content.trim().slice(0, 600) : "";
     const venue = typeof week.venue === "string" ? week.venue.trim().slice(0, 120) : "";
+    // 與學校活動衝堂的週次不提供撰寫，送審時也不列入必填
+    const blocked = blockedWeeks.has(weekNo);
     // 草稿可留白（進度可分次完成）；送審時每一週的學習安排與場地都必填
-    if (action === "submit" && !content) return { ok: false, message: `第 ${weekNo} 週未填寫學習安排` };
-    if (action === "submit" && !venue) return { ok: false, message: `第 ${weekNo} 週未填寫場地` };
+    if (action === "submit" && !blocked && !content) {
+      return { ok: false, message: `第 ${weekNo} 週未填寫學習安排` };
+    }
+    if (action === "submit" && !blocked && !venue) {
+      return { ok: false, message: `第 ${weekNo} 週未填寫場地` };
+    }
     const timing: PlanTiming = isTiming(week.timing) ? week.timing : "flexible";
     weeks.push({ week: weekNo, content, venue, timing });
   }

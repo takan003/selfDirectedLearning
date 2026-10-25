@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.33",
+    "version": "0.0.34",
     "releasedAt": "2026-10-25"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -54,6 +54,15 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.34",
+      "releasedAt": "2026-10-25",
+      "notes": [
+        "學生端「撰寫計畫」的逐週課程安排改為表格：每一列自動推算該週彈性學習時間的日期與節次（依學期起訖與管理端勾選的節次行程），不再只靠學生自行判讀",
+        "與行事曆的學校活動層級（全校／年級／班級）衝堂時，仍列出該週日期與節次，但顯示活動名稱、不提供撰寫，且送審時不列入必填",
+        "課表作息文件尚未建立時改用主程式內建八節＋午休預設，節次衝堂比對與管理端節次格狀勾選不再空白"
+      ]
+    },
     {
       "version": "0.0.33",
       "releasedAt": "2026-10-25",

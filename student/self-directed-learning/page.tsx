@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import AdSense from "@/components/AdSense";
 import Copyright from "@/components/Copyright";
@@ -16,6 +16,7 @@ import {
   MAX_PLAN_WEEKS,
   PLAN_STATUS_LABELS,
   PLAN_TIMING_LABELS,
+  WEEKDAY_LABELS,
   openStateOf,
   type PlanStatus,
   type PlanTiming,
@@ -23,6 +24,7 @@ import {
   type PlanReview,
   type SelfDirectedLearningPlan,
   type SelfDirectedLearningSettings,
+  type WeekSchedule,
 } from "../../types/self-directed-learning";
 
 interface Draft {
@@ -55,6 +57,13 @@ function formatDateTime(epoch: number | null): string {
   const d = new Date(epoch);
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** 逐週表格的短日期（`YYYY-MM-DD` → `M/D`） */
+function monthDayText(date: string): string {
+  const [, month, day] = date.split("-");
+  if (!month || !day) return date;
+  return `${Number(month)}/${Number(day)}`;
 }
 
 /** 學期識別（如 115-1）轉為易讀文字 */
@@ -113,6 +122,8 @@ export default function StudentSelfDirectedLearningPage() {
   const [maintenance, setMaintenance] = useState(false);
   /** 全學期形式的須填週數（由學期起訖自動判斷；null＝學校尚未設定起訖） */
   const [fullWeeks, setFullWeeks] = useState<number | null>(null);
+  /** 逐週彈性學習時間（日期／節次）與學校活動衝堂 */
+  const [weekSchedule, setWeekSchedule] = useState<WeekSchedule[]>([]);
   /** 撰寫計畫區塊是否展開（預設隱藏；發起新計畫或編輯草稿才顯示） */
   const [formOpen, setFormOpen] = useState(false);
   /** 正在編輯的草稿 id；null＝新計畫 */
@@ -128,6 +139,11 @@ export default function StudentSelfDirectedLearningPage() {
   const currentApproved = plans.some(
     (plan) => plan.status === "approved" && plan.period === currentPeriod
   );
+  /** 週次 → 該週彈性學習時間與衝堂資訊 */
+  const weekScheduleByNo = useMemo(
+    () => new Map(weekSchedule.map((row) => [row.week, row])),
+    [weekSchedule]
+  );
 
   const load = useCallback(async () => {
     try {
@@ -141,6 +157,7 @@ export default function StudentSelfDirectedLearningPage() {
       const nextFullWeeks = typeof data.fullWeeks === "number" ? data.fullWeeks : null;
       setSettings(nextSettings);
       setFullWeeks(nextFullWeeks);
+      setWeekSchedule(Array.isArray(data.weekSchedule) ? (data.weekSchedule as WeekSchedule[]) : []);
       setMaintenance(Boolean(data.maintenance));
       setWithinWindow(Boolean(data.withinWindow));
       setCurrentPeriod(typeof data.currentPeriod === "string" ? data.currentPeriod : "");
@@ -549,7 +566,7 @@ export default function StudentSelfDirectedLearningPage() {
               ) : (
                 <p className="text-t2 text-sm">
                   {fullWeeks !== null
-                    ? `全學期 ${fullWeeks} 週（全學期空白週數都須填寫）`
+                    ? `全學期 ${fullWeeks} 週（空白週數都須填寫；學校活動衝堂週次不列入）`
                     : "全學期形式：學校尚未設定上課日／學期起訖，暫無法判斷週數"}
                 </p>
               )}
@@ -561,57 +578,135 @@ export default function StudentSelfDirectedLearningPage() {
               ))}
             </datalist>
 
-            <div className="space-y-3">
-              {draft.weeks.map((week) => (
-                <div key={week.week} className="border-themed bg-surface rounded-md p-3">
-                  <div className="text-t1 mb-2 text-sm font-medium">第 {week.week} 週</div>
-                  <div className="grid gap-3">
-                    <label className="text-t2 block space-y-1 text-sm">
-                      <span>學習安排</span>
-                      <textarea
-                        className="input-theme min-h-20 w-full rounded px-3 py-2 text-sm"
-                        value={week.content}
-                        maxLength={600}
-                        disabled={locked}
-                        onChange={(event) => patchWeek(week.week, { content: event.target.value })}
-                        placeholder="本週預計學習的內容、進度與方式"
-                      />
-                    </label>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <label className="text-t2 block space-y-1 text-sm">
-                        <span>場地</span>
-                        <input
-                          type="text"
-                          className="input-theme w-full rounded px-3 py-2 text-sm"
-                          value={week.venue}
-                          list="sdl-venues"
-                          maxLength={120}
-                          disabled={locked}
-                          onChange={(event) => patchWeek(week.week, { venue: event.target.value })}
-                          placeholder="圖書館自習室（可輸入或點選開放場域）"
-                        />
-                      </label>
-                      <label className="text-t2 block space-y-1 text-sm">
-                        <span>時段</span>
-                        <select
-                          className="input-theme w-full rounded px-3 py-2 text-sm"
-                          value={week.timing}
-                          disabled={locked}
-                          onChange={(event) =>
-                            patchWeek(week.week, { timing: event.target.value as PlanTiming })
-                          }
-                        >
-                          {(["flexible", "afterSchool"] as const).map((timing) => (
-                            <option key={timing} value={timing}>
-                              {PLAN_TIMING_LABELS[timing]}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <p className="text-t3 text-xs">
+              週次日期依學校學期起訖與彈性學習節次推算；與學校活動衝堂的週次會標示活動名稱，不提供撰寫，也不列入必填。
+            </p>
+
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[56rem] text-left text-sm [&_td]:align-top [&_th]:align-top">
+                <thead className="text-t2">
+                  <tr className="border-themed border-b">
+                    <th scope="col" className="px-2 py-2 font-medium whitespace-nowrap">週次</th>
+                    <th scope="col" className="px-2 py-2 font-medium whitespace-nowrap">日期</th>
+                    <th scope="col" className="px-2 py-2 font-medium whitespace-nowrap">節次</th>
+                    <th scope="col" className="px-2 py-2 font-medium">學習安排</th>
+                    <th scope="col" className="px-2 py-2 font-medium whitespace-nowrap">場地</th>
+                    <th scope="col" className="px-2 py-2 font-medium whitespace-nowrap">時段</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {draft.weeks.map((week) => {
+                    const scheduleRow = weekScheduleByNo.get(week.week);
+                    const slots = scheduleRow?.slots ?? [];
+                    const blocked = scheduleRow?.blocked ?? false;
+                    const conflictNames = [
+                      ...new Set(
+                        slots
+                          .map((slot) => slot.blockedBy)
+                          .filter((name): name is string => Boolean(name))
+                      ),
+                    ];
+                    return (
+                      <tr key={week.week} className="border-themed border-b last:border-0 align-top">
+                        <td className="text-t1 px-2 py-3 whitespace-nowrap">第 {week.week} 週</td>
+                        <td className="text-t2 px-2 py-3 whitespace-nowrap">
+                          {slots.length === 0 ? (
+                            "—"
+                          ) : (
+                            slots.map((slot) => (
+                              <div key={`${slot.date}-${slot.day}`}>
+                                {monthDayText(slot.date)} {WEEKDAY_LABELS[slot.day - 1]}
+                              </div>
+                            ))
+                          )}
+                        </td>
+                        <td className="text-t2 px-2 py-3">
+                          {slots.length === 0 ? (
+                            "—"
+                          ) : (
+                            slots.map((slot) => (
+                              <div
+                                key={`${slot.date}-${slot.day}`}
+                                className={slot.blockedBy ? "text-danger" : ""}
+                              >
+                                {slot.periods.length > 0 ? slot.periods.join("、") : "—"}
+                                {slot.blockedBy && (
+                                  <span className="text-danger block text-xs">{slot.blockedBy}</span>
+                                )}
+                              </div>
+                            ))
+                          )}
+                        </td>
+                        {blocked ? (
+                          <td colSpan={3} className="px-2 py-3">
+                            <p className="text-danger text-sm font-medium">
+                              {conflictNames.join("、") || "學校活動"}
+                            </p>
+                            <p className="text-t3 mt-1 text-xs">
+                              本週彈性學習時間為學校活動，不提供撰寫（不列入必填）。
+                            </p>
+                            {week.content && (
+                              <p className="text-t3 mt-1 text-xs whitespace-pre-wrap">
+                                原內容：{week.content}
+                              </p>
+                            )}
+                          </td>
+                        ) : (
+                          <>
+                            <td className="min-w-[20rem] px-2 py-3">
+                              <textarea
+                                className="input-theme min-h-20 w-full rounded px-3 py-2 text-sm"
+                                value={week.content}
+                                maxLength={600}
+                                disabled={locked}
+                                onChange={(event) =>
+                                  patchWeek(week.week, { content: event.target.value })
+                                }
+                                placeholder="本週預計學習的內容、進度與方式"
+                                aria-label={`第 ${week.week} 週學習安排`}
+                              />
+                            </td>
+                            <td className="min-w-[9rem] px-2 py-3">
+                              <input
+                                type="text"
+                                className="input-theme w-full rounded px-3 py-2 text-sm"
+                                value={week.venue}
+                                list="sdl-venues"
+                                maxLength={120}
+                                disabled={locked}
+                                onChange={(event) =>
+                                  patchWeek(week.week, { venue: event.target.value })
+                                }
+                                placeholder="圖書館自習室"
+                                aria-label={`第 ${week.week} 週場地`}
+                              />
+                            </td>
+                            <td className="px-2 py-3 whitespace-nowrap">
+                              <select
+                                className="input-theme w-full rounded px-3 py-2 text-sm"
+                                value={week.timing}
+                                disabled={locked}
+                                onChange={(event) =>
+                                  patchWeek(week.week, {
+                                    timing: event.target.value as PlanTiming,
+                                  })
+                                }
+                                aria-label={`第 ${week.week} 週時段`}
+                              >
+                                {(["flexible", "afterSchool"] as const).map((timing) => (
+                                  <option key={timing} value={timing}>
+                                    {PLAN_TIMING_LABELS[timing]}
+                                  </option>
+                                ))}
+                              </select>
+                            </td>
+                          </>
+                        )}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
 
