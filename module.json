@@ -13,8 +13,8 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.38",
-    "releasedAt": "2026-10-25"
+    "version": "0.0.39",
+    "releasedAt": "2026-10-26"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
   "managerPermissions": [
@@ -54,6 +54,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.39",
+      "releasedAt": "2026-10-26",
+      "notes": [
+        "學生端逐週表格的說明改為三點自動編號清單（日期推算、衝堂週次、課餘時間與場地），依說明文字格式規範簡化"
+      ]
+    },
     {
       "version": "0.0.38",
       "releasedAt": "2026-10-25",

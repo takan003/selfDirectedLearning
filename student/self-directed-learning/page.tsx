@@ -580,13 +580,18 @@ export default function StudentSelfDirectedLearningPage() {
               ))}
             </datalist>
 
-            <p className="text-t3 text-xs">
-              週次日期依學校學期起訖與彈性學習節次推算；與學校活動衝堂的週次會標示活動名稱，不提供撰寫，也不列入必填。課餘時間的學習安排另行處理。
-              {!venueEditable &&
-                (settings.venues.length > 0
-                  ? "場地請從學校開放的場域清單選擇。"
-                  : "學校尚未設定開放場域，請聯繫管理人員。")}
-            </p>
+            <ol className="text-t3 list-decimal space-y-1 pl-5 text-xs">
+              <li>週次日期依學校學期起訖與彈性學習節次推算。</li>
+              <li>與學校活動衝堂的週次會標示活動名稱，不提供撰寫，也不列入必填。</li>
+              <li>
+                課餘時間另行處理；場地
+                {venueEditable
+                  ? "可自行輸入，或從學校開放的場域清單選擇。"
+                  : settings.venues.length > 0
+                    ? "請從學校開放的場域清單選擇。"
+                    : "尚未設定開放場域，請聯繫管理人員。"}
+              </li>
+            </ol>
 
             <div className="overflow-x-auto">
               <table
