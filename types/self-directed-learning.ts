@@ -129,7 +129,7 @@ export interface SelfDirectedLearningSettings {
   slots: FlexibleSlot[];
   /** 開放場域 */
   venues: string[];
-  /** 是否開放學生自行輸入場地（false＝場地欄唯讀、由學校安排，送出審核不檢查場地） */
+  /** 是否開放學生自行輸入場地名稱（false＝只能從 `venues` 清單選擇，送審會檢查） */
   venueEditable: boolean;
   /** 審核人員名單 */
   reviewers: ReviewerEntry[];
@@ -600,8 +600,10 @@ export function parsePlanDraft(
     fullWeeks: number | null;
     /** 與學校活動衝堂、不提供撰寫的週次（送審時不列入必填） */
     blockedWeeks?: number[];
-    /** 是否要求填寫場地（預設 true；管理端關閉「開放學生自行輸入場地」時為 false） */
-    venueRequired?: boolean;
+    /** 是否開放學生自行輸入場地名稱（預設 true；false＝只能從 `venueOptions` 選擇） */
+    venueEditable?: boolean;
+    /** 學校開放的固定場域清單（`venueEditable` 為 false 時送審據此驗證） */
+    venueOptions?: string[];
   },
   action: "save" | "submit"
 ): PlanParseResult {
@@ -649,7 +651,8 @@ export function parsePlanDraft(
   const weeks: PlanWeek[] = [];
   const seen = new Set<number>();
   const blockedWeeks = new Set(rules.blockedWeeks ?? []);
-  const venueRequired = rules.venueRequired !== false;
+  const venueEditable = rules.venueEditable !== false;
+  const venueOptions = new Set(rules.venueOptions ?? []);
   for (const item of body.weeks) {
     if (!item || typeof item !== "object") return { ok: false, message: "每週安排格式錯誤" };
     const week = item as Record<string, unknown>;
@@ -667,8 +670,15 @@ export function parsePlanDraft(
     if (action === "submit" && !blocked && !content) {
       return { ok: false, message: `第 ${weekNo} 週未填寫學習安排` };
     }
-    if (action === "submit" && !blocked && !venue && venueRequired) {
+    if (action === "submit" && !blocked && !venue) {
       return { ok: false, message: `第 ${weekNo} 週未填寫場地` };
+    }
+    // 未開放自行輸入時，場地必須是學校開放的固定場域之一
+    if (action === "submit" && !blocked && !venueEditable && !venueOptions.has(venue)) {
+      return {
+        ok: false,
+        message: `第 ${weekNo} 週場地「${venue}」不在學校開放的場域清單，請重新選擇`,
+      };
     }
     const timing: PlanTiming = isTiming(week.timing) ? week.timing : "flexible";
     weeks.push({ week: weekNo, content, venue, timing });

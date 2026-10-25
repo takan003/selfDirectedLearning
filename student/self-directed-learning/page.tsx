@@ -582,7 +582,10 @@ export default function StudentSelfDirectedLearningPage() {
 
             <p className="text-t3 text-xs">
               週次日期依學校學期起訖與彈性學習節次推算；與學校活動衝堂的週次會標示活動名稱，不提供撰寫，也不列入必填。課餘時間的學習安排另行處理。
-              {!venueEditable && "場地由學校安排，無須填寫。"}
+              {!venueEditable &&
+                (settings.venues.length > 0
+                  ? "場地請從學校開放的場域清單選擇。"
+                  : "學校尚未設定開放場域，請聯繫管理人員。")}
             </p>
 
             <div className="overflow-x-auto">
@@ -667,21 +670,43 @@ export default function StudentSelfDirectedLearningPage() {
                               />
                             </td>
                             <td className="align-top px-2 py-3" style={{ minWidth: "9rem" }}>
-                              <input
-                                type="text"
-                                className="input-theme w-full rounded px-3 py-2 text-sm"
-                                value={week.venue}
-                                list={venueEditable ? "sdl-venues" : undefined}
-                                maxLength={120}
-                                disabled={locked || !venueEditable}
-                                onChange={(event) =>
-                                  patchWeek(week.week, { venue: event.target.value })
-                                }
-                                placeholder={venueEditable ? "圖書館自習室" : "由學校安排"}
-                                aria-label={`第 ${week.week} 週場地${
-                                  venueEditable ? "" : "（由學校安排）"
-                                }`}
-                              />
+                              {venueEditable ? (
+                                <input
+                                  type="text"
+                                  className="input-theme w-full rounded px-3 py-2 text-sm"
+                                  value={week.venue}
+                                  list="sdl-venues"
+                                  maxLength={120}
+                                  disabled={locked}
+                                  onChange={(event) =>
+                                    patchWeek(week.week, { venue: event.target.value })
+                                  }
+                                  placeholder="圖書館自習室"
+                                  aria-label={`第 ${week.week} 週場地`}
+                                />
+                              ) : (
+                                <select
+                                  className="input-theme w-full rounded px-3 py-2 text-sm"
+                                  value={week.venue}
+                                  disabled={locked}
+                                  onChange={(event) =>
+                                    patchWeek(week.week, { venue: event.target.value })
+                                  }
+                                  aria-label={`第 ${week.week} 週場地（限學校開放場域）`}
+                                >
+                                  <option value="">請選擇場地</option>
+                                  {settings.venues.map((venue) => (
+                                    <option key={venue} value={venue}>
+                                      {venue}
+                                    </option>
+                                  ))}
+                                  {week.venue && !settings.venues.includes(week.venue) && (
+                                    <option value={week.venue}>
+                                      {week.venue}（不在開放清單，請重新選擇）
+                                    </option>
+                                  )}
+                                </select>
+                              )}
                             </td>
                           </>
                         )}

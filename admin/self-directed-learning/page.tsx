@@ -753,11 +753,19 @@ export default function SelfDirectedLearningSettingsPage({
                 開放學生自行輸入場地（{settings.venueEditable ? "開啟" : "關閉"}）
               </span>
               <span className="text-t3 block text-xs">
-                勾選後學生可在場地欄自行輸入，並提示下方開放場域；取消勾選時場地欄為唯讀、
-                顯示「由學校安排」，送出審核也不檢查場地。
+                勾選後學生除下方開放的固定場域外，也可自行輸入其他場地名稱；
+                取消勾選時學生只能從下方開放的固定場域清單選擇（送出審核會檢查）。
               </span>
             </span>
           </label>
+          {!settings.venueEditable && settings.venues.length === 0 && (
+            <p className="text-danger text-sm">
+              已關閉自行輸入，但目前沒有任何開放場域，學生將無法選擇場地——請先新增至少一個場域。
+            </p>
+          )}
+          <p className="text-t3 text-sm">
+            以下為學生可選擇的固定場域清單；關閉自行輸入時，學生只能從中選擇。
+          </p>
           {settings.venues.length === 0 ? (
             <p className="text-t3 text-sm">尚未設定開放場域。</p>
           ) : (

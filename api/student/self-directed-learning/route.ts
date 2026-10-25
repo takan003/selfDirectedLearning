@@ -168,7 +168,8 @@ export async function POST(request: NextRequest) {
         ...settings,
         fullWeeks,
         blockedWeeks,
-        venueRequired: settings.venueEditable,
+        venueEditable: settings.venueEditable,
+        venueOptions: settings.venues,
       },
       action
     );

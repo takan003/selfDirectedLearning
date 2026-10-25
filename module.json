@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.37",
+    "version": "0.0.38",
     "releasedAt": "2026-10-25"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -54,6 +54,15 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.38",
+      "releasedAt": "2026-10-25",
+      "notes": [
+        "修正場地規則：管理端設定的「開放場域」是學生可選的固定清單；「開放學生自行輸入場地」只決定學生能否在清單之外自行輸入場地名稱",
+        "關閉自行輸入時，學生端場地欄改為下拉選單（只能選學校開放的固定場域），送出審核時伺服器也會檢查場地是否在清單內",
+        "關閉自行輸入但尚未設定任何開放場域時，管理端顯示警示，避免學生無法選擇場地"
+      ]
+    },
     {
       "version": "0.0.37",
       "releasedAt": "2026-10-25",

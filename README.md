@@ -6,7 +6,7 @@
 地點須在學校規範內。
 
 1. 開發者：[takan003](https://github.com/takan003)（`https://github.com/takan003/selfDirectedLearning`）
-2. 版本：0.0.37（`contractVersion` 1、`minHostVersion` 0.580）
+2. 版本：0.0.38（`contractVersion` 1、`minHostVersion` 0.580）
 3. 四身分入口：管理員（設定與總覽）、學生（填報送審）、教職員（審核／兼導師瀏覽全班）、家長（檢視）
 
 ## 功能摘要
@@ -44,7 +44,7 @@
 1. `selfDirectedLearningSettings`（doc `global`）：模組設定單文件——`enabled`（功能總開關）、
    `openAt`／`closeAt`（開放起訖 epoch ms）、`weekMode`（`full` 全學期全填／`flexible` 彈性
    下限）、`minWeeks`（彈性下限週數）、`slots`（節次行程）、`venues`（開放場域）、
-   `venueEditable`（是否開放學生自行輸入場地；false＝唯讀、由學校安排且送審不檢查場地）、
+   `venueEditable`（是否開放學生自行輸入場地名稱；false＝只能從 `venues` 清單選擇，送審會檢查）、
    `reviewers`（審核人員 uid＋名稱）、`instructions`（自主學習實施說明）、
    `writingInstructions`（自主學習計畫撰寫說明）、`updatedAt`。
    **不存全學期週數（`maxWeeks` 已移除）**：全學期形式的週數由主程式上課日／學期起訖自動推算
