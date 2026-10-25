@@ -134,6 +134,8 @@ export default function StudentSelfDirectedLearningPage() {
     ? plans.find((plan) => plan.id === editingPlanId) ?? null
     : null;
   const locked = editingPlan?.status === "submitted" || editingPlan?.status === "approved";
+  /** 場地是否開放學生輸入（舊資料沒有此欄位時視為開放，避免誤鎖） */
+  const venueEditable = settings.venueEditable !== false;
   const formalPlans = plans.filter((plan) => plan.status === "approved");
   const draftPlans = plans.filter((plan) => plan.status !== "approved");
   const currentApproved = plans.some(
@@ -580,7 +582,7 @@ export default function StudentSelfDirectedLearningPage() {
 
             <p className="text-t3 text-xs">
               週次日期依學校學期起訖與彈性學習節次推算；與學校活動衝堂的週次會標示活動名稱，不提供撰寫，也不列入必填。課餘時間的學習安排另行處理。
-              {!settings.venueEditable && "場地由學校安排，無須填寫。"}
+              {!venueEditable && "場地由學校安排，無須填寫。"}
             </p>
 
             <div className="overflow-x-auto">
@@ -665,15 +667,15 @@ export default function StudentSelfDirectedLearningPage() {
                                 type="text"
                                 className="input-theme w-full rounded px-3 py-2 text-sm"
                                 value={week.venue}
-                                list={settings.venueEditable ? "sdl-venues" : undefined}
+                                list={venueEditable ? "sdl-venues" : undefined}
                                 maxLength={120}
-                                disabled={locked || !settings.venueEditable}
+                                disabled={locked || !venueEditable}
                                 onChange={(event) =>
                                   patchWeek(week.week, { venue: event.target.value })
                                 }
-                                placeholder={settings.venueEditable ? "圖書館自習室" : "由學校安排"}
+                                placeholder={venueEditable ? "圖書館自習室" : "由學校安排"}
                                 aria-label={`第 ${week.week} 週場地${
-                                  settings.venueEditable ? "" : "（由學校安排）"
+                                  venueEditable ? "" : "（由學校安排）"
                                 }`}
                               />
                             </td>
