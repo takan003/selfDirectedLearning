@@ -123,7 +123,8 @@ function ToolButton({
       title={title}
       aria-label={title}
       disabled={disabled}
-      className="text-t1 hover:bg-card rounded-full px-2 py-1 text-xs leading-none disabled:cursor-not-allowed disabled:opacity-50"
+      className="text-t1 hover:bg-card px-2 py-1 text-xs leading-none disabled:cursor-not-allowed disabled:opacity-50"
+      style={{ borderRadius: 0 }}
       onMouseDown={(event) => event.preventDefault()}
       onClick={onClick}
     >
@@ -270,10 +271,48 @@ export function RichTextEditor({
 
   return (
     <div className="space-y-1">
+      <div className="flex justify-end">
+        <span className={`text-xs ${count > maxLength ? "text-danger" : "text-t3"}`}>
+          {count} / {maxLength} 字
+        </span>
+      </div>
+
+      <div style={{ position: "relative" }}>
+        <div
+          ref={editorRef}
+          role="textbox"
+          aria-multiline="true"
+          aria-label={ariaLabel}
+          contentEditable={!disabled}
+          suppressContentEditableWarning
+          className={`input-theme min-h-24 w-full px-3 py-2 text-sm ${disabled ? "opacity-60" : ""}`}
+          style={{
+            minHeight: "6rem",
+            resize: disabled ? "none" : "vertical",
+            overflowY: "auto",
+            borderRadius: 0,
+          }}
+          onInput={handleInput}
+          onPaste={handlePaste}
+          onKeyUp={saveSelection}
+          onMouseUp={saveSelection}
+          onBlur={saveSelection}
+        />
+        {empty && (
+          <span
+            className="text-t3 pointer-events-none select-none text-sm"
+            style={{ position: "absolute", top: "0.5rem", left: "0.75rem" }}
+          >
+            {placeholder}
+          </span>
+        )}
+      </div>
+
       <div
         role="toolbar"
         aria-label="文字格式工具列"
-        className="rounded-full border border-themed bg-surface px-3 py-1 flex flex-wrap items-center gap-1"
+        className="border border-themed bg-surface px-3 py-1 flex flex-wrap items-center gap-1"
+        style={{ borderRadius: 0 }}
         onMouseDown={saveSelection}
       >
         <ToolButton title="復原" disabled={disabled} onClick={() => exec("undo")}>
@@ -289,6 +328,7 @@ export function RichTextEditor({
           aria-label="字型"
           title="字型"
           className="text-t1 bg-transparent px-1 py-1 text-xs"
+          style={{ borderRadius: 0 }}
           value={fontFamily}
           disabled={disabled}
           onChange={(event) => {
@@ -310,6 +350,7 @@ export function RichTextEditor({
           aria-label="字級"
           title="字級"
           className="text-t1 bg-transparent px-1 py-1 text-xs"
+          style={{ borderRadius: 0 }}
           value={fontSize}
           disabled={disabled}
           onChange={(event) => {
@@ -343,22 +384,26 @@ export function RichTextEditor({
             aria-label="文字顏色"
             aria-expanded={colorOpen}
             disabled={disabled}
-            className="text-t1 hover:bg-card rounded-full px-2 py-1 text-xs leading-none disabled:cursor-not-allowed disabled:opacity-50"
+            className="text-t1 hover:bg-card px-2 py-1 text-xs leading-none disabled:cursor-not-allowed disabled:opacity-50"
+      style={{ borderRadius: 0 }}
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => setColorOpen((open) => !open)}
           >
             <span className="underline">A</span> ▾
           </button>
           {colorOpen && !disabled && (
-            <div className="border-themed bg-card absolute left-0 top-full z-20 mt-1 flex flex-wrap gap-1 rounded-md border p-2 shadow-lg">
+            <div
+              className="border-themed bg-card absolute bottom-full right-0 z-20 mb-1 flex flex-wrap gap-1 border p-2 shadow-lg"
+              style={{ width: "8.5rem", borderRadius: 0 }}
+            >
               {TEXT_COLORS.map((color) => (
                 <button
                   key={color.value}
                   type="button"
                   title={color.label}
                   aria-label={color.label}
-                  className="border-themed h-5 w-5 rounded-full border"
-                  style={{ backgroundColor: color.value }}
+                  className="border-themed h-5 w-5 border"
+                  style={{ backgroundColor: color.value, borderRadius: 0 }}
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => {
                     exec("foreColor", color.value);
@@ -379,6 +424,7 @@ export function RichTextEditor({
           aria-label="對齊方式"
           title="對齊方式"
           className="text-t1 bg-transparent px-1 py-1 text-xs"
+          style={{ borderRadius: 0 }}
           value={alignment}
           disabled={disabled}
           onChange={(event) => {
@@ -425,39 +471,6 @@ export function RichTextEditor({
         <ToolButton title="清除格式" disabled={disabled} onClick={() => exec("removeFormat")}>
           T\
         </ToolButton>
-      </div>
-
-      <div className="relative">
-        <div
-          ref={editorRef}
-          role="textbox"
-          aria-multiline="true"
-          aria-label={ariaLabel}
-          contentEditable={!disabled}
-          suppressContentEditableWarning
-          className={`input-theme min-h-24 w-full rounded px-3 py-2 text-sm ${disabled ? "opacity-60" : ""}`}
-          style={{
-            minHeight: "6rem",
-            resize: disabled ? "none" : "vertical",
-            overflowY: "auto",
-          }}
-          onInput={handleInput}
-          onPaste={handlePaste}
-          onKeyUp={saveSelection}
-          onMouseUp={saveSelection}
-          onBlur={saveSelection}
-        />
-        {empty && (
-          <span className="text-t3 pointer-events-none absolute left-3 top-2 select-none text-sm">
-            {placeholder}
-          </span>
-        )}
-      </div>
-
-      <div className="flex justify-end">
-        <span className={`text-xs ${count > maxLength ? "text-danger" : "text-t3"}`}>
-          {count} / {maxLength} 字
-        </span>
       </div>
     </div>
   );

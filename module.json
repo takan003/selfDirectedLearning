@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.40",
+    "version": "0.0.41",
     "releasedAt": "2026-10-26"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -54,6 +54,14 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.41",
+      "releasedAt": "2026-10-26",
+      "notes": [
+        "學習安排編輯器版面調整：字數統計移到編輯區上方、工具列移到編輯區下方，placeholder 固定在編輯區左上角",
+        "編輯器、工具列、下拉選單與文字顏色選色盤改為直角，不再使用圓角"
+      ]
+    },
     {
       "version": "0.0.40",
       "releasedAt": "2026-10-26",
