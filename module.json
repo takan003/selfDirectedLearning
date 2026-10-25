@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.41",
+    "version": "0.0.42",
     "releasedAt": "2026-10-26"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -27,6 +27,7 @@
     { "kind": "api", "path": "/api/admin/self-directed-learning" },
     { "kind": "api", "path": "/api/admin/self-directed-learning/students" },
     { "kind": "page", "path": "/student/self-directed-learning" },
+    { "kind": "page", "path": "/student/self-directed-learning/print" },
     { "kind": "api", "path": "/api/student/self-directed-learning" },
     { "kind": "page", "path": "/staff/self-directed-learning" },
     { "kind": "api", "path": "/api/staff/self-directed-learning" },
@@ -54,6 +55,15 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.42",
+      "releasedAt": "2026-10-26",
+      "notes": [
+        "學生端「撰寫計畫」左側新增跟隨畫面的浮動列印預覽圖示（SVG），點擊後開新分頁以 A4 紙張樣式檢視目前編輯內容（含尚未儲存的變更）並可列印",
+        "列印預覽以 postMessage 由撰寫頁傳遞草稿，不寫入資料庫；預覽頁使用白底黑字紙張樣式、重複表頭與避免列印分割週次列",
+        "新增學生端頁面路由 /student/self-directed-learning/print；僅能由撰寫頁開啟取得內容，直接開啟時顯示提示"
+      ]
+    },
     {
       "version": "0.0.41",
       "releasedAt": "2026-10-26",

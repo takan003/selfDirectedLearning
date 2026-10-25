@@ -362,6 +362,43 @@ export interface PlanWeek {
   timing: PlanTiming;
 }
 
+/* ——— 列印預覽（學生端新分頁；以 postMessage 傳遞目前編輯內容） ——— */
+
+/** 預覽頁載入完成 → 撰寫頁回傳目前草稿 */
+export const PRINT_PREVIEW_READY = "selfDirectedLearning:print-ready";
+/** 撰寫頁 → 預覽頁的資料訊息 */
+export const PRINT_PREVIEW_DATA = "selfDirectedLearning:print-data";
+
+export interface PrintPreviewSlot {
+  /** 實際日期 `YYYY-MM-DD` */
+  date: string;
+  /** 1=週一…7=週日 */
+  day: number;
+  periods: string[];
+  /** 衝堂的學校活動名稱；null＝無 */
+  blockedBy: string | null;
+}
+
+export interface PrintPreviewWeek {
+  week: number;
+  content: string;
+  venue: string;
+  slots: PrintPreviewSlot[];
+  blocked: boolean;
+}
+
+/** 列印預覽內容（目前編輯中的草稿；不必先儲存） */
+export interface PrintPreviewPayload {
+  period: string;
+  studentName: string;
+  className: string;
+  topic: string;
+  studyGroup: string;
+  advisor: string;
+  generatedAt: number;
+  weeks: PrintPreviewWeek[];
+}
+
 export interface SelfDirectedLearningPlan {
   /** doc id＝`${period}_${studentUid}` */
   id: string;

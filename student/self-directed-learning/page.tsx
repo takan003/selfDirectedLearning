@@ -17,16 +17,24 @@ import {
   MAX_PLAN_WEEKS,
   PLAN_STATUS_LABELS,
   PLAN_TIMING_LABELS,
+  PRINT_PREVIEW_DATA,
+  PRINT_PREVIEW_READY,
   WEEKDAY_LABELS,
   openStateOf,
   type PlanStatus,
   type PlanTiming,
   type PlanWeek,
   type PlanReview,
+  type PrintPreviewPayload,
   type SelfDirectedLearningPlan,
   type SelfDirectedLearningSettings,
   type WeekSchedule,
 } from "../../types/self-directed-learning";
+
+interface StudentInfo {
+  name: string;
+  className: string;
+}
 
 interface Draft {
   topic: string;
@@ -125,6 +133,8 @@ export default function StudentSelfDirectedLearningPage() {
   const [fullWeeks, setFullWeeks] = useState<number | null>(null);
   /** 逐週彈性學習時間（日期／節次）與學校活動衝堂 */
   const [weekSchedule, setWeekSchedule] = useState<WeekSchedule[]>([]);
+  /** 學生姓名／班級（列印預覽表頭用） */
+  const [studentInfo, setStudentInfo] = useState<StudentInfo | null>(null);
   /** 撰寫計畫區塊是否展開（預設隱藏；發起新計畫或編輯草稿才顯示） */
   const [formOpen, setFormOpen] = useState(false);
   /** 正在編輯的草稿 id；null＝新計畫 */
@@ -147,6 +157,9 @@ export default function StudentSelfDirectedLearningPage() {
     () => new Map(weekSchedule.map((row) => [row.week, row])),
     [weekSchedule]
   );
+  /** 列印預覽分頁與最近一次送出的預覽內容 */
+  const previewWindowRef = useRef<Window | null>(null);
+  const printPayloadRef = useRef<PrintPreviewPayload | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -161,6 +174,20 @@ export default function StudentSelfDirectedLearningPage() {
       setSettings(nextSettings);
       setFullWeeks(nextFullWeeks);
       setWeekSchedule(Array.isArray(data.weekSchedule) ? (data.weekSchedule as WeekSchedule[]) : []);
+      setStudentInfo(
+        data.student && typeof data.student === "object"
+          ? {
+              name:
+                typeof (data.student as StudentInfo).name === "string"
+                  ? (data.student as StudentInfo).name
+                  : "",
+              className:
+                typeof (data.student as StudentInfo).className === "string"
+                  ? (data.student as StudentInfo).className
+                  : "",
+            }
+          : null
+      );
       setMaintenance(Boolean(data.maintenance));
       setWithinWindow(Boolean(data.withinWindow));
       setCurrentPeriod(typeof data.currentPeriod === "string" ? data.currentPeriod : "");
@@ -180,6 +207,25 @@ export default function StudentSelfDirectedLearningPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // 列印預覽分頁載入後會送出 ready，這裡回傳目前編輯中的草稿（含未儲存變更）
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      const target = previewWindowRef.current;
+      if (!target || event.source !== target) return;
+      if (!event.data || event.data.type !== PRINT_PREVIEW_READY) return;
+      const payload = printPayloadRef.current;
+      if (!payload) return;
+      try {
+        target.postMessage({ type: PRINT_PREVIEW_DATA, payload }, window.location.origin);
+      } catch {
+        // 分頁已關閉或瀏覽器限制時忽略
+      }
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -251,6 +297,43 @@ export default function StudentSelfDirectedLearningPage() {
   const closeForm = () => {
     setFormOpen(false);
     setEditingPlanId(null);
+  };
+
+  /** 開新分頁列印預覽：把目前草稿（含尚未儲存的變更）交給預覽頁 */
+  const openPrintPreview = () => {
+    const payload: PrintPreviewPayload = {
+      period: currentPeriod,
+      studentName: studentInfo?.name || editingPlan?.studentName || "",
+      className: studentInfo?.className || editingPlan?.className || "",
+      topic: draft.topic,
+      studyGroup: draft.studyGroup,
+      advisor: draft.advisor,
+      generatedAt: Date.now(),
+      weeks: draft.weeks.map((week) => {
+        const scheduleRow = weekScheduleByNo.get(week.week);
+        const slots = scheduleRow?.slots ?? [];
+        return {
+          week: week.week,
+          content: week.content,
+          venue: week.venue,
+          slots: slots.map((slot) => ({
+            date: slot.date,
+            day: slot.day,
+            periods: [...slot.periods],
+            blockedBy: slot.blockedBy,
+          })),
+          blocked: scheduleRow?.blocked ?? false,
+        };
+      }),
+    };
+    printPayloadRef.current = payload;
+    const preview = window.open("/student/self-directed-learning/print", "_blank");
+    if (!preview) {
+      setToast({ kind: "error", text: "瀏覽器封鎖了新分頁，請允許彈出視窗後再試" });
+      return;
+    }
+    previewWindowRef.current = preview;
+    preview.focus();
   };
 
   const submit = async (action: "save" | "submit") => {
@@ -741,6 +824,41 @@ export default function StudentSelfDirectedLearningPage() {
             </button>
           </div>
         </section>
+      )}
+
+      {formOpen && (
+        <button
+          type="button"
+          onClick={openPrintPreview}
+          title="列印預覽（新分頁）"
+          aria-label="在新分頁預覽列印"
+          className="border-themed bg-surface text-t1 hover:bg-card flex items-center justify-center border px-2 py-3 shadow-md"
+          style={{
+            position: "fixed",
+            left: 0,
+            top: "50%",
+            transform: "translateY(-50%)",
+            zIndex: 40,
+            borderLeftWidth: 0,
+          }}
+        >
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M6 9V3h12v6" />
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+            <rect x="6" y="14" width="12" height="8" rx="1" />
+            <path d="M18 12h.01" />
+          </svg>
+        </button>
       )}
     </>
   );
