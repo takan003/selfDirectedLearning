@@ -3,13 +3,13 @@
 ## 專案定位
 
 1. **C「選用功能模組」**：`selfDirectedLearning`（自主學習計畫），本專案位於 `\selfDirectedLearning`。
-2. **A「主程式」**：`\campus-toolkit`，C 以模組方式掛載到 A 測試；A 的變更與版控不屬於本專案。
-3. 沒有下達指令時，請勿修改或 push 任何專案；測試掛載、dev server 與 lint 等操作在主程式 A 執行，依 A 的 `AGENTS.md`。
+1. **A「主程式」**：`\campus-toolkit`，C 以模組方式掛載到 A 測試；A 的變更與版控不屬於本專案。
+1. 沒有下達指令時，請勿修改或 push 任何專案；測試掛載、dev server 與 lint 等操作在主程式 A 執行，依 A 的 `AGENTS.md`。
 
 ## 工作指令
 
 1. **「修改C」**：只在 C 修改；透過 A 已掛載的模組驗證結果，完成後 push C。
-2. **「打包C」**：依指示打包並上架 B「模組市集」，完成後 push；**絕不更動或 push A**。
+1. **「打包C」**：依指示打包並上架 B「模組市集」，完成後 push；**絕不更動或 push A**。
 
 ## 貢獻者規範（必讀）
 
@@ -90,6 +90,6 @@
 ## 修改完成後的流程
 
 1. 在 A 執行 `npm run lint`（eslint + tsc）確認通過（C 沒有自己的 npm 指令）。
-2. 功能或修正完成時，更新 `module.json` 的 `author.version`／`releasedAt` 與 `changelog`。
-3. commit（訊息結尾附「版本號更新至 0.0.xx」）。
-4. `git push`（C 的 `master`）。
+1. 功能或修正完成時，更新 `module.json` 的 `author.version`／`releasedAt` 與 `changelog`。
+1. commit（訊息結尾附「版本號更新至 0.0.xx」）。
+1. `git push`（C 的 `master`）。
