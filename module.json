@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.39",
+    "version": "0.0.40",
     "releasedAt": "2026-10-26"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -54,6 +54,16 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.40",
+      "releasedAt": "2026-10-26",
+      "notes": [
+        "學生端「學習安排」升級為零依賴所見即所得編輯器：膠囊工具列提供復原／重做、字型、字級、粗斜體底線、文字顏色、對齊、編號與項目清單、縮排、引用、刪除線與清除格式，支援 placeholder、字數統計與停用狀態",
+        "新增純 TypeScript 白名單 HTML 淨化：只允許安全標籤與屬性（含顏色、字級、對齊、縮排），移除 script／iframe／事件屬性／javascript: 與 url()；貼上內容同樣先淨化",
+        "學習安排改存淨化後的 HTML（可見純文字上限 600 字、HTML 上限 6000 字元），舊版純文字資料仍可正常顯示與編輯",
+        "學生端我的計畫、教職員端逐週檢視、家長端逐週安排改用共用富文本檢視元件，清單符號／編號、縮排與引用樣式在 Tailwind reset 下仍正確呈現"
+      ]
+    },
     {
       "version": "0.0.39",
       "releasedAt": "2026-10-26",

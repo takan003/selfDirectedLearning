@@ -6,6 +6,7 @@ import AdSense from "@/components/AdSense";
 import Copyright from "@/components/Copyright";
 import Toast, { type ToastMessage } from "@/components/Toast";
 import DisclosureArrow from "@/components/DisclosureArrow";
+import { RichTextContent, RichTextEditor } from "../../components/rich-text-editor";
 import { fetchSettings } from "@/lib/settings-client";
 import { logout } from "@/lib/session";
 import { Settings, defaultSettings } from "@/types/settings";
@@ -394,7 +395,7 @@ export default function StudentSelfDirectedLearningPage() {
                   <span>{PLAN_TIMING_LABELS[week.timing]}</span>
                   <span>{week.venue || "—"}</span>
                 </div>
-                <p className="text-t2 whitespace-pre-wrap text-xs">{week.content || "—"}</p>
+                <RichTextContent html={week.content} className="text-t2 text-xs" />
               </li>
             ))}
           </ul>
@@ -653,25 +654,22 @@ export default function StudentSelfDirectedLearningPage() {
                               本週彈性學習時間為學校活動，不提供撰寫（不列入必填）。
                             </p>
                             {week.content && (
-                              <p className="text-t3 mt-1 text-xs whitespace-pre-wrap">
-                                原內容：{week.content}
-                              </p>
+                              <div className="text-t3 mt-1 text-xs">
+                                <p>原內容：</p>
+                                <RichTextContent html={week.content} className="text-t3 text-xs" />
+                              </div>
                             )}
                           </td>
                         ) : (
                           <>
                             <td className="align-top px-2 py-3" style={{ minWidth: "20rem" }}>
-                              <textarea
-                                className="input-theme min-h-20 w-full rounded px-3 py-2 text-sm"
-                                style={{ resize: "both" }}
+                              <RichTextEditor
                                 value={week.content}
-                                maxLength={600}
+                                onChange={(content) => patchWeek(week.week, { content })}
                                 disabled={locked}
-                                onChange={(event) =>
-                                  patchWeek(week.week, { content: event.target.value })
-                                }
+                                maxLength={600}
                                 placeholder="本週預計學習的內容、進度與方式"
-                                aria-label={`第 ${week.week} 週學習安排`}
+                                ariaLabel={`第 ${week.week} 週學習安排`}
                               />
                             </td>
                             <td className="align-top px-2 py-3" style={{ minWidth: "9rem" }}>
