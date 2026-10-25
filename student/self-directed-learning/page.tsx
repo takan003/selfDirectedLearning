@@ -586,14 +586,17 @@ export default function StudentSelfDirectedLearningPage() {
             </p>
 
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[40rem] text-left text-sm [&_td]:align-top [&_th]:align-top">
+              <table
+                className="w-full text-left text-sm"
+                style={{ minWidth: "40rem" }}
+              >
                 <thead className="text-t2">
                   <tr className="border-themed border-b">
-                    <th scope="col" className="px-2 py-2 font-medium whitespace-nowrap">
+                    <th scope="col" className="align-top px-2 py-2 font-medium whitespace-nowrap">
                       週次／日期／節次
                     </th>
-                    <th scope="col" className="px-2 py-2 font-medium">學習安排</th>
-                    <th scope="col" className="px-2 py-2 font-medium whitespace-nowrap">場地</th>
+                    <th scope="col" className="align-top px-2 py-2 font-medium">學習安排</th>
+                    <th scope="col" className="align-top px-2 py-2 font-medium whitespace-nowrap">場地</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -610,7 +613,7 @@ export default function StudentSelfDirectedLearningPage() {
                     ];
                     return (
                       <tr key={week.week} className="border-themed border-b last:border-0 align-top">
-                        <td className="px-2 py-3 whitespace-nowrap">
+                        <td className="align-top px-2 py-3 whitespace-nowrap">
                           <div className="text-t1 font-medium">第 {week.week} 週</div>
                           {slots.length === 0 ? (
                             <div className="text-t3 mt-1 text-xs">—</div>
@@ -634,7 +637,7 @@ export default function StudentSelfDirectedLearningPage() {
                           )}
                         </td>
                         {blocked ? (
-                          <td colSpan={2} className="px-2 py-3">
+                          <td colSpan={2} className="align-top px-2 py-3">
                             <p className="text-danger text-sm font-medium">
                               {conflictNames.join("、") || "學校活動"}
                             </p>
@@ -649,9 +652,10 @@ export default function StudentSelfDirectedLearningPage() {
                           </td>
                         ) : (
                           <>
-                            <td className="min-w-[20rem] px-2 py-3">
+                            <td className="align-top px-2 py-3" style={{ minWidth: "20rem" }}>
                               <textarea
-                                className="input-theme min-h-20 w-full resize rounded px-3 py-2 text-sm"
+                                className="input-theme min-h-20 w-full rounded px-3 py-2 text-sm"
+                                style={{ resize: "both" }}
                                 value={week.content}
                                 maxLength={600}
                                 disabled={locked}
@@ -662,7 +666,7 @@ export default function StudentSelfDirectedLearningPage() {
                                 aria-label={`第 ${week.week} 週學習安排`}
                               />
                             </td>
-                            <td className="min-w-[9rem] px-2 py-3">
+                            <td className="align-top px-2 py-3" style={{ minWidth: "9rem" }}>
                               <input
                                 type="text"
                                 className="input-theme w-full rounded px-3 py-2 text-sm"

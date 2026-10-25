@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.36",
+    "version": "0.0.37",
     "releasedAt": "2026-10-25"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -54,6 +54,14 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.37",
+      "releasedAt": "2026-10-25",
+      "notes": [
+        "修正學習安排文字框只能上下調整：改以行內樣式設定 resize，現在可上下左右拖曳調整大小",
+        "表格最小寬度與學習安排／場地欄寬改以行內樣式設定，避免模組原始碼未被樣式掃描時失去響應式寬度"
+      ]
+    },
     {
       "version": "0.0.36",
       "releasedAt": "2026-10-25",
