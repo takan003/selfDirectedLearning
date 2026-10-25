@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.34",
+    "version": "0.0.35",
     "releasedAt": "2026-10-25"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -54,6 +54,14 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.35",
+      "releasedAt": "2026-10-25",
+      "notes": [
+        "逐週表格的「週次／日期／節次」合併為同一欄，減少橫向佔用、手機較好閱讀",
+        "移除逐週表格的「時段」欄（學校彈性學習時間／課餘時間）；課餘時間的安排另行處理，既有資料的時段值保留不動"
+      ]
+    },
     {
       "version": "0.0.34",
       "releasedAt": "2026-10-25",

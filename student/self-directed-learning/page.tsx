@@ -579,19 +579,18 @@ export default function StudentSelfDirectedLearningPage() {
             </datalist>
 
             <p className="text-t3 text-xs">
-              週次日期依學校學期起訖與彈性學習節次推算；與學校活動衝堂的週次會標示活動名稱，不提供撰寫，也不列入必填。
+              週次日期依學校學期起訖與彈性學習節次推算；與學校活動衝堂的週次會標示活動名稱，不提供撰寫，也不列入必填。課餘時間的學習安排另行處理。
             </p>
 
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[56rem] text-left text-sm [&_td]:align-top [&_th]:align-top">
+              <table className="w-full min-w-[40rem] text-left text-sm [&_td]:align-top [&_th]:align-top">
                 <thead className="text-t2">
                   <tr className="border-themed border-b">
-                    <th scope="col" className="px-2 py-2 font-medium whitespace-nowrap">週次</th>
-                    <th scope="col" className="px-2 py-2 font-medium whitespace-nowrap">日期</th>
-                    <th scope="col" className="px-2 py-2 font-medium whitespace-nowrap">節次</th>
+                    <th scope="col" className="px-2 py-2 font-medium whitespace-nowrap">
+                      週次／日期／節次
+                    </th>
                     <th scope="col" className="px-2 py-2 font-medium">學習安排</th>
                     <th scope="col" className="px-2 py-2 font-medium whitespace-nowrap">場地</th>
-                    <th scope="col" className="px-2 py-2 font-medium whitespace-nowrap">時段</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -608,37 +607,31 @@ export default function StudentSelfDirectedLearningPage() {
                     ];
                     return (
                       <tr key={week.week} className="border-themed border-b last:border-0 align-top">
-                        <td className="text-t1 px-2 py-3 whitespace-nowrap">第 {week.week} 週</td>
-                        <td className="text-t2 px-2 py-3 whitespace-nowrap">
+                        <td className="px-2 py-3 whitespace-nowrap">
+                          <div className="text-t1 font-medium">第 {week.week} 週</div>
                           {slots.length === 0 ? (
-                            "—"
-                          ) : (
-                            slots.map((slot) => (
-                              <div key={`${slot.date}-${slot.day}`}>
-                                {monthDayText(slot.date)} {WEEKDAY_LABELS[slot.day - 1]}
-                              </div>
-                            ))
-                          )}
-                        </td>
-                        <td className="text-t2 px-2 py-3">
-                          {slots.length === 0 ? (
-                            "—"
+                            <div className="text-t3 mt-1 text-xs">—</div>
                           ) : (
                             slots.map((slot) => (
                               <div
                                 key={`${slot.date}-${slot.day}`}
-                                className={slot.blockedBy ? "text-danger" : ""}
+                                className="text-t2 mt-1 text-xs"
                               >
-                                {slot.periods.length > 0 ? slot.periods.join("、") : "—"}
-                                {slot.blockedBy && (
-                                  <span className="text-danger block text-xs">{slot.blockedBy}</span>
-                                )}
+                                <div>
+                                  {monthDayText(slot.date)} {WEEKDAY_LABELS[slot.day - 1]}
+                                </div>
+                                <div className={slot.blockedBy ? "text-danger" : ""}>
+                                  {slot.periods.length > 0 ? slot.periods.join("、") : "—"}
+                                  {slot.blockedBy && (
+                                    <span className="text-danger block">{slot.blockedBy}</span>
+                                  )}
+                                </div>
                               </div>
                             ))
                           )}
                         </td>
                         {blocked ? (
-                          <td colSpan={3} className="px-2 py-3">
+                          <td colSpan={2} className="px-2 py-3">
                             <p className="text-danger text-sm font-medium">
                               {conflictNames.join("、") || "學校活動"}
                             </p>
@@ -680,25 +673,6 @@ export default function StudentSelfDirectedLearningPage() {
                                 placeholder="圖書館自習室"
                                 aria-label={`第 ${week.week} 週場地`}
                               />
-                            </td>
-                            <td className="px-2 py-3 whitespace-nowrap">
-                              <select
-                                className="input-theme w-full rounded px-3 py-2 text-sm"
-                                value={week.timing}
-                                disabled={locked}
-                                onChange={(event) =>
-                                  patchWeek(week.week, {
-                                    timing: event.target.value as PlanTiming,
-                                  })
-                                }
-                                aria-label={`第 ${week.week} 週時段`}
-                              >
-                                {(["flexible", "afterSchool"] as const).map((timing) => (
-                                  <option key={timing} value={timing}>
-                                    {PLAN_TIMING_LABELS[timing]}
-                                  </option>
-                                ))}
-                              </select>
                             </td>
                           </>
                         )}
