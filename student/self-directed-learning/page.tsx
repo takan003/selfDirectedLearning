@@ -510,6 +510,28 @@ export default function StudentSelfDirectedLearningPage() {
   const canSubmit = withinWindow && !locked && saving === null;
   const canStartNew = withinWindow && !currentApproved && !formOpen && !loading;
 
+  const formActionButtons = (
+    <>
+      <button
+        type="button"
+        className="btn-theme px-6 py-3 text-base"
+        disabled={locked || saving !== null || loading}
+        onClick={() => void submit("save")}
+      >
+        {saving === "save" ? "儲存中…" : "儲存草稿"}
+      </button>
+      <button
+        type="button"
+        className="btn-primary btn-theme px-6 py-3 text-base"
+        disabled={!canSubmit || loading}
+        onClick={() => void submit("submit")}
+        title={withinWindow ? "" : WINDOW_LABEL[windowState]}
+      >
+        {saving === "submit" ? "送出中…" : "送出審核"}
+      </button>
+    </>
+  );
+
   const actionButtons = (
     <>
       <button
@@ -871,11 +893,22 @@ export default function StudentSelfDirectedLearningPage() {
               </div>
               <button
                 type="button"
-                className="btn-theme rounded-lg px-4 py-2 text-sm"
+                className="btn-theme rounded-lg px-4 py-2.5 text-sm"
                 onClick={closeForm}
               >
                 取消
               </button>
+            </div>
+          </div>
+
+          <div className="border-themed bg-card border-b px-5 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-t3 text-xs">
+                表單較長，可隨時儲存草稿或送出審核。
+              </p>
+              <div className="flex w-full flex-wrap justify-end gap-3 sm:w-auto">
+                {formActionButtons}
+              </div>
             </div>
           </div>
 
@@ -1120,61 +1153,73 @@ export default function StudentSelfDirectedLearningPage() {
           </div>
 
             <div className="border-themed flex flex-wrap justify-end gap-3 border-t pt-4">
-              <button
-                type="button"
-                className="btn-theme px-6"
-                disabled={locked || saving !== null || loading}
-                onClick={() => void submit("save")}
-              >
-                {saving === "save" ? "儲存中…" : "儲存草稿"}
-              </button>
-              <button
-                type="button"
-                className="btn-primary btn-theme px-6"
-                disabled={!canSubmit || loading}
-                onClick={() => void submit("submit")}
-                title={withinWindow ? "" : WINDOW_LABEL[windowState]}
-              >
-                {saving === "submit" ? "送出中…" : "送出審核"}
-              </button>
+              {formActionButtons}
             </div>
           </div>
         </section>
       )}
 
       {formOpen && (
-        <button
-          type="button"
-          onClick={openPrintPreview}
-          title="列印預覽（新分頁）"
-          aria-label="在新分頁預覽列印"
-          className="border-themed bg-surface text-t1 hover:bg-card flex items-center justify-center border px-2 py-3 shadow-md"
+        <div
+          className="flex flex-col gap-2"
           style={{
             position: "fixed",
             left: 0,
             top: "50%",
             transform: "translateY(-50%)",
             zIndex: 40,
-            borderLeftWidth: 0,
           }}
         >
-          <svg
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
+          <button
+            type="button"
+            onClick={() => void submit("save")}
+            title="儲存草稿"
+            aria-label="儲存草稿"
+            disabled={locked || saving !== null || loading}
+            className="border-themed bg-surface text-t1 hover:bg-card flex items-center justify-center border shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+            style={{ width: "2.75rem", height: "2.75rem", borderLeftWidth: 0 }}
           >
-            <path d="M6 9V3h12v6" />
-            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-            <rect x="6" y="14" width="12" height="8" rx="1" />
-            <path d="M18 12h.01" />
-          </svg>
-        </button>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
+              <path d="M17 21v-8H7v8M7 3v5h8" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            onClick={openPrintPreview}
+            title="列印預覽（新分頁）"
+            aria-label="在新分頁預覽列印"
+            className="border-themed bg-surface text-t1 hover:bg-card flex items-center justify-center border shadow-md"
+            style={{ width: "2.75rem", height: "2.75rem", borderLeftWidth: 0 }}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M6 9V3h12v6" />
+              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+              <rect x="6" y="14" width="12" height="8" rx="1" />
+              <path d="M18 12h.01" />
+            </svg>
+          </button>
+        </div>
       )}
     </>
   );

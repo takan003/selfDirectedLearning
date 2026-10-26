@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.44",
+    "version": "0.0.45",
     "releasedAt": "2026-10-26"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -57,6 +57,15 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.45",
+      "releasedAt": "2026-10-26",
+      "notes": [
+        "撰寫計畫表單頂部新增一組儲存草稿／送出審核按鈕，長表單不必捲到底才能儲存或送出",
+        "儲存草稿與送出審核按鈕加大（py-3、text-base），取消按鈕也同步調整",
+        "左側浮動圖示改為兩個 SVG：上方快速儲存草稿（軟碟片）、下方列印預覽（印表機），皆為 44px 觸控目標"
+      ]
+    },
     {
       "version": "0.0.44",
       "releasedAt": "2026-10-26",
