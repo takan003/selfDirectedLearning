@@ -445,6 +445,28 @@ export default function StudentSelfDirectedLearningPage() {
     }));
   };
 
+  /** 把本週的學習安排與場地完整複製到下一週 */
+  const copyWeekToNext = (index: number) => {
+    const source = draft.weeks[index];
+    const target = draft.weeks[index + 1];
+    if (!source || !target) return;
+    setDraft((prev) => ({
+      ...prev,
+      weeks: prev.weeks.map((week, weekIndex) =>
+        weekIndex === index + 1
+          ? { ...week, content: source.content, venue: source.venue }
+          : week
+      ),
+    }));
+    setCustomVenueWeeks((prev) => {
+      const next = new Set(prev);
+      if (customVenueWeeks.has(source.week)) next.add(target.week);
+      else next.delete(target.week);
+      return next;
+    });
+    setToast({ kind: "success", text: "已複製本週場地與學習安排到下一週" });
+  };
+
   const revealForm = () => {
     requestAnimationFrame(() => {
       formSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1307,10 +1329,15 @@ export default function StudentSelfDirectedLearningPage() {
                       </td>
                     </tr>
                   )}
-                  {draft.weeks.map((week) => {
+                  {draft.weeks.map((week, index) => {
                     const scheduleRow = weekScheduleByNo.get(week.week);
                     const slots = scheduleRow?.slots ?? [];
                     const blocked = scheduleRow?.blocked ?? false;
+                    const nextWeek = draft.weeks[index + 1];
+                    const nextBlocked = nextWeek
+                      ? weekScheduleByNo.get(nextWeek.week)?.blocked ?? false
+                      : false;
+                    const canCopyDown = Boolean(nextWeek) && !blocked && !nextBlocked;
                     const conflictNames = [
                       ...new Set(
                         slots
@@ -1322,7 +1349,7 @@ export default function StudentSelfDirectedLearningPage() {
                       <tr key={week.week} className="border-themed border-b last:border-0 align-top">
                         <td
                           className="align-top px-2 py-3 whitespace-nowrap"
-                          style={{ width: "7rem" }}
+                          style={{ width: "7rem", position: "relative" }}
                         >
                           <div className="text-t1 font-medium">第 {week.week} 週</div>
                           {slots.length === 0 ? (
@@ -1350,6 +1377,37 @@ export default function StudentSelfDirectedLearningPage() {
                                 </div>
                               </div>
                             ))
+                          )}
+                          {canCopyDown && (
+                            <button
+                              type="button"
+                              onClick={() => copyWeekToNext(index)}
+                              title="複製本週場地與學習安排到下一週"
+                              aria-label="複製本週場地與學習安排到下一週"
+                              className="border-themed bg-surface text-t1 hover:bg-card absolute flex items-center justify-center border"
+                              style={{
+                                bottom: "0.25rem",
+                                left: "0.25rem",
+                                width: "2.25rem",
+                                height: "2.25rem",
+                                borderRadius: 0,
+                              }}
+                            >
+                              <svg
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.8"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                aria-hidden="true"
+                              >
+                                <path d="M12 4v14" />
+                                <path d="m6 12 6 6 6-6" />
+                              </svg>
+                            </button>
                           )}
                         </td>
                         {blocked ? (

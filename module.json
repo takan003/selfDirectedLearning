@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.51",
+    "version": "0.0.52",
     "releasedAt": "2026-10-26"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -57,6 +57,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.52",
+      "releasedAt": "2026-10-26",
+      "notes": [
+        "逐週表格第一欄底部新增向下箭頭（只有下面還有一週且兩週皆可撰寫時顯示）：點一下就把本週的學習安排與場地完整複製到下一週，自訂場地模式一併帶入，並以 Toast 提示"
+      ]
+    },
     {
       "version": "0.0.51",
       "releasedAt": "2026-10-26",
