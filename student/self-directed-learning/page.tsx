@@ -245,6 +245,8 @@ export default function StudentSelfDirectedLearningPage() {
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
   /** 學群是否為「其他（自行填寫）」 */
   const [customStudyGroup, setCustomStudyGroup] = useState(false);
+  /** 各週場地是否為「其他（自行填寫）」 */
+  const [customVenueWeeks, setCustomVenueWeeks] = useState<Set<number>>(new Set());
   /** 我的計畫分頁：文件匣／草稿匣／垃圾桶 */
   const [planTab, setPlanTab] = useState<PlanTab>("documents");
   /** 彈性形式的週次區間（可寫週次；full 模式不使用） */
@@ -452,6 +454,7 @@ export default function StudentSelfDirectedLearningPage() {
   const startNewPlan = () => {
     setEditingPlanId(null);
     setCustomStudyGroup(false);
+    setCustomVenueWeeks(new Set());
     if (settings.weekMode === "flexible") {
       const range = defaultRange();
       if (range) {
@@ -477,6 +480,15 @@ export default function StudentSelfDirectedLearningPage() {
     setEditingPlanId(plan.id);
     setCustomStudyGroup(
       plan.studyGroup !== "" && !(STUDY_GROUPS as readonly string[]).includes(plan.studyGroup)
+    );
+    setCustomVenueWeeks(
+      venueEditable
+        ? new Set(
+            plan.weeks
+              .filter((week) => week.venue && !settings.venues.includes(week.venue))
+              .map((week) => week.week)
+          )
+        : new Set()
     );
     if (settings.weekMode === "flexible") {
       const stored = plan.weeks;
@@ -1254,19 +1266,13 @@ export default function StudentSelfDirectedLearningPage() {
                 </p>
               ))}
 
-            <datalist id="sdl-venues">
-              {settings.venues.map((venue) => (
-                <option key={venue} value={venue} />
-              ))}
-            </datalist>
-
             <ol className="text-t3 list-decimal space-y-1 pl-5 text-xs">
               <li>週次日期依學校學期起訖與彈性學習節次推算。</li>
               <li>與學校活動衝堂的週次會標示活動名稱，不提供撰寫，也不列入必填。</li>
               <li>
                 課餘時間另行處理；場地
                 {venueEditable
-                  ? "可自行輸入，或從學校開放的場域清單選擇。"
+                  ? "可從學校開放的場域清單選擇，或選「其他」自行輸入。"
                   : settings.venues.length > 0
                     ? "請從學校開放的場域清單選擇。"
                     : "尚未設定開放場域，請聯繫管理人員。"}
@@ -1280,17 +1286,23 @@ export default function StudentSelfDirectedLearningPage() {
               >
                 <thead className="text-t2 bg-surface">
                   <tr className="border-themed border-b">
-                    <th scope="col" className="align-top px-2 py-2 font-medium whitespace-nowrap">
-                      週次／日期／節次
+                    <th
+                      scope="col"
+                      className="align-top px-2 py-2 font-medium"
+                      style={{ width: "7rem" }}
+                    >
+                      <span className="block">週次</span>
+                      <span className="block">日期／節次</span>
                     </th>
-                    <th scope="col" className="align-top px-2 py-2 font-medium">學習安排</th>
-                    <th scope="col" className="align-top px-2 py-2 font-medium whitespace-nowrap">場地</th>
+                    <th scope="col" className="align-top px-2 py-2 font-medium">
+                      學習安排與場地
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {draft.weeks.length === 0 && (
                     <tr>
-                      <td colSpan={3} className="text-t3 px-3 py-6 text-center text-sm">
+                      <td colSpan={2} className="text-t3 px-3 py-6 text-center text-sm">
                         目前沒有可寫週次，請調整開始／結束週次。
                       </td>
                     </tr>
@@ -1308,7 +1320,10 @@ export default function StudentSelfDirectedLearningPage() {
                     ];
                     return (
                       <tr key={week.week} className="border-themed border-b last:border-0 align-top">
-                        <td className="align-top px-2 py-3 whitespace-nowrap">
+                        <td
+                          className="align-top px-2 py-3 whitespace-nowrap"
+                          style={{ width: "7rem" }}
+                        >
                           <div className="text-t1 font-medium">第 {week.week} 週</div>
                           {slots.length === 0 ? (
                             <div className="text-t3 mt-1 text-xs">—</div>
@@ -1322,7 +1337,13 @@ export default function StudentSelfDirectedLearningPage() {
                                   {monthDayText(slot.date)} {WEEKDAY_LABELS[slot.day - 1]}
                                 </div>
                                 <div className={slot.blockedBy ? "text-danger" : ""}>
-                                  {slot.periods.length > 0 ? slot.periods.join("、") : "—"}
+                                  {slot.periods.length > 0 ? (
+                                    slot.periods.map((period) => (
+                                      <div key={period}>{period}</div>
+                                    ))
+                                  ) : (
+                                    <div>—</div>
+                                  )}
                                   {slot.blockedBy && (
                                     <span className="text-danger block">{slot.blockedBy}</span>
                                   )}
@@ -1332,7 +1353,7 @@ export default function StudentSelfDirectedLearningPage() {
                           )}
                         </td>
                         {blocked ? (
-                          <td colSpan={2} className="align-top px-2 py-3">
+                          <td className="align-top px-2 py-3">
                             <p className="text-danger text-sm font-medium">
                               {conflictNames.join("、") || "學校活動"}
                             </p>
@@ -1347,8 +1368,79 @@ export default function StudentSelfDirectedLearningPage() {
                             )}
                           </td>
                         ) : (
-                          <>
-                            <td className="align-top px-2 py-3" style={{ minWidth: "20rem" }}>
+                          <td className="align-top px-2 py-3" style={{ minWidth: "28rem" }}>
+                            <div className="space-y-2">
+                              <div className="flex flex-col items-start gap-1">
+                                <span className="text-t3 text-xs">場地</span>
+                                <select
+                                  className="input-theme w-auto max-w-full rounded px-3 py-2 text-sm"
+                                  style={{ width: "auto", minWidth: "10em", maxWidth: "100%" }}
+                                  value={
+                                    customVenueWeeks.has(week.week)
+                                      ? "__custom__"
+                                      : week.venue || ""
+                                  }
+                                  disabled={locked}
+                                  onChange={(event) => {
+                                    const value = event.target.value;
+                                    if (value === "__custom__") {
+                                      setCustomVenueWeeks((prev) => new Set(prev).add(week.week));
+                                      patchWeek(week.week, { venue: "" });
+                                      return;
+                                    }
+                                    setCustomVenueWeeks((prev) => {
+                                      const next = new Set(prev);
+                                      next.delete(week.week);
+                                      return next;
+                                    });
+                                    patchWeek(week.week, { venue: value });
+                                  }}
+                                  aria-label={`第 ${week.week} 週場地`}
+                                >
+                                  <option value="">請選擇場地</option>
+                                  {settings.venues.map((venue) => (
+                                    <option key={venue} value={venue}>
+                                      {venue}
+                                    </option>
+                                  ))}
+                                  {week.venue &&
+                                    !settings.venues.includes(week.venue) &&
+                                    !customVenueWeeks.has(week.week) && (
+                                      <option value={week.venue}>
+                                        {week.venue}（不在開放清單，請重新選擇）
+                                      </option>
+                                    )}
+                                  {venueEditable && (
+                                    <option value="__custom__">其他（自行填寫）</option>
+                                  )}
+                                </select>
+                                {venueEditable && customVenueWeeks.has(week.week) && (
+                                  <>
+                                    <input
+                                      type="text"
+                                      className="input-theme max-w-full rounded px-3 py-2 text-sm"
+                                      style={{
+                                        width: `${Math.min(
+                                          Math.max((week.venue || "自行輸入場地名稱").length + 4, 12),
+                                          32
+                                        )}em`,
+                                        maxWidth: "100%",
+                                      }}
+                                      value={week.venue}
+                                      maxLength={120}
+                                      disabled={locked}
+                                      onChange={(event) =>
+                                        patchWeek(week.week, { venue: event.target.value })
+                                      }
+                                      placeholder="請輸入場地名稱"
+                                      aria-label={`第 ${week.week} 週自訂場地`}
+                                    />
+                                    {week.venue === "" && (
+                                      <p className="text-t3 text-xs">請填寫場地名稱</p>
+                                    )}
+                                  </>
+                                )}
+                              </div>
                               <RichTextEditor
                                 value={week.content}
                                 onChange={(content) => patchWeek(week.week, { content })}
@@ -1357,47 +1449,8 @@ export default function StudentSelfDirectedLearningPage() {
                                 placeholder="本週預計學習的內容、進度與方式"
                                 ariaLabel={`第 ${week.week} 週學習安排`}
                               />
-                            </td>
-                            <td className="align-top px-2 py-3" style={{ minWidth: "9rem" }}>
-                              {venueEditable ? (
-                                <input
-                                  type="text"
-                                  className="input-theme w-full rounded px-3 py-2 text-sm"
-                                  value={week.venue}
-                                  list="sdl-venues"
-                                  maxLength={120}
-                                  disabled={locked}
-                                  onChange={(event) =>
-                                    patchWeek(week.week, { venue: event.target.value })
-                                  }
-                                  placeholder="圖書館自習室"
-                                  aria-label={`第 ${week.week} 週場地`}
-                                />
-                              ) : (
-                                <select
-                                  className="input-theme w-full rounded px-3 py-2 text-sm"
-                                  value={week.venue}
-                                  disabled={locked}
-                                  onChange={(event) =>
-                                    patchWeek(week.week, { venue: event.target.value })
-                                  }
-                                  aria-label={`第 ${week.week} 週場地（限學校開放場域）`}
-                                >
-                                  <option value="">請選擇場地</option>
-                                  {settings.venues.map((venue) => (
-                                    <option key={venue} value={venue}>
-                                      {venue}
-                                    </option>
-                                  ))}
-                                  {week.venue && !settings.venues.includes(week.venue) && (
-                                    <option value={week.venue}>
-                                      {week.venue}（不在開放清單，請重新選擇）
-                                    </option>
-                                  )}
-                                </select>
-                              )}
-                            </td>
-                          </>
+                            </div>
+                          </td>
                         )}
                       </tr>
                     );

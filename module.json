@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.49",
+    "version": "0.0.50",
     "releasedAt": "2026-10-26"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -57,6 +57,15 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.50",
+      "releasedAt": "2026-10-26",
+      "notes": [
+        "逐週表格第一欄縮窄：節次改為每節一行，欄位只保留週次、日期與節次",
+        "合併「學習安排」與「場地」為同一欄；場地下拉選單（或自行輸入）放在學習安排輸入框上方，水平靠左對齊",
+        "場地改為「學校開放場域下拉＋（開放時）其他自行填寫」：學校選項不再因學生輸入文字被 datalist 過濾而看不到；下拉與自訂輸入依文字內容自動寬度並維持響應式"
+      ]
+    },
     {
       "version": "0.0.49",
       "releasedAt": "2026-10-26",
