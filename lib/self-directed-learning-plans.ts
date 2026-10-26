@@ -424,6 +424,53 @@ export function planInReviewScope(plan: SelfDirectedLearningPlan, scope: ReviewS
   return scope.classCodes.includes(plan.classCode) || scope.studentUids.includes(plan.studentUid);
 }
 
+/**
+ * 待審件數（省流模式的輕量總數）：以 Firestore count 聚合計算，不載入任何計畫內容。
+ * - 全校／僅班級／僅個人：各以 `count()` 精準計算（`in` 30 值／批）。
+ * - 班級與個人同時指定：涉及聯集去重，改用既有待審清單（上限 100 筆）計數。
+ * 審核中的計畫不可移至垃圾桶，故不必再過濾 `deletedAt`。
+ */
+export async function countSubmittedPlansForScope(
+  period: string,
+  scope: ReviewScope
+): Promise<number> {
+  if (scope.all) {
+    const snap = await plansRef()
+      .where("period", "==", period)
+      .where("status", "==", "submitted")
+      .count()
+      .get();
+    return snap.data().count;
+  }
+
+  const classCodes = [...new Set(scope.classCodes)];
+  const studentUids = [...new Set(scope.studentUids)];
+  if (classCodes.length > 0 && studentUids.length > 0) {
+    return (await listSubmittedPlansForScope(period, scope)).length;
+  }
+
+  let total = 0;
+  for (let index = 0; index < classCodes.length; index += 30) {
+    const snap = await plansRef()
+      .where("period", "==", period)
+      .where("status", "==", "submitted")
+      .where("classCode", "in", classCodes.slice(index, index + 30))
+      .count()
+      .get();
+    total += snap.data().count;
+  }
+  for (let index = 0; index < studentUids.length; index += 30) {
+    const snap = await plansRef()
+      .where("period", "==", period)
+      .where("status", "==", "submitted")
+      .where("studentUid", "in", studentUids.slice(index, index + 30))
+      .count()
+      .get();
+    total += snap.data().count;
+  }
+  return total;
+}
+
 /** 兼導師瀏覽全班（當期＋班級代碼，limit 有界） */
 export async function listClassPlans(
   period: string,

@@ -6,6 +6,8 @@ import AdSense from "@/components/AdSense";
 import Copyright from "@/components/Copyright";
 import Toast, { type ToastMessage } from "@/components/Toast";
 import DisclosureArrow from "@/components/DisclosureArrow";
+import RevealListCard from "@/components/RevealListCard";
+import { useDataSaver } from "@/lib/data-saver";
 import { RichTextContent } from "../../components/rich-text-editor";
 import { fetchSettings } from "@/lib/settings-client";
 import { logout } from "@/lib/session";
@@ -54,6 +56,18 @@ const REVIEW_STATE_LABEL: Record<string, string> = {
   ended: "已超過審核期限",
 };
 
+/** 純前端切片：分頁不增加任何資料庫讀取 */
+function paginate<T>(items: T[], page: number, pageSize: number): T[] {
+  const size = Math.max(1, pageSize);
+  const start = (Math.max(1, page) - 1) * size;
+  return items.slice(start, start + size);
+}
+
+/** 依總筆數與每頁筆數算總頁數（至少 1 頁） */
+function totalPagesOf(total: number, pageSize: number): number {
+  return Math.max(1, Math.ceil(total / Math.max(1, pageSize)));
+}
+
 export default function StaffSelfDirectedLearningPage() {
   const router = useRouter();
   const [systemSettings, setSystemSettings] = useState<Settings>(defaultSettings);
@@ -72,39 +86,106 @@ export default function StaffSelfDirectedLearningPage() {
     startAt: number | null;
     endAt: number | null;
   }>({ startAt: null, endAt: null });
+  /** 省流開關（啟用時審核佇列預設不載入，先以 count 取得待審件數） */
+  const { ready: saverReady, saverOn } = useDataSaver();
+  /** 本次停留是否已按下「顯示審核列表」（省流閘門） */
+  const [revealed, setRevealed] = useState(false);
+  /** 省流閘門的待審件數（count 聚合） */
+  const [reviewCount, setReviewCount] = useState(0);
+  /** 清單分頁（純前端切片，不增加讀取） */
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
-  const load = useCallback(async (mode: Tab) => {
+  /** 兩種模式共用的頁面資訊（角色、維護旗標、審核期限） */
+  const applySharedMeta = useCallback((data: Record<string, unknown>) => {
+    setRoles((data.roles as StaffRoles) ?? null);
+    setMaintenance(Boolean(data.maintenance));
+    const window = data.reviewWindow as { startAt?: unknown; endAt?: unknown } | undefined;
+    setReviewWindow({
+      startAt: typeof window?.startAt === "number" ? window.startAt : null,
+      endAt: typeof window?.endAt === "number" ? window.endAt : null,
+    });
+  }, []);
+
+  const load = useCallback(
+    async (mode: Tab) => {
+      try {
+        const response = await fetch(
+          `/api/staff/self-directed-learning?mode=${mode}`,
+          { cache: "no-store" }
+        );
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          const nextRoles = data.roles as StaffRoles | undefined;
+          if (nextRoles) applySharedMeta(data as Record<string, unknown>);
+          if (nextRoles && !nextRoles.isReviewer && nextRoles.isTutor) {
+            // 兼導師但無審核權限：不視為錯誤，改載入「我的班級」
+            setTab("class");
+            setLoading(true);
+            setPage(1);
+          } else {
+            setToast({ kind: "error", text: data.message || "讀取資料失敗" });
+          }
+          setPlans([]);
+          return;
+        }
+        applySharedMeta(data as Record<string, unknown>);
+        setPlans((data.plans as SelfDirectedLearningPlan[]) || []);
+      } catch {
+        setToast({ kind: "error", text: "讀取資料失敗" });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [applySharedMeta]
+  );
+
+  /** 省流模式：只取待審件數（count 聚合，不載入計畫內容） */
+  const loadCount = useCallback(async () => {
     try {
-      const response = await fetch(
-        `/api/staff/self-directed-learning?mode=${mode}`,
-        { cache: "no-store" }
-      );
+      const response = await fetch("/api/staff/self-directed-learning?mode=count", {
+        cache: "no-store",
+      });
       const data = await response.json();
       if (!response.ok || !data.success) {
-        setToast({ kind: "error", text: data.message || "讀取資料失敗" });
+        const nextRoles = data.roles as StaffRoles | undefined;
+        if (nextRoles) applySharedMeta(data as Record<string, unknown>);
+        if (nextRoles && !nextRoles.isReviewer && nextRoles.isTutor) {
+          setTab("class");
+          setLoading(true);
+          setPage(1);
+        } else {
+          setToast({ kind: "error", text: data.message || "讀取資料失敗" });
+        }
         setPlans([]);
         return;
       }
-      setRoles((data.roles as StaffRoles) ?? null);
-      setMaintenance(Boolean(data.maintenance));
-      setPlans((data.plans as SelfDirectedLearningPlan[]) || []);
-      const window = data.reviewWindow as
-        | { startAt?: unknown; endAt?: unknown }
-        | undefined;
-      setReviewWindow({
-        startAt: typeof window?.startAt === "number" ? window.startAt : null,
-        endAt: typeof window?.endAt === "number" ? window.endAt : null,
-      });
+      applySharedMeta(data as Record<string, unknown>);
+      setReviewCount(typeof data.count === "number" ? data.count : 0);
+      setPlans([]);
     } catch {
       setToast({ kind: "error", text: "讀取資料失敗" });
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [applySharedMeta]);
 
   useEffect(() => {
+    // 省流開關判定完成前不載入，避免省流模式下白打一發列表請求
+    if (!saverReady) return;
+    if (tab === "review" && saverOn && !revealed) {
+      void loadCount();
+      return;
+    }
     void load(tab);
-  }, [tab, load]);
+  }, [tab, saverReady, saverOn, revealed, load, loadCount]);
+
+  /** 按下「顯示審核列表」：解除省流閘門後才載入計畫內容 */
+  const revealList = () => {
+    setRevealed(true);
+    setLoading(true);
+    setPage(1);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -126,7 +207,7 @@ export default function StaffSelfDirectedLearningPage() {
   const switchTab = (next: Tab) => {
     setTab(next);
     setLoading(true);
-    void load(next);
+    setPage(1);
   };
 
   const confirmReview = async () => {
@@ -184,7 +265,13 @@ export default function StaffSelfDirectedLearningPage() {
     reviewWindow.endAt !== null
       ? Math.floor((Date.now() - reviewWindow.endAt) / 86_400_000)
       : null;
-  const pendingCount = plans.filter((plan) => plan.status === "submitted").length;
+  /** 待審件數：省流閘門未解除時用 count 聚合的總數，解除後用目前清單 */
+  const pendingCount =
+    tab === "review"
+      ? saverOn && !revealed
+        ? reviewCount
+        : plans.length
+      : plans.filter((plan) => plan.status === "submitted").length;
   const reviewWindowText =
     reviewWindow.startAt !== null || reviewWindow.endAt !== null
       ? `${formatDateTime(reviewWindow.startAt)} ～ ${formatDateTime(reviewWindow.endAt)}`
@@ -195,6 +282,10 @@ export default function StaffSelfDirectedLearningPage() {
       : reviewState === "open"
         ? "text-warning"
         : "text-t3";
+  /** 清單分頁（純前端切片）：頁碼超出範圍時自動夾回有效頁 */
+  const totalPages = totalPagesOf(plans.length, pageSize);
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const pagedPlans = paginate(plans, safePage, pageSize);
 
   const actionButtons = (
     <>
@@ -309,7 +400,7 @@ export default function StaffSelfDirectedLearningPage() {
         </div>
       )}
 
-      {tab === "review" && (
+      {tab === "review" && !loading && (
         <div
           className="border-themed bg-card space-y-1 rounded-lg border p-4 text-sm"
           style={
@@ -344,107 +435,193 @@ export default function StaffSelfDirectedLearningPage() {
 
       {loading ? (
         <div className="border-themed bg-card text-t2 rounded-lg p-4 text-sm">載入中…</div>
+      ) : tab === "review" && saverOn && !revealed && reviewCount > 0 ? (
+        <div className="border-themed bg-card overflow-hidden rounded-lg border">
+          <RevealListCard
+            label="審核"
+            summary={`目前待審 ${reviewCount} 件`}
+            onReveal={revealList}
+          />
+        </div>
       ) : plans.length === 0 ? (
         <div className="border-themed bg-card text-t2 rounded-lg p-4 text-sm">
           {tab === "review" ? "目前沒有待審核的計畫。" : "本班目前沒有自主學習計畫資料。"}
         </div>
       ) : (
         <div className="space-y-3">
-          {plans.map((plan) => (
-            <article key={plan.id} className="border-themed bg-card rounded-lg p-4">
-              <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
-                <div>
-                  <h2 className="text-t1 font-medium">
-                    {plan.studentName}
-                    <span className="text-t3 ml-2 text-xs">
-                      {plan.grade}
-                      {plan.className || plan.classCode}
+          {pagedPlans.map((plan) => (
+            <article key={plan.id} className="border-themed bg-card overflow-hidden rounded-lg">
+              <details>
+                <summary className="flex cursor-pointer flex-wrap items-start justify-between gap-2 p-4">
+                  <span className="flex min-w-0 items-start gap-2">
+                    <span className="text-t3 mt-0.5 shrink-0">
+                      <DisclosureArrow />
                     </span>
-                  </h2>
-                  <p className="text-t2 mt-1 text-sm">
-                    {plan.topic} ｜ {plan.studyGroup}
-                    {plan.advisor ? ` ｜ 指導老師：${plan.advisor}` : ""}
-                  </p>
-                </div>
-                <div className="text-right text-xs">
-                  <span className={STATUS_CLASS[plan.status] || "text-t2"}>
-                    {PLAN_STATUS_LABELS[plan.status]}
+                    <span className="min-w-0 space-y-1">
+                      <span className="flex flex-wrap items-center gap-2">
+                        <span className="text-t1 font-medium">{plan.studentName}</span>
+                        <span className="text-t3 text-xs">
+                          {plan.grade}
+                          {plan.className || plan.classCode}
+                        </span>
+                      </span>
+                      <span className="text-t2 block text-sm">
+                        {plan.topic} ｜ {plan.studyGroup}
+                        {plan.advisor ? ` ｜ 指導老師：${plan.advisor}` : ""}
+                      </span>
+                    </span>
                   </span>
-                  <div
-                    className={
-                      reviewState === "ended" && plan.status === "submitted"
-                        ? "text-danger"
-                        : "text-t3"
-                    }
-                  >
-                    送出：{formatDateTime(plan.submittedAt)}
-                    {plan.status === "submitted" && plan.submittedAt
-                      ? `（已等待 ${Math.max(
+                  <span className="shrink-0 text-right text-xs">
+                    <span className={`block ${STATUS_CLASS[plan.status] || "text-t2"}`}>
+                      {PLAN_STATUS_LABELS[plan.status]}
+                    </span>
+                    <span
+                      className={`block ${
+                        reviewState === "ended" && plan.status === "submitted"
+                          ? "text-danger"
+                          : "text-t3"
+                      }`}
+                    >
+                      送出：{formatDateTime(plan.submittedAt)}
+                    </span>
+                    {plan.status === "submitted" && plan.submittedAt && (
+                      <span
+                        className={`block ${
+                          reviewState === "ended" ? "text-danger" : "text-t3"
+                        }`}
+                      >
+                        已等待{" "}
+                        {Math.max(
                           Math.floor((Date.now() - plan.submittedAt) / 86_400_000),
                           0
-                        )} 天）`
-                      : ""}
-                  </div>
-                </div>
-              </div>
-
-              <details className="border-themed bg-surface mt-2 rounded-md">
-                <summary className="text-t1 flex cursor-pointer items-center gap-2 px-3 py-2 text-sm">
-                  <DisclosureArrow />
-                  檢視逐週安排（{plan.weeks.length} 週）
+                        )}{" "}
+                        天
+                      </span>
+                    )}
+                  </span>
                 </summary>
-                <ul className="space-y-2 px-3 pb-3">
-                  {plan.weeks.map((week) => (
-                    <li key={week.week} className="text-t2 border-themed rounded-md p-2 text-sm">
-                      <div className="text-t1 mb-1 flex flex-wrap gap-3 text-xs font-medium">
-                        <span>第 {week.week} 週</span>
-                        <span>{PLAN_TIMING_LABELS[week.timing]}</span>
-                        <span className="text-t3">{week.venue}</span>
-                      </div>
-                      <RichTextContent html={week.content} />
-                    </li>
-                  ))}
-                </ul>
-              </details>
 
-              {roles?.isReviewer && plan.status === "submitted" && (
-                <div className="mt-3 space-y-2">
-                  <label className="text-t2 block space-y-1 text-sm">
-                    <span>審查意見（退回時必填）</span>
-                    <textarea
-                      className="input-theme min-h-16 w-full rounded px-3 py-2 text-sm"
-                      maxLength={1000}
-                      value={notes[plan.id] || ""}
-                      onChange={(event) =>
-                        setNotes((prev) => ({ ...prev, [plan.id]: event.target.value }))
-                      }
-                      placeholder="給學生的審查意見…"
-                    />
-                  </label>
-                  <div className="flex flex-wrap justify-end gap-2">
-                    <button
-                      type="button"
-                      className="btn-danger btn-theme h-9 px-4 text-sm"
-                      onClick={() =>
-                        setPending({ planId: plan.id, action: "return", topic: plan.topic })
-                      }
-                    >
-                      退回修改
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-primary btn-theme h-9 px-4 text-sm"
-                      onClick={() =>
-                        setPending({ planId: plan.id, action: "approve", topic: plan.topic })
-                      }
-                    >
-                      通過審核
-                    </button>
-                  </div>
+                <div className="border-themed space-y-3 border-t p-4">
+                  <details className="border-themed bg-surface rounded-md">
+                    <summary className="text-t1 flex cursor-pointer items-center gap-2 px-3 py-2 text-sm">
+                      <DisclosureArrow />
+                      檢視逐週安排（{plan.weeks.length} 週）
+                    </summary>
+                    <ul className="space-y-2 px-3 pb-3">
+                      {plan.weeks.map((week) => (
+                        <li key={week.week} className="text-t2 border-themed rounded-md p-2 text-sm">
+                          <div className="text-t1 mb-1 flex flex-wrap gap-3 text-xs font-medium">
+                            <span>第 {week.week} 週</span>
+                            <span>{PLAN_TIMING_LABELS[week.timing]}</span>
+                            <span className="text-t3">{week.venue}</span>
+                          </div>
+                          <RichTextContent html={week.content} />
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+
+                  {roles?.isReviewer && plan.status === "submitted" && (
+                    <div className="space-y-2">
+                      <label className="text-t2 block space-y-1 text-sm">
+                        <span>審查意見（退回時必填）</span>
+                        <textarea
+                          className="input-theme min-h-16 w-full rounded px-3 py-2 text-sm"
+                          maxLength={1000}
+                          value={notes[plan.id] || ""}
+                          onChange={(event) =>
+                            setNotes((prev) => ({ ...prev, [plan.id]: event.target.value }))
+                          }
+                          placeholder="給學生的審查意見…"
+                        />
+                      </label>
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <button
+                          type="button"
+                          className="btn-danger btn-theme h-9 px-4 text-sm"
+                          onClick={() =>
+                            setPending({ planId: plan.id, action: "return", topic: plan.topic })
+                          }
+                        >
+                          退回修改
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-primary btn-theme h-9 px-4 text-sm"
+                          onClick={() =>
+                            setPending({ planId: plan.id, action: "approve", topic: plan.topic })
+                          }
+                        >
+                          通過審核
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
+              </details>
             </article>
           ))}
+
+          <div className="text-t2 flex w-full flex-wrap items-center justify-between gap-3 pt-1 text-sm">
+            <div className="flex items-center gap-2">
+              <label htmlFor="sdl-staff-page-size">每頁</label>
+              <select
+                id="sdl-staff-page-size"
+                value={pageSize}
+                onChange={(event) => {
+                  setPageSize(Number(event.target.value));
+                  setPage(1);
+                }}
+                className="input-theme cursor-pointer rounded px-2 py-1"
+              >
+                {[10, 20, 50, 100].map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+              <span>筆，共 {plans.length} 筆</span>
+            </div>
+            {totalPages > 1 && (
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPage(1)}
+                  disabled={safePage <= 1}
+                  className="btn-theme cursor-pointer rounded px-3 py-1 text-xs disabled:opacity-50"
+                >
+                  第一頁
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPage(safePage - 1)}
+                  disabled={safePage <= 1}
+                  className="btn-theme cursor-pointer rounded px-3 py-1 text-xs disabled:opacity-50"
+                >
+                  上一頁
+                </button>
+                <span>
+                  第 {safePage} / {totalPages} 頁
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPage(safePage + 1)}
+                  disabled={safePage >= totalPages}
+                  className="btn-theme cursor-pointer rounded px-3 py-1 text-xs disabled:opacity-50"
+                >
+                  下一頁
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPage(totalPages)}
+                  disabled={safePage >= totalPages}
+                  className="btn-theme cursor-pointer rounded px-3 py-1 text-xs disabled:opacity-50"
+                >
+                  最後一頁
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

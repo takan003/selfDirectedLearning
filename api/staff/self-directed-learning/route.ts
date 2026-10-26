@@ -8,6 +8,7 @@ import { requireFeatureModuleEnabled } from "@/lib/module-gate";
 import { getSettings } from "../../../lib/self-directed-learning";
 import {
   applyReview,
+  countSubmittedPlansForScope,
   listClassPlans,
   listSubmittedPlansForScope,
 } from "../../../lib/self-directed-learning-plans";
@@ -87,7 +88,9 @@ export async function GET(request: NextRequest) {
 
     const settings = await getSettings();
     const roles = await staffRolesOf(session as VerifiedSession, settings);
-    const mode = request.nextUrl.searchParams.get("mode") === "class" ? "class" : "review";
+    const modeParam = request.nextUrl.searchParams.get("mode");
+    const mode: "review" | "class" | "count" =
+      modeParam === "class" ? "class" : modeParam === "count" ? "count" : "review";
     const period = periodLabelOf(await getCurrentPeriod());
     // 審核期限：只提供起訖（供審核頁顯示與逾期提醒，不阻止審核）
     const reviewWindow = {
@@ -121,10 +124,27 @@ export async function GET(request: NextRequest) {
       roles.isReviewer || roles.permissions.includes("viewPlans") || roles.permissions.includes("review");
     if (!canViewPlans) {
       return NextResponse.json(
-        { success: false, message: "你不在本模組的審核人員名單內，也未被指派查看計畫的權限。" },
+        {
+          success: false,
+          message: "你不在本模組的審核人員名單內，也未被指派查看計畫的權限。",
+          mode,
+          roles,
+          period,
+          reviewWindow,
+        },
         { status: 403, headers: noStore }
       );
     }
+
+    // 省流模式：只回待審件數（count 聚合），不載入計畫內容
+    if (mode === "count") {
+      const count = await countSubmittedPlansForScope(period, roles.scope);
+      return NextResponse.json(
+        { success: true, mode, roles, period, reviewWindow, count },
+        { headers: noStore }
+      );
+    }
+
     const plans = await listSubmittedPlansForScope(period, roles.scope);
     return NextResponse.json(
       { success: true, mode, roles, period, reviewWindow, plans },

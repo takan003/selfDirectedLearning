@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.55",
+    "version": "0.0.56",
     "releasedAt": "2026-10-26"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -58,6 +58,16 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.56",
+      "releasedAt": "2026-10-26",
+      "notes": [
+        "教職員審核佇列與全班清單改為收合式摘要卡片：預設只顯示學生／班級、主題／學群／指導老師、狀態、送出時間與已等待天數，展開後才顯示逐週安排與審查表單，避免多份計畫時頁面落落長",
+        "清單加入純前端分頁（每頁 10／20／50／100 筆，預設 10 筆），翻頁不增加資料庫讀取",
+        "配合主程式省流開關：啟用時審核頁先以 count 聚合取得待審件數，顯示「顯示審核列表」按鈕，按下後才載入計畫內容；審核期限提示卡與待審件數仍正常顯示",
+        "待審件數以 Firestore count 聚合精準計算（全校／指定班級／指定個人各自下推；班級與個人同時指定時以既有清單計數去重）"
+      ]
+    },
     {
       "version": "0.0.55",
       "releasedAt": "2026-10-26",
