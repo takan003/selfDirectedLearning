@@ -1370,8 +1370,9 @@ export default function StudentSelfDirectedLearningPage() {
                         ) : (
                           <td className="align-top px-2 py-3" style={{ minWidth: "28rem" }}>
                             <div className="space-y-2">
-                              <div className="flex flex-col items-start gap-1">
+                              <div className="flex w-full flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                                 <span className="text-t3 text-xs">場地</span>
+                                <div className="flex flex-col items-start gap-1 sm:items-end">
                                 <select
                                   className="input-theme w-auto max-w-full rounded px-3 py-2 text-sm"
                                   style={{ width: "auto", minWidth: "10em", maxWidth: "100%" }}
@@ -1440,6 +1441,7 @@ export default function StudentSelfDirectedLearningPage() {
                                     )}
                                   </>
                                 )}
+                                </div>
                               </div>
                               <RichTextEditor
                                 value={week.content}
