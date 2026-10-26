@@ -68,6 +68,7 @@ function readPlan(id: string, raw: Record<string, unknown>): SelfDirectedLearnin
     topic: str(raw.topic),
     studyGroup: str(raw.studyGroup),
     advisor: str(raw.advisor),
+    learningGoals: str(raw.learningGoals),
     weeks,
     status,
     deletedAt: typeof raw.deletedAt === "number" ? raw.deletedAt : null,
@@ -169,6 +170,7 @@ export async function saveStudentPlan(input: {
     topic: string;
     studyGroup: string;
     advisor: string;
+    learningGoals: string;
     weeks: SelfDirectedLearningPlan["weeks"];
   };
   action: SaveAction;
@@ -234,6 +236,7 @@ export async function saveStudentPlan(input: {
     topic: input.draft.topic,
     studyGroup: input.draft.studyGroup,
     advisor: input.draft.advisor,
+    learningGoals: input.draft.learningGoals,
     weeks: input.draft.weeks,
     status: input.action === "submit" ? "submitted" : "draft",
     deletedAt: null,

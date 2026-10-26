@@ -457,6 +457,8 @@ export interface PrintPreviewPayload {
   topic: string;
   studyGroup: string;
   advisor: string;
+  /** 學習目標（富文本） */
+  learningGoals: string;
   generatedAt: number;
   weeks: PrintPreviewWeek[];
 }
@@ -477,6 +479,8 @@ export interface SelfDirectedLearningPlan {
   studyGroup: string;
   /** 指導老師（非必填） */
   advisor: string;
+  /** 學習目標（富文本；送出審核時必填） */
+  learningGoals: string;
   weeks: PlanWeek[];
   status: PlanStatus;
   /** 移至垃圾桶的時間（epoch ms）；null＝不在垃圾桶 */
@@ -955,6 +959,22 @@ export function parsePlanDraft(
   if (!topic) return { ok: false, message: "請填寫主題" };
   if (!studyGroup) return { ok: false, message: "請填寫學群" };
 
+  // 學習目標（富文本）：送出審核時必填，草稿可先留白
+  const goalsHtml = sanitizeRichHtml(
+    typeof body.learningGoals === "string" ? body.learningGoals : ""
+  );
+  const goalsPlain = stripHtmlToText(goalsHtml).trim();
+  if (action === "submit" && !goalsPlain) {
+    return { ok: false, message: "請填寫學習目標" };
+  }
+  if (goalsPlain.length > 600) {
+    return {
+      ok: false,
+      message: `學習目標超過 600 字上限（目前 ${goalsPlain.length} 字）`,
+    };
+  }
+  const learningGoals = goalsPlain ? capRichHtmlLength(goalsHtml, 6000) : "";
+
   if (!Array.isArray(body.weeks) || body.weeks.length < 1) {
     return { ok: false, message: "請至少填寫一週的課程安排" };
   }
@@ -1034,7 +1054,7 @@ export function parsePlanDraft(
     weeks.push({ week: weekNo, content, venue, timing });
   }
   weeks.sort((a, b) => a.week - b.week);
-  return { ok: true, value: { topic, studyGroup, advisor, weeks } };
+  return { ok: true, value: { topic, studyGroup, advisor, learningGoals, weeks } };
 }
 
 /* ——— 教職員審核 ——— */

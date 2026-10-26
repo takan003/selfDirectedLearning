@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.57",
+    "version": "0.0.58",
     "releasedAt": "2026-10-26"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -58,6 +58,15 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.58",
+      "releasedAt": "2026-10-26",
+      "notes": [
+        "新增必填欄位「學習目標」：位於學生撰寫表單的主題／學群／指導老師之後，採所見即所得多行編輯器，說明文字為「簡單扼要描述，建議採用條列陳述」，可見文字上限 600 字",
+        "送出審核時學習目標必填（伺服器檢核）；草稿可分次儲存、允許先留白",
+        "學習目標以淨化後 HTML 儲存（learningGoals），學生「查看內容」、教職員審核卡片、家長檢視與 A4 列印預表頭都會顯示；舊計畫沒有此欄位時顯示「未填寫」"
+      ]
+    },
     {
       "version": "0.0.57",
       "releasedAt": "2026-10-26",

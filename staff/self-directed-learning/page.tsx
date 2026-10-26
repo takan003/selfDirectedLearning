@@ -586,6 +586,15 @@ export default function StaffSelfDirectedLearningPage() {
                 </summary>
 
                 <div className="border-themed space-y-3 border-t p-4">
+                  <div className="border border-themed bg-surface rounded-md p-3">
+                    <p className="text-t1 text-xs font-medium">學習目標</p>
+                    <RichTextContent
+                      html={plan.learningGoals}
+                      emptyText="（未填寫）"
+                      className="text-t2 text-sm"
+                    />
+                  </div>
+
                   <div className="overflow-x-auto">
                     <table className="w-full border-collapse text-sm">
                       <thead>

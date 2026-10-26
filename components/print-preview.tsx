@@ -213,6 +213,12 @@ export function PrintPreviewSheet({ payload }: { payload: PrintPreviewPayload })
             <th scope="row">指導老師</th>
             <td>{payload.advisor || "未指定"}</td>
           </tr>
+          <tr>
+            <th scope="row">學習目標</th>
+            <td colSpan={3}>
+              <RichTextContent html={payload.learningGoals || ""} className="text-xs" />
+            </td>
+          </tr>
         </tbody>
       </table>
 

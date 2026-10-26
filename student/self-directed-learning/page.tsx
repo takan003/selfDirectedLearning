@@ -43,10 +43,17 @@ interface Draft {
   topic: string;
   studyGroup: string;
   advisor: string;
+  learningGoals: string;
   weeks: PlanWeek[];
 }
 
-const EMPTY_DRAFT: Draft = { topic: "", studyGroup: "", advisor: "", weeks: [] };
+const EMPTY_DRAFT: Draft = {
+  topic: "",
+  studyGroup: "",
+  advisor: "",
+  learningGoals: "",
+  weeks: [],
+};
 
 function emptyWeeks(count: number): PlanWeek[] {
   return Array.from({ length: count }, (_, index) => ({
@@ -525,6 +532,7 @@ export default function StudentSelfDirectedLearningPage() {
           topic: plan.topic,
           studyGroup: plan.studyGroup,
           advisor: plan.advisor,
+          learningGoals: plan.learningGoals,
           weeks: range ? weeksForNumbers(range.numbers, []) : [],
         });
       } else {
@@ -540,6 +548,7 @@ export default function StudentSelfDirectedLearningPage() {
             topic: plan.topic,
             studyGroup: plan.studyGroup,
             advisor: plan.advisor,
+            learningGoals: plan.learningGoals,
             weeks: weeksForNumbers(numbers, stored),
           });
         } else {
@@ -550,6 +559,7 @@ export default function StudentSelfDirectedLearningPage() {
             topic: plan.topic,
             studyGroup: plan.studyGroup,
             advisor: plan.advisor,
+            learningGoals: plan.learningGoals,
             weeks: stored,
           });
         }
@@ -562,6 +572,7 @@ export default function StudentSelfDirectedLearningPage() {
         topic: plan.topic,
         studyGroup: plan.studyGroup,
         advisor: plan.advisor,
+        learningGoals: plan.learningGoals,
         weeks: fitWeeks(weeks, settings, fullWeeks),
       });
     }
@@ -583,6 +594,7 @@ export default function StudentSelfDirectedLearningPage() {
       topic: draft.topic,
       studyGroup: draft.studyGroup,
       advisor: draft.advisor,
+      learningGoals: draft.learningGoals,
       generatedAt: Date.now(),
       weeks: draft.weeks.map((week) => {
         const scheduleRow = weekScheduleByNo.get(week.week);
@@ -900,6 +912,12 @@ export default function StudentSelfDirectedLearningPage() {
             <DisclosureArrow />
             查看內容（{plan.weeks.length} 週）
           </summary>
+          {plan.learningGoals && (
+            <div className="border border-themed bg-card mt-2 rounded-md p-3">
+              <p className="text-t1 text-xs font-medium">學習目標</p>
+              <RichTextContent html={plan.learningGoals} className="text-t2 text-xs" />
+            </div>
+          )}
           <ul className="mt-2 space-y-2">
             {plan.weeks.map((week) => {
               const weekReview = review?.weekNotes?.find((item) => item.week === week.week);
@@ -1277,6 +1295,19 @@ export default function StudentSelfDirectedLearningPage() {
                 placeholder="如：王老師（校內）／校外相關領域人士"
               />
             </label>
+
+            <div className="space-y-1">
+              <span className="text-t2 block text-sm">學習目標 *</span>
+              <RichTextEditor
+                value={draft.learningGoals}
+                onChange={(value) => patchDraft({ learningGoals: value })}
+                disabled={locked}
+                maxLength={600}
+                placeholder="請填寫學習目標…"
+                ariaLabel="學習目標"
+              />
+              <p className="text-t3 text-xs">簡單扼要描述，建議採用條列陳述。</p>
+            </div>
           </div>
 
           <div className="space-y-4">

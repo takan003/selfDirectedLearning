@@ -140,6 +140,15 @@ export default function ParentSelfDirectedLearningPage() {
             </div>
           </section>
 
+          <section className="border border-themed bg-card rounded-lg p-4" aria-label="學習目標">
+            <h2 className="text-t1 mb-1 text-sm font-medium">學習目標</h2>
+            <RichTextContent
+              html={plan.learningGoals}
+              emptyText="（未填寫）"
+              className="text-t2 text-sm"
+            />
+          </section>
+
           {latestReview && (
             <section className="border border-themed bg-card rounded-lg p-4" aria-label="審查意見">
               <h2 className="text-t1 mb-1 text-sm font-medium">
