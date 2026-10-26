@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.43",
+    "version": "0.0.44",
     "releasedAt": "2026-10-26"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -46,7 +46,9 @@
     "self_directed_learning_settings_updated",
     "self_directed_learning_plan_submitted",
     "self_directed_learning_plan_reviewed",
-    "self_directed_learning_plan_archived"
+    "self_directed_learning_plan_archived",
+    "self_directed_learning_plan_trashed",
+    "self_directed_learning_plan_restored"
   ],
   "dataCollections": [
     "selfDirectedLearningSettings",
@@ -55,6 +57,16 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.44",
+      "releasedAt": "2026-10-26",
+      "notes": [
+        "學生端版面重新設計：自主學習實施說明改為預設展開的卡片（主色頂線、圖示與副標），我的計畫與撰寫計畫都是獨立卡片，加入明顯框線、主色頂線與區塊標題",
+        "我的計畫改為文件匣（正式、審核中）、草稿匣（草稿、退回修改）、垃圾桶（假性刪除）三個分頁，附圖示與數量；草稿與退回修改可移至垃圾桶，垃圾桶可還原",
+        "新增計畫 deletedAt 欄位與 trash／restore API：僅本人可操作，審核中與已通過的計畫不可移至垃圾桶；教職員與家長端會過濾垃圾桶計畫，並新增移至垃圾桶／還原的稽核動作",
+        "撰寫計畫表單改為獨立卡片：區塊標題、撰寫說明 callout、表格外框與分區標題，讓長表單的界線更清楚"
+      ]
+    },
     {
       "version": "0.0.43",
       "releasedAt": "2026-10-26",

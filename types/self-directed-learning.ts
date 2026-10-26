@@ -417,6 +417,8 @@ export interface SelfDirectedLearningPlan {
   advisor: string;
   weeks: PlanWeek[];
   status: PlanStatus;
+  /** 移至垃圾桶的時間（epoch ms）；null＝不在垃圾桶 */
+  deletedAt: number | null;
   submittedAt: number | null;
   updatedAt: number;
 }
@@ -847,7 +849,7 @@ export function stripHtmlToText(input: string): string {
 }
 
 export type PlanParseResult =
-  | { ok: true; value: Omit<SelfDirectedLearningPlan, "id" | "period" | "studentUid" | "studentName" | "grade" | "classCode" | "className" | "status" | "submittedAt" | "updatedAt"> }
+  | { ok: true; value: Omit<SelfDirectedLearningPlan, "id" | "period" | "studentUid" | "studentName" | "grade" | "classCode" | "className" | "status" | "deletedAt" | "submittedAt" | "updatedAt"> }
   | { ok: false; message: string };
 
 /** 學生計畫草稿輸入驗證（送審與草稿共用；草稿寬鬆、送審才套週數形式與每週必填） */

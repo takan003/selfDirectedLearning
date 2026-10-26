@@ -36,6 +36,8 @@ interface StudentInfo {
   className: string;
 }
 
+type PlanTab = "documents" | "drafts" | "trash";
+
 interface Draft {
   topic: string;
   studyGroup: string;
@@ -111,6 +113,100 @@ function fitWeeks(
   return next.map((week, index) => ({ ...week, week: index + 1 }));
 }
 
+function FolderTabIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H9l2 2h7.5A2.5 2.5 0 0 1 21 9.5v7A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-9Z" />
+    </svg>
+  );
+}
+
+function DraftTabIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z" />
+      <path d="M14 3v6h6" />
+      <path d="M8 13h8M8 17h5" />
+    </svg>
+  );
+}
+
+function TrashTabIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" />
+    </svg>
+  );
+}
+
+function InfoIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v5M12 8h.01" />
+    </svg>
+  );
+}
+
+function PencilIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  );
+}
+
 export default function StudentSelfDirectedLearningPage() {
   const router = useRouter();
   const [systemSettings, setSystemSettings] = useState<Settings>(defaultSettings);
@@ -139,6 +235,10 @@ export default function StudentSelfDirectedLearningPage() {
   const [formOpen, setFormOpen] = useState(false);
   /** 正在編輯的草稿 id；null＝新計畫 */
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
+  /** 我的計畫分頁：文件匣／草稿匣／垃圾桶 */
+  const [planTab, setPlanTab] = useState<PlanTab>("documents");
+  /** 正在假性刪除／還原的計畫 id */
+  const [planBusy, setPlanBusy] = useState<string | null>(null);
   const formSectionRef = useRef<HTMLElement | null>(null);
 
   const editingPlan = editingPlanId
@@ -147,9 +247,15 @@ export default function StudentSelfDirectedLearningPage() {
   const locked = editingPlan?.status === "submitted" || editingPlan?.status === "approved";
   /** 場地是否開放學生輸入（舊資料沒有此欄位時視為開放，避免誤鎖） */
   const venueEditable = settings.venueEditable !== false;
-  const formalPlans = plans.filter((plan) => plan.status === "approved");
-  const draftPlans = plans.filter((plan) => plan.status !== "approved");
-  const currentApproved = plans.some(
+  const activePlans = plans.filter((plan) => !plan.deletedAt);
+  const trashedPlans = plans.filter((plan) => Boolean(plan.deletedAt));
+  const approvedPlans = activePlans.filter((plan) => plan.status === "approved");
+  const submittedPlans = activePlans.filter((plan) => plan.status === "submitted");
+  const draftPlans = activePlans.filter((plan) => plan.status === "draft");
+  const returnedPlans = activePlans.filter((plan) => plan.status === "returned");
+  const documentCount = approvedPlans.length + submittedPlans.length;
+  const draftCount = draftPlans.length + returnedPlans.length;
+  const currentApproved = activePlans.some(
     (plan) => plan.status === "approved" && plan.period === currentPeriod
   );
   /** 週次 → 該週彈性學習時間與衝堂資訊 */
@@ -355,12 +461,48 @@ export default function StudentSelfDirectedLearningPage() {
       if (action === "submit") {
         setFormOpen(false);
         setEditingPlanId(null);
+        setPlanTab("documents");
       }
       await load();
     } catch {
       setToast({ kind: "error", text: "儲存失敗" });
     } finally {
       setSaving(null);
+    }
+  };
+
+  /** 假性刪除／還原：只影響草稿與退回修改，正式與審核中的計畫由伺服器擋下 */
+  const changePlanDeleted = async (plan: SelfDirectedLearningPlan, deleted: boolean) => {
+    if (planBusy) return;
+    setPlanBusy(plan.id);
+    try {
+      const response = await fetch("/api/student/self-directed-learning", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: deleted ? "trash" : "restore",
+          planId: plan.id,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        setToast({ kind: "error", text: data.message || "操作失敗" });
+        return;
+      }
+      if (deleted && editingPlanId === plan.id) {
+        setFormOpen(false);
+        setEditingPlanId(null);
+      }
+      if (!deleted) setPlanTab("drafts");
+      setToast({
+        kind: "success",
+        text: data.message || (deleted ? "已移至垃圾桶" : "已還原"),
+      });
+      await load();
+    } catch {
+      setToast({ kind: "error", text: "操作失敗" });
+    } finally {
+      setPlanBusy(null);
     }
   };
 
@@ -429,52 +571,92 @@ export default function StudentSelfDirectedLearningPage() {
     </div>
   );
 
-  const renderPlanCard = (plan: SelfDirectedLearningPlan, editable: boolean) => {
+  const renderPlanCard = (
+    plan: SelfDirectedLearningPlan,
+    options: { editable?: boolean; trashable?: boolean; restorable?: boolean } = {}
+  ) => {
     const review = reviews[plan.id];
+    const busy = planBusy === plan.id;
     return (
-      <div key={plan.id} className="border-themed bg-surface space-y-2 rounded-md p-3">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="text-t1 font-medium">{plan.topic || "（未命名草稿）"}</p>
-            <p className="text-t3 mt-1 text-xs">
+      <article key={plan.id} className="border border-themed bg-surface space-y-3 rounded-lg p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h4 className="text-t1 text-base font-semibold break-words">
+                {plan.topic || "（未命名草稿）"}
+              </h4>
+              <span
+                className={`border-themed bg-card rounded-full border px-2 py-0.5 text-xs ${statusClass(
+                  plan.status
+                )}`}
+              >
+                {PLAN_STATUS_LABELS[plan.status]}
+              </span>
+            </div>
+            <p className="text-t3 text-xs">
               {periodText(plan.period)}・{plan.studyGroup || "未填學群"}・指導老師：
               {plan.advisor || "未指定"}
             </p>
             <p className="text-t3 text-xs">更新：{formatDateTime(plan.updatedAt)}</p>
+            {plan.deletedAt && (
+              <p className="text-t3 text-xs">移至垃圾桶：{formatDateTime(plan.deletedAt)}</p>
+            )}
           </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <span className={`text-xs ${statusClass(plan.status)}`}>
-              {PLAN_STATUS_LABELS[plan.status]}
-            </span>
-            {editable && !formOpen && (plan.status === "draft" || plan.status === "returned") && (
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            {options.editable && (plan.status === "draft" || plan.status === "returned") && (
               <button
                 type="button"
                 className="btn-theme rounded px-3 py-1.5 text-xs"
+                disabled={busy}
                 onClick={() => startEditPlan(plan)}
               >
                 編輯
+              </button>
+            )}
+            {options.trashable && (plan.status === "draft" || plan.status === "returned") && (
+              <button
+                type="button"
+                className="btn-theme text-danger rounded px-3 py-1.5 text-xs"
+                disabled={busy}
+                onClick={() => void changePlanDeleted(plan, true)}
+              >
+                {busy ? "處理中…" : "移至垃圾桶"}
+              </button>
+            )}
+            {options.restorable && (
+              <button
+                type="button"
+                className="btn-theme text-primary rounded px-3 py-1.5 text-xs"
+                disabled={busy}
+                onClick={() => void changePlanDeleted(plan, false)}
+              >
+                {busy ? "處理中…" : "還原"}
               </button>
             )}
           </div>
         </div>
 
         {review && (
-          <p className="text-t2 border-themed border-t pt-2 text-xs whitespace-pre-wrap">
-            審查意見（{review.reviewerName || "審核人員"}）：
-            {review.note || "（無文字意見）"}
-          </p>
+          <div className="border-l-4 border-l-primary border-themed bg-card rounded-md border p-3">
+            <p className="text-t1 text-xs font-medium">
+              審查意見（{review.reviewerName || "審核人員"}）
+            </p>
+            <p className="text-t2 mt-1 whitespace-pre-wrap text-xs">
+              {review.note || "（無文字意見）"}
+            </p>
+          </div>
         )}
 
-        <details>
+        <details className="border-themed border-t pt-2">
           <summary className="text-t2 flex cursor-pointer items-center gap-1 text-xs">
             <DisclosureArrow />
             查看內容（{plan.weeks.length} 週）
           </summary>
           <ul className="mt-2 space-y-2">
             {plan.weeks.map((week) => (
-              <li key={week.week} className="border-themed bg-card rounded-md p-2">
+              <li key={week.week} className="border border-themed bg-card rounded-md p-3">
                 <div className="text-t3 mb-1 flex flex-wrap gap-2 text-xs">
-                  <span>第 {week.week} 週</span>
+                  <span className="text-t2 font-medium">第 {week.week} 週</span>
                   <span>{PLAN_TIMING_LABELS[week.timing]}</span>
                   <span>{week.venue || "—"}</span>
                 </div>
@@ -483,9 +665,32 @@ export default function StudentSelfDirectedLearningPage() {
             ))}
           </ul>
         </details>
-      </div>
+      </article>
     );
   };
+
+  const renderEmptyState = (text: string, hint?: string) => (
+    <div className="border border-themed bg-surface rounded-lg px-4 py-6 text-center">
+      <p className="text-t3 text-sm">{text}</p>
+      {hint && <p className="text-t3 mt-1 text-xs">{hint}</p>}
+    </div>
+  );
+
+  const renderPlanGroup = (
+    title: string,
+    items: SelfDirectedLearningPlan[],
+    options: { editable?: boolean; trashable?: boolean; restorable?: boolean },
+    emptyText: string
+  ) => (
+    <div className="space-y-2">
+      <h3 className="text-t2 text-sm font-medium">
+        {title}（{items.length}）
+      </h3>
+      {items.length === 0
+        ? renderEmptyState(emptyText)
+        : items.map((plan) => renderPlanCard(plan, options))}
+    </div>
+  );
 
   // 總開關關閉：只見維護說明（資料不呈現、表單不開放）
   if (!loading && maintenance) {
@@ -500,88 +705,195 @@ export default function StudentSelfDirectedLearningPage() {
   return renderShell(
     <>
       {settings.instructions.trim() && (
-        <details className="border-themed bg-card rounded-lg">
-          <summary className="text-t1 flex cursor-pointer items-center gap-2 p-4 font-medium">
-            <DisclosureArrow />
-            自主學習實施說明
-          </summary>
-          <p className="text-t2 px-4 pb-4 whitespace-pre-wrap text-sm">{settings.instructions}</p>
-        </details>
+        <div className="overflow-hidden rounded-lg border border-themed bg-card shadow-sm">
+          <div className="bg-primary" style={{ height: "0.25rem" }} />
+          <details open>
+            <summary className="text-t1 border-themed bg-surface flex cursor-pointer items-start justify-between gap-3 border-b px-5 py-4">
+              <span className="flex items-start gap-3">
+                <span className="text-primary mt-0.5">
+                  <InfoIcon />
+                </span>
+                <span>
+                  <span className="block text-base font-semibold">自主學習實施說明</span>
+                  <span className="text-t3 mt-0.5 block text-xs">撰寫前請先閱讀（點擊可收合）</span>
+                </span>
+              </span>
+              <DisclosureArrow />
+            </summary>
+            <div className="px-5 py-4">
+              <p className="text-t2 whitespace-pre-wrap text-sm">{settings.instructions}</p>
+            </div>
+          </details>
+        </div>
       )}
 
-      <section className="border-themed bg-card space-y-4 rounded-lg p-4" aria-label="我的計畫">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-t1 font-medium">我的計畫</h2>
-          {canStartNew && (
-            <button
-              type="button"
-              className="btn-primary btn-theme px-4 py-2 text-sm"
-              onClick={startNewPlan}
-            >
-              發起新計畫
-            </button>
+      <section
+        className="overflow-hidden rounded-lg border border-themed bg-card shadow-sm"
+        aria-label="我的計畫"
+      >
+        <div className="bg-primary" style={{ height: "0.25rem" }} />
+        <div className="border-themed bg-surface border-b px-5 py-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <span className="border-themed bg-card text-primary flex h-10 w-10 items-center justify-center rounded-lg border">
+                <FolderTabIcon />
+              </span>
+              <div>
+                <h2 className="text-t1 text-lg font-semibold">我的計畫</h2>
+                <p className="text-t3 mt-0.5 text-xs">文件匣、草稿匣與垃圾桶</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span
+                className={`border-themed bg-card rounded-full border px-3 py-1 text-xs ${
+                  windowState === "open" ? "text-success" : "text-t3"
+                }`}
+              >
+                {WINDOW_LABEL[windowState]}
+              </span>
+              {canStartNew && (
+                <button
+                  type="button"
+                  className="btn-primary btn-theme px-4 py-2 text-sm"
+                  onClick={startNewPlan}
+                >
+                  發起新計畫
+                </button>
+              )}
+            </div>
+          </div>
+          {currentApproved && (
+            <p className="text-t3 mt-2 text-xs">
+              本學期已有正式計畫；如需修改請聯絡審核人員。
+            </p>
           )}
         </div>
-        <p className="text-xs">
-          <span className={windowState === "open" ? "text-success" : "text-t3"}>
-            {WINDOW_LABEL[windowState]}
-          </span>
-          {currentApproved && <span className="text-t3">・本學期已有正式計畫</span>}
-        </p>
 
-        <div className="space-y-2">
-          <h3 className="text-t2 text-sm font-medium">
-            正式計畫{formalPlans.length > 0 ? `（${formalPlans.length}）` : ""}
-          </h3>
-          {formalPlans.length === 0 ? (
-            <p className="text-t3 text-sm">尚無正式計畫</p>
-          ) : (
-            formalPlans.map((plan) => renderPlanCard(plan, false))
-          )}
-        </div>
+        <div className="space-y-4 p-5">
+          <div
+            role="tablist"
+            aria-label="我的計畫分類"
+            className="border-themed flex flex-wrap gap-1 border-b"
+          >
+            {[
+              { key: "documents" as const, label: "文件匣", icon: <FolderTabIcon /> },
+              { key: "drafts" as const, label: "草稿匣", icon: <DraftTabIcon /> },
+              { key: "trash" as const, label: "垃圾桶", icon: <TrashTabIcon /> },
+            ].map((tab) => {
+              const active = planTab === tab.key;
+              const count =
+                tab.key === "documents"
+                  ? documentCount
+                  : tab.key === "drafts"
+                    ? draftCount
+                    : trashedPlans.length;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  className={`flex items-center gap-2 border-b-2 px-4 py-2 text-sm ${
+                    active
+                      ? "border-primary text-t1 font-medium"
+                      : "text-t2 border-transparent hover:text-t1"
+                  }`}
+                  style={active ? { borderBottomColor: "var(--primary)" } : undefined}
+                  onClick={() => setPlanTab(tab.key)}
+                >
+                  <span className={active ? "text-primary" : "text-t3"}>{tab.icon}</span>
+                  {tab.label}
+                  <span className="text-t3 text-xs">{count}</span>
+                </button>
+              );
+            })}
+          </div>
 
-        <div className="space-y-2">
-          <h3 className="text-t2 text-sm font-medium">
-            草稿計畫{draftPlans.length > 0 ? `（${draftPlans.length}）` : ""}
-          </h3>
-          {draftPlans.length === 0 ? (
-            <p className="text-t3 text-sm">尚無草稿計畫</p>
-          ) : (
-            draftPlans.map((plan) => renderPlanCard(plan, true))
-          )}
+          {planTab === "documents" &&
+            (documentCount === 0 ? (
+              renderEmptyState("文件匣目前是空的。", "送出審核後，計畫會出現在這裡。")
+            ) : (
+              <div className="space-y-5">
+                {approvedPlans.length > 0 &&
+                  renderPlanGroup("正式計畫", approvedPlans, {}, "")}
+                {submittedPlans.length > 0 &&
+                  renderPlanGroup("審核中", submittedPlans, {}, "")}
+              </div>
+            ))}
+
+          {planTab === "drafts" &&
+            (draftCount === 0 ? (
+              renderEmptyState("草稿匣目前是空的。", "按「發起新計畫」開始撰寫。")
+            ) : (
+              <div className="space-y-5">
+                {draftPlans.length > 0 &&
+                  renderPlanGroup("草稿", draftPlans, { editable: !formOpen, trashable: !formOpen }, "")}
+                {returnedPlans.length > 0 &&
+                  renderPlanGroup(
+                    "退回修改",
+                    returnedPlans,
+                    { editable: !formOpen, trashable: !formOpen },
+                    ""
+                  )}
+              </div>
+            ))}
+
+          {planTab === "trash" &&
+            (trashedPlans.length === 0
+              ? renderEmptyState(
+                  "垃圾桶是空的。",
+                  "移至垃圾桶的草稿會保留在這裡，可隨時還原。"
+                )
+              : renderPlanGroup("已移至垃圾桶", trashedPlans, { restorable: true }, ""))}
         </div>
       </section>
 
       {formOpen && (
         <section
           ref={formSectionRef}
-          className="border-themed bg-card space-y-4 rounded-lg p-4"
+          className="overflow-hidden rounded-lg border border-themed bg-card shadow-sm"
           aria-label="撰寫計畫"
         >
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div>
-              <h2 className="text-t1 font-medium">撰寫計畫</h2>
-              <p className="text-t3 mt-1 text-xs">
-                {editingPlanId ? "編輯草稿" : "新計畫"}
-                {editingPlan ? `・${periodText(editingPlan.period)}` : ""}
-              </p>
+          <div className="bg-primary" style={{ height: "0.25rem" }} />
+          <div className="border-themed bg-surface border-b px-5 py-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <span className="border-themed bg-card text-primary flex h-10 w-10 items-center justify-center rounded-lg border">
+                  <PencilIcon />
+                </span>
+                <div>
+                  <h2 className="text-t1 text-lg font-semibold">撰寫計畫</h2>
+                  <p className="text-t3 mt-0.5 text-xs">
+                    {editingPlanId ? "編輯草稿" : "新計畫"}
+                    {editingPlan ? `・${periodText(editingPlan.period)}` : ""}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn-theme rounded-lg px-4 py-2 text-sm"
+                onClick={closeForm}
+              >
+                取消
+              </button>
             </div>
-            <button type="button" className="btn-theme rounded-lg px-4 py-2 text-sm" onClick={closeForm}>
-              取消
-            </button>
           </div>
 
-          {settings.writingInstructions.trim() && (
-            <div className="border-themed bg-surface space-y-1 rounded-md p-3">
-              <p className="text-t1 text-sm font-medium">自主學習計畫撰寫說明</p>
-              <p className="text-t2 whitespace-pre-wrap text-sm">
-                {settings.writingInstructions}
-              </p>
-            </div>
-          )}
+          <div className="space-y-6 p-5">
+            {settings.writingInstructions.trim() && (
+              <div className="border-themed bg-surface border-l-4 border-l-primary space-y-1 rounded-md border p-4">
+                <p className="text-t1 text-sm font-semibold">自主學習計畫撰寫說明</p>
+                <p className="text-t2 whitespace-pre-wrap text-sm">
+                  {settings.writingInstructions}
+                </p>
+              </div>
+            )}
 
-          <div className="space-y-4">
-            <h3 className="text-t1 text-sm font-medium">計畫內容</h3>
+            <div className="space-y-4">
+              <div className="border-themed flex items-center gap-2 border-b pb-2">
+                <span className="bg-primary" style={{ width: "0.25rem", height: "1rem" }} />
+                <h3 className="text-t1 text-sm font-semibold">計畫內容</h3>
+              </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="text-t2 block space-y-1 text-sm">
                 <span>主題 *</span>
@@ -622,9 +934,12 @@ export default function StudentSelfDirectedLearningPage() {
             </label>
           </div>
 
-          <div className="border-themed space-y-4 border-t pt-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h3 className="text-t1 text-sm font-medium">逐週課程安排</h3>
+          <div className="space-y-4">
+            <div className="border-themed flex flex-wrap items-center justify-between gap-3 border-b pb-2">
+              <div className="flex items-center gap-2">
+                <span className="bg-primary" style={{ width: "0.25rem", height: "1rem" }} />
+                <h3 className="text-t1 text-sm font-semibold">逐週課程安排</h3>
+              </div>
               {settings.weekMode === "flexible" ? (
                 <label className="text-t2 flex flex-wrap items-center gap-2 text-sm">
                   方案週數（至少 {settings.minWeeks} 週
@@ -677,12 +992,12 @@ export default function StudentSelfDirectedLearningPage() {
               </li>
             </ol>
 
-            <div className="overflow-x-auto">
+            <div className="border border-themed overflow-x-auto">
               <table
                 className="w-full text-left text-sm"
                 style={{ minWidth: "40rem" }}
               >
-                <thead className="text-t2">
+                <thead className="text-t2 bg-surface">
                   <tr className="border-themed border-b">
                     <th scope="col" className="align-top px-2 py-2 font-medium whitespace-nowrap">
                       週次／日期／節次
@@ -804,24 +1119,25 @@ export default function StudentSelfDirectedLearningPage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap justify-end gap-3">
-            <button
-              type="button"
-              className="btn-theme px-6"
-              disabled={locked || saving !== null || loading}
-              onClick={() => void submit("save")}
-            >
-              {saving === "save" ? "儲存中…" : "儲存草稿"}
-            </button>
-            <button
-              type="button"
-              className="btn-primary btn-theme px-6"
-              disabled={!canSubmit || loading}
-              onClick={() => void submit("submit")}
-              title={withinWindow ? "" : WINDOW_LABEL[windowState]}
-            >
-              {saving === "submit" ? "送出中…" : "送出審核"}
-            </button>
+            <div className="border-themed flex flex-wrap justify-end gap-3 border-t pt-4">
+              <button
+                type="button"
+                className="btn-theme px-6"
+                disabled={locked || saving !== null || loading}
+                onClick={() => void submit("save")}
+              >
+                {saving === "save" ? "儲存中…" : "儲存草稿"}
+              </button>
+              <button
+                type="button"
+                className="btn-primary btn-theme px-6"
+                disabled={!canSubmit || loading}
+                onClick={() => void submit("submit")}
+                title={withinWindow ? "" : WINDOW_LABEL[windowState]}
+              >
+                {saving === "submit" ? "送出中…" : "送出審核"}
+              </button>
+            </div>
           </div>
         </section>
       )}

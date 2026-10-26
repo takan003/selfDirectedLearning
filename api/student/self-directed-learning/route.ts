@@ -9,6 +9,7 @@ import {
   getLatestReviews,
   getStudentPlans,
   saveStudentPlan,
+  setStudentPlanDeleted,
   type StudentIdentityLite,
 } from "../../../lib/self-directed-learning-plans";
 import { getCurrentPeriod } from "@/lib/settings-server";
@@ -151,6 +152,7 @@ export async function POST(request: NextRequest) {
       planId?: unknown;
     } | null;
     const action = body?.action === "submit" ? "submit" : "save";
+    const requestedAction = body?.action;
     const planId = typeof body?.planId === "string" ? body.planId.trim().slice(0, 200) : "";
 
     const settings = await getSettings();
@@ -160,6 +162,46 @@ export async function POST(request: NextRequest) {
         { status: 403, headers: noStore }
       );
     }
+
+    // 假性刪除／還原：只處理垃圾桶狀態，不需解析草稿內容
+    if (requestedAction === "trash" || requestedAction === "restore") {
+      if (!planId) {
+        return NextResponse.json(
+          { success: false, message: "缺少計畫識別" },
+          { status: 400, headers: noStore }
+        );
+      }
+      const deleted = requestedAction === "trash";
+      const trashResult = await setStudentPlanDeleted({
+        planId,
+        studentUid: student.uid,
+        deleted,
+      });
+      if (!trashResult.ok) {
+        return NextResponse.json(
+          { success: false, message: trashResult.message },
+          { status: trashResult.status, headers: noStore }
+        );
+      }
+      await logActivity({
+        userId: student.uid,
+        role: session.role,
+        action: deleted
+          ? "self_directed_learning_plan_trashed"
+          : "self_directed_learning_plan_restored",
+        ip: getClientIp(request),
+        details: `${deleted ? "移至垃圾桶" : "還原"}：${trashResult.plan.topic}`,
+      });
+      return NextResponse.json(
+        {
+          success: true,
+          plan: trashResult.plan,
+          message: deleted ? "已移至垃圾桶" : "已還原",
+        },
+        { headers: noStore }
+      );
+    }
+
     const fullWeeks = await getFullWeeks();
     // 與學校活動衝堂的週次不提供撰寫（送審時不列入必填）
     const weekSchedule = await getWeekSchedule(student.grade, student.classCode);
