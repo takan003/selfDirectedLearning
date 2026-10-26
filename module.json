@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.46",
+    "version": "0.0.47",
     "releasedAt": "2026-10-26"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -57,6 +57,15 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.47",
+      "releasedAt": "2026-10-26",
+      "notes": [
+        "學生端「學群」改為教育部 18 學群下拉選單（資訊、工程、數理化、醫藥衛生、生命科學、生物資源、地球與環境、建築與設計、藝術、社會與心理、大眾傳播、外語、文史哲、教育、法政、管理、財經、遊憩與運動）",
+        "學群選單保留「其他（自行填寫）」：主題跨域或沒有適合分類時，可自行輸入學群名稱或說明（上限 100 字）",
+        "舊資料若學群不是 18 學群之一，編輯時會自動顯示為「其他」並帶出原文字，不會遺失"
+      ]
+    },
     {
       "version": "0.0.46",
       "releasedAt": "2026-10-26",

@@ -18,6 +18,7 @@ import {
   PLAN_TIMING_LABELS,
   PRINT_PREVIEW_DATA,
   PRINT_PREVIEW_READY,
+  STUDY_GROUPS,
   WEEKDAY_LABELS,
   openStateOf,
   type PlanStatus,
@@ -242,6 +243,8 @@ export default function StudentSelfDirectedLearningPage() {
   const [formOpen, setFormOpen] = useState(false);
   /** 正在編輯的草稿 id；null＝新計畫 */
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
+  /** 學群是否為「其他（自行填寫）」 */
+  const [customStudyGroup, setCustomStudyGroup] = useState(false);
   /** 我的計畫分頁：文件匣／草稿匣／垃圾桶 */
   const [planTab, setPlanTab] = useState<PlanTab>("documents");
   /** 彈性形式的週次區間（可寫週次；full 模式不使用） */
@@ -448,6 +451,7 @@ export default function StudentSelfDirectedLearningPage() {
 
   const startNewPlan = () => {
     setEditingPlanId(null);
+    setCustomStudyGroup(false);
     if (settings.weekMode === "flexible") {
       const range = defaultRange();
       if (range) {
@@ -471,6 +475,9 @@ export default function StudentSelfDirectedLearningPage() {
   const startEditPlan = (plan: SelfDirectedLearningPlan) => {
     if (plan.status !== "draft" && plan.status !== "returned") return;
     setEditingPlanId(plan.id);
+    setCustomStudyGroup(
+      plan.studyGroup !== "" && !(STUDY_GROUPS as readonly string[]).includes(plan.studyGroup)
+    );
     if (settings.weekMode === "flexible") {
       const stored = plan.weeks;
       if (stored.length === 0) {
@@ -1065,18 +1072,57 @@ export default function StudentSelfDirectedLearningPage() {
                   placeholder="如：城市影像的光與構圖"
                 />
               </label>
-              <label className="text-t2 block space-y-1 text-sm">
-                <span>學群 *</span>
-                <input
-                  type="text"
-                  className="input-theme w-full rounded px-3 py-2 text-sm"
-                  value={draft.studyGroup}
-                  maxLength={100}
-                  disabled={locked}
-                  onChange={(event) => patchDraft({ studyGroup: event.target.value })}
-                  placeholder="如：藝術與人文"
-                />
-              </label>
+              <div className="space-y-2">
+                <label className="text-t2 block space-y-1 text-sm">
+                  <span>學群 *</span>
+                  <select
+                    className="input-theme w-full rounded px-3 py-2 text-sm"
+                    value={
+                      customStudyGroup
+                        ? "__custom__"
+                        : (STUDY_GROUPS as readonly string[]).includes(draft.studyGroup)
+                          ? draft.studyGroup
+                          : ""
+                    }
+                    disabled={locked}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      if (value === "__custom__") {
+                        setCustomStudyGroup(true);
+                        patchDraft({ studyGroup: "" });
+                        return;
+                      }
+                      setCustomStudyGroup(false);
+                      patchDraft({ studyGroup: value });
+                    }}
+                  >
+                    <option value="">請選擇學群</option>
+                    {STUDY_GROUPS.map((group) => (
+                      <option key={group} value={group}>
+                        {group}
+                      </option>
+                    ))}
+                    <option value="__custom__">其他（自行填寫）</option>
+                  </select>
+                </label>
+                {customStudyGroup && (
+                  <label className="text-t2 block space-y-1 text-sm">
+                    <span>學群說明（自行填寫）</span>
+                    <input
+                      type="text"
+                      className="input-theme w-full rounded px-3 py-2 text-sm"
+                      value={draft.studyGroup}
+                      maxLength={100}
+                      disabled={locked}
+                      onChange={(event) => patchDraft({ studyGroup: event.target.value })}
+                      placeholder="例如：藝術與人文－攝影、跨域專題"
+                    />
+                  </label>
+                )}
+                <p className="text-t3 text-xs">
+                  可從教育部 18 學群選擇；若主題跨域或沒有適合分類，請選「其他（自行填寫）」。
+                </p>
+              </div>
             </div>
             <label className="text-t2 block space-y-1 text-sm">
               <span>指導老師（非必填）</span>

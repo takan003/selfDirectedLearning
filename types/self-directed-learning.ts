@@ -354,6 +354,28 @@ export const PLAN_TIMING_LABELS: Record<PlanTiming, string> = {
   afterSchool: "課餘時間",
 };
 
+/** 教育部 18 學群（大學招生分類；學生可從中選擇，或自行填寫說明） */
+export const STUDY_GROUPS = [
+  "資訊學群",
+  "工程學群",
+  "數理化學群",
+  "醫藥衛生學群",
+  "生命科學學群",
+  "生物資源學群",
+  "地球與環境學群",
+  "建築與設計學群",
+  "藝術學群",
+  "社會與心理學群",
+  "大眾傳播學群",
+  "外語學群",
+  "文史哲學群",
+  "教育學群",
+  "法政學群",
+  "管理學群",
+  "財經學群",
+  "遊憩與運動學群",
+] as const;
+
 /** 每週課程安排 */
 export interface PlanWeek {
   week: number;
