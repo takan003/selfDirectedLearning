@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.52",
+    "version": "0.0.53",
     "releasedAt": "2026-10-26"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -57,6 +57,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.53",
+      "releasedAt": "2026-10-26",
+      "notes": [
+        "列印預覽移除紙張陰影：螢幕預覽與列印樣式都不再套用 box-shadow；若瀏覽器列印預覽仍顯示頁面邊緣陰影，那是瀏覽器預覽介面本身，不會出現在實際列印或 PDF"
+      ]
+    },
     {
       "version": "0.0.52",
       "releasedAt": "2026-10-26",

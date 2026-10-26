@@ -50,7 +50,6 @@ const PRINT_SHEET_STYLES = `
   max-width: 210mm;
   margin: 0 auto;
   padding: 12mm 10mm;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
@@ -165,7 +164,7 @@ const PRINT_SHEET_STYLES = `
     width: auto;
     margin: 0;
     padding: 0;
-    box-shadow: none;
+    box-shadow: none !important;
   }
 }
 `;
