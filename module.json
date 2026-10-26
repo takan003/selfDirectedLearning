@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.53",
+    "version": "0.0.54",
     "releasedAt": "2026-10-26"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -58,10 +58,17 @@
   "hooks": ["announcements", "calendar"],
   "changelog": [
     {
+      "version": "0.0.54",
+      "releasedAt": "2026-10-26",
+      "notes": [
+        "列印輸出只保留紙張內容：列印時只顯示紙張（visibility 隔離），紙張以外的元素一律不輸出，包含瀏覽器擴充套件注入的浮動按鈕與其陰影（即使不是 button／SVG 也能隱藏）；另隱藏所有按鈕、SVG 圖示與 box-shadow"
+      ]
+    },
+    {
       "version": "0.0.53",
       "releasedAt": "2026-10-26",
       "notes": [
-        "列印預覽移除紙張陰影：螢幕預覽與列印樣式都不再套用 box-shadow；若瀏覽器列印預覽仍顯示頁面邊緣陰影，那是瀏覽器預覽介面本身，不會出現在實際列印或 PDF"
+        "列印預覽移除紙張陰影：螢幕預覽與列印樣式都不再套用 box-shadow，PDF 不會再出現紙張邊緣的陰影"
       ]
     },
     {

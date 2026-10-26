@@ -148,9 +148,27 @@ const PRINT_SHEET_STYLES = `
     size: A4;
     margin: 14mm;
   }
+  /* 列印輸出只保留紙張內容：按鈕、SVG 浮動圖示與任何陰影都不輸出 */
+  button,
+  svg {
+    display: none !important;
+  }
+  * {
+    box-shadow: none !important;
+  }
   html,
   body {
     background: #ffffff !important;
+  }
+  /* 只輸出紙張：紙張以外的元素（含瀏覽器擴充套件注入的浮動按鈕、
+     陰影與固定定位面板）一律隱藏，避免被帶進 PDF。
+     使用 visibility 而非 display，避免影響紙張版面。 */
+  :where(body:has(.sdl-print-sheet)) * {
+    visibility: hidden !important;
+  }
+  .sdl-print-sheet,
+  .sdl-print-sheet * {
+    visibility: visible !important;
   }
   .sdl-print-page {
     padding: 0 !important;
