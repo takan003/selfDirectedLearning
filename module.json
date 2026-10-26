@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.54",
+    "version": "0.0.55",
     "releasedAt": "2026-10-26"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -45,6 +45,7 @@
   "auditActions": [
     "self_directed_learning_settings_updated",
     "self_directed_learning_plan_submitted",
+    "self_directed_learning_plan_withdrawn",
     "self_directed_learning_plan_reviewed",
     "self_directed_learning_plan_archived",
     "self_directed_learning_plan_trashed",
@@ -57,6 +58,15 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.55",
+      "releasedAt": "2026-10-26",
+      "notes": [
+        "學生可在開放撰寫期間內抽回審核中的計畫（警告色「抽回修改」按鈕＋確認視窗）：抽回後回到草稿匣、審核人員即看不到該計畫，可修改後重新送出；限本學期、限開放期間，伺服器與狀態一併檢核（transaction，避免與審核同時處理）",
+        "管理端新增「審核期限」起訖設定：教職員審核頁顯示審核期限、待審件數、剩餘天數與逾期提醒，每筆待審計畫顯示已等待天數，以督促於期限內完成審核；期限僅供提示，逾期仍可審核，留空表示不設期限",
+        "學生端顯示管理端設定的審核期間"
+      ]
+    },
     {
       "version": "0.0.54",
       "releasedAt": "2026-10-26",

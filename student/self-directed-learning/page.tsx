@@ -256,6 +256,8 @@ export default function StudentSelfDirectedLearningPage() {
   const [rangeSwap, setRangeSwap] = useState<{ start: number; end: number } | null>(null);
   /** 正在假性刪除／還原的計畫 id */
   const [planBusy, setPlanBusy] = useState<string | null>(null);
+  /** 準備抽回（取消送審）的計畫 */
+  const [withdrawTarget, setWithdrawTarget] = useState<SelfDirectedLearningPlan | null>(null);
   const formSectionRef = useRef<HTMLElement | null>(null);
 
   const editingPlan = editingPlanId
@@ -672,6 +674,35 @@ export default function StudentSelfDirectedLearningPage() {
     }
   };
 
+  /** 抽回審核中的計畫：回到草稿匣，開放撰寫期間內可修改後重新送出 */
+  const withdrawPlan = async (plan: SelfDirectedLearningPlan) => {
+    if (planBusy) return;
+    setPlanBusy(plan.id);
+    try {
+      const response = await fetch("/api/student/self-directed-learning", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "withdraw", planId: plan.id }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        setToast({ kind: "error", text: data.message || "抽回失敗" });
+        return;
+      }
+      setWithdrawTarget(null);
+      setPlanTab("drafts");
+      setToast({
+        kind: "success",
+        text: data.message || "已抽回，可在草稿匣修改後重新送出",
+      });
+      await load();
+    } catch {
+      setToast({ kind: "error", text: "抽回失敗" });
+    } finally {
+      setPlanBusy(null);
+    }
+  };
+
   const windowState = openStateOf(settings);
   /** 開放狀態的提示色（主題變數） */
   const windowTone =
@@ -768,7 +799,12 @@ export default function StudentSelfDirectedLearningPage() {
 
   const renderPlanCard = (
     plan: SelfDirectedLearningPlan,
-    options: { editable?: boolean; trashable?: boolean; restorable?: boolean } = {}
+    options: {
+      editable?: boolean;
+      trashable?: boolean;
+      restorable?: boolean;
+      withdrawable?: boolean;
+    } = {}
   ) => {
     const review = reviews[plan.id];
     const busy = planBusy === plan.id;
@@ -798,6 +834,20 @@ export default function StudentSelfDirectedLearningPage() {
             )}
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2">
+            {options.withdrawable &&
+              plan.status === "submitted" &&
+              plan.period === currentPeriod && (
+                <button
+                  type="button"
+                  className="btn-theme rounded px-3 py-1.5 text-xs"
+                  style={{ color: "var(--warning)", borderColor: "var(--warning)" }}
+                  disabled={busy}
+                  title="抽回後回到草稿匣，可修改後重新送出"
+                  onClick={() => setWithdrawTarget(plan)}
+                >
+                  {busy ? "處理中…" : "抽回修改"}
+                </button>
+              )}
             {options.editable && (plan.status === "draft" || plan.status === "returned") && (
               <button
                 type="button"
@@ -874,7 +924,12 @@ export default function StudentSelfDirectedLearningPage() {
   const renderPlanGroup = (
     title: string,
     items: SelfDirectedLearningPlan[],
-    options: { editable?: boolean; trashable?: boolean; restorable?: boolean },
+    options: {
+      editable?: boolean;
+      trashable?: boolean;
+      restorable?: boolean;
+      withdrawable?: boolean;
+    },
     emptyText: string
   ) => (
     <div className="space-y-2">
@@ -983,6 +1038,12 @@ export default function StudentSelfDirectedLearningPage() {
                   ? `開放期間：${formatDateTime(settings.openAt)} ～ ${formatDateTime(settings.closeAt)}`
                   : "開放時間尚未設定"}
               </span>
+              {(settings.reviewStartAt !== null || settings.reviewEndAt !== null) && (
+                <span className="text-t3 text-xs">
+                  審核期間：{formatDateTime(settings.reviewStartAt)} ～{" "}
+                  {formatDateTime(settings.reviewEndAt)}
+                </span>
+              )}
             </div>
             {currentApproved && (
               <span className="text-t3 text-xs">本學期已有正式計畫；如需修改請聯絡審核人員。</span>
@@ -1038,7 +1099,7 @@ export default function StudentSelfDirectedLearningPage() {
                 {approvedPlans.length > 0 &&
                   renderPlanGroup("正式計畫", approvedPlans, {}, "")}
                 {submittedPlans.length > 0 &&
-                  renderPlanGroup("審核中", submittedPlans, {}, "")}
+                  renderPlanGroup("審核中", submittedPlans, { withdrawable: withinWindow }, "")}
               </div>
             ))}
 
@@ -1563,6 +1624,52 @@ export default function StudentSelfDirectedLearningPage() {
                 }}
               >
                 確認調換
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {withdrawTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          style={{ backgroundColor: "color-mix(in srgb, var(--bg) 75%, transparent)" }}
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="sdl-withdraw-title"
+        >
+          <div className="border-themed bg-card w-full max-w-md rounded-lg border p-5 shadow-lg">
+            <p id="sdl-withdraw-title" className="text-t1 text-base font-semibold">
+              抽回這份計畫？
+            </p>
+            <p className="text-t2 mt-2 text-sm">
+              《{withdrawTarget.topic || "（未命名計畫）"}》會從審核佇列抽回並回到草稿匣；
+              你可以在開放撰寫期間內修改後重新送出。
+            </p>
+            <p className="text-t3 mt-1 text-xs">
+              抽回後審核人員將看不到這份計畫，直到你重新送出審核。
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                className="btn-theme px-4 py-2 text-sm"
+                disabled={planBusy !== null}
+                onClick={() => setWithdrawTarget(null)}
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                className="btn-theme px-4 py-2 text-sm font-medium"
+                style={{
+                  backgroundColor: "var(--warning)",
+                  borderColor: "var(--warning)",
+                  color: "var(--t1)",
+                }}
+                disabled={planBusy !== null}
+                onClick={() => void withdrawPlan(withdrawTarget)}
+              >
+                {planBusy === withdrawTarget.id ? "抽回中…" : "抽回修改"}
               </button>
             </div>
           </div>

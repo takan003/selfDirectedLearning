@@ -15,6 +15,7 @@ import {
   MAINTENANCE_TITLE,
   PLAN_STATUS_LABELS,
   PLAN_TIMING_LABELS,
+  reviewStateOf,
   type SelfDirectedLearningPlan,
 } from "../../types/self-directed-learning";
 import SelfDirectedLearningManagerPanel from "../../components/manager-panel";
@@ -46,6 +47,13 @@ const STATUS_CLASS: Record<string, string> = {
   returned: "text-danger",
 };
 
+const REVIEW_STATE_LABEL: Record<string, string> = {
+  unset: "尚未設定審核期限",
+  closed: "尚未開始審核",
+  open: "審核進行中",
+  ended: "已超過審核期限",
+};
+
 export default function StaffSelfDirectedLearningPage() {
   const router = useRouter();
   const [systemSettings, setSystemSettings] = useState<Settings>(defaultSettings);
@@ -59,6 +67,11 @@ export default function StaffSelfDirectedLearningPage() {
   const [toast, setToast] = useState<ToastMessage | null>(null);
   /** 總開關關閉：只顯示維護說明 */
   const [maintenance, setMaintenance] = useState(false);
+  /** 審核期限（管理員設定；null＝未設定，僅供提示與督促） */
+  const [reviewWindow, setReviewWindow] = useState<{
+    startAt: number | null;
+    endAt: number | null;
+  }>({ startAt: null, endAt: null });
 
   const load = useCallback(async (mode: Tab) => {
     try {
@@ -75,6 +88,13 @@ export default function StaffSelfDirectedLearningPage() {
       setRoles((data.roles as StaffRoles) ?? null);
       setMaintenance(Boolean(data.maintenance));
       setPlans((data.plans as SelfDirectedLearningPlan[]) || []);
+      const window = data.reviewWindow as
+        | { startAt?: unknown; endAt?: unknown }
+        | undefined;
+      setReviewWindow({
+        startAt: typeof window?.startAt === "number" ? window.startAt : null,
+        endAt: typeof window?.endAt === "number" ? window.endAt : null,
+      });
     } catch {
       setToast({ kind: "error", text: "讀取資料失敗" });
     } finally {
@@ -150,6 +170,31 @@ export default function StaffSelfDirectedLearningPage() {
   ]
     .filter(Boolean)
     .join(" ");
+
+  /** 審核期限狀態與剩餘／逾期天數（管理員未設定時不顯示期限壓力） */
+  const reviewState = reviewStateOf({
+    reviewStartAt: reviewWindow.startAt,
+    reviewEndAt: reviewWindow.endAt,
+  });
+  const reviewRemainingDays =
+    reviewWindow.endAt !== null
+      ? Math.ceil((reviewWindow.endAt - Date.now()) / 86_400_000)
+      : null;
+  const reviewOverdueDays =
+    reviewWindow.endAt !== null
+      ? Math.floor((Date.now() - reviewWindow.endAt) / 86_400_000)
+      : null;
+  const pendingCount = plans.filter((plan) => plan.status === "submitted").length;
+  const reviewWindowText =
+    reviewWindow.startAt !== null || reviewWindow.endAt !== null
+      ? `${formatDateTime(reviewWindow.startAt)} ～ ${formatDateTime(reviewWindow.endAt)}`
+      : "管理員尚未設定審核期限";
+  const reviewTone =
+    reviewState === "ended" && pendingCount > 0
+      ? "text-danger"
+      : reviewState === "open"
+        ? "text-warning"
+        : "text-t3";
 
   const actionButtons = (
     <>
@@ -264,6 +309,39 @@ export default function StaffSelfDirectedLearningPage() {
         </div>
       )}
 
+      {tab === "review" && (
+        <div
+          className="border-themed bg-card space-y-1 rounded-lg border p-4 text-sm"
+          style={
+            reviewState === "ended" && pendingCount > 0
+              ? { borderColor: "color-mix(in srgb, var(--danger) 45%, var(--bd))" }
+              : reviewState === "open"
+                ? { borderColor: "color-mix(in srgb, var(--warning) 45%, var(--bd))" }
+                : undefined
+          }
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-t1 font-medium">審核期限</span>
+            <span className={`text-xs font-semibold ${reviewTone}`}>
+              {REVIEW_STATE_LABEL[reviewState]}
+            </span>
+            <span className="text-t3 text-xs">{reviewWindowText}</span>
+          </div>
+          <p className="text-t2 text-xs">
+            目前待審 {pendingCount} 件
+            {reviewState === "open" && reviewRemainingDays !== null
+              ? `；距離審核截止還有 ${Math.max(reviewRemainingDays, 0)} 天，請於期限內完成。`
+              : reviewState === "ended"
+                ? `；已逾期 ${Math.max(reviewOverdueDays ?? 0, 0)} 天${
+                    pendingCount > 0 ? "，請儘速完成審核。" : "，目前已無待審計畫。"
+                  }`
+                : reviewState === "closed"
+                  ? "；審核期限尚未開始。"
+                  : "。"}
+          </p>
+        </div>
+      )}
+
       {loading ? (
         <div className="border-themed bg-card text-t2 rounded-lg p-4 text-sm">載入中…</div>
       ) : plans.length === 0 ? (
@@ -292,7 +370,21 @@ export default function StaffSelfDirectedLearningPage() {
                   <span className={STATUS_CLASS[plan.status] || "text-t2"}>
                     {PLAN_STATUS_LABELS[plan.status]}
                   </span>
-                  <div className="text-t3">送出：{formatDateTime(plan.submittedAt)}</div>
+                  <div
+                    className={
+                      reviewState === "ended" && plan.status === "submitted"
+                        ? "text-danger"
+                        : "text-t3"
+                    }
+                  >
+                    送出：{formatDateTime(plan.submittedAt)}
+                    {plan.status === "submitted" && plan.submittedAt
+                      ? `（已等待 ${Math.max(
+                          Math.floor((Date.now() - plan.submittedAt) / 86_400_000),
+                          0
+                        )} 天）`
+                      : ""}
+                  </div>
                 </div>
               </div>
 

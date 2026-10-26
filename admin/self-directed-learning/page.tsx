@@ -7,6 +7,7 @@ import {
   DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS,
   WEEKDAY_LABELS,
   openStateOf,
+  reviewStateOf,
   type ClassOption,
   type FlexibleSlot,
   type PeriodOption,
@@ -42,6 +43,13 @@ const STATE_LABEL: Record<string, string> = {
   closed: "尚未開放",
   open: "開放撰寫中",
   ended: "已截止",
+};
+
+const REVIEW_STATE_LABEL: Record<string, string> = {
+  unset: "尚未設定審核期限",
+  closed: "尚未開始審核",
+  open: "審核進行中",
+  ended: "已超過審核期限",
 };
 
 /** 範例說明（插入後可再修改；空行不標號，其餘行自動 1. 2. 3. …） */
@@ -415,15 +423,27 @@ export default function SelfDirectedLearningSettingsPage({
     }
     const openAt = fromDateTimeLocal(toDateTimeLocal(settings.openAt));
     const closeAt = fromDateTimeLocal(toDateTimeLocal(settings.closeAt));
+    const reviewStartAt = fromDateTimeLocal(toDateTimeLocal(settings.reviewStartAt));
+    const reviewEndAt = fromDateTimeLocal(toDateTimeLocal(settings.reviewEndAt));
     const payload = {
       ...settings,
       openAt,
       closeAt,
+      reviewStartAt,
+      reviewEndAt,
       instructions: renumberInstructions(settings.instructions),
       writingInstructions: renumberInstructions(settings.writingInstructions),
     };
     if (payload.openAt !== null && payload.closeAt !== null && payload.closeAt <= payload.openAt) {
       setToast({ kind: "error", text: "截止時間必須晚於開始時間" });
+      return;
+    }
+    if (
+      payload.reviewStartAt !== null &&
+      payload.reviewEndAt !== null &&
+      payload.reviewEndAt <= payload.reviewStartAt
+    ) {
+      setToast({ kind: "error", text: "審核截止時間必須晚於審核開始時間" });
       return;
     }
     if (
@@ -474,6 +494,15 @@ export default function SelfDirectedLearningSettingsPage({
   };
 
   const state = openStateOf(settings);
+  const reviewState = reviewStateOf(settings);
+  const reviewRemainingDays =
+    settings.reviewEndAt !== null
+      ? Math.ceil((settings.reviewEndAt - Date.now()) / 86_400_000)
+      : null;
+  const reviewOverdueDays =
+    settings.reviewEndAt !== null
+      ? Math.floor((Date.now() - settings.reviewEndAt) / 86_400_000)
+      : null;
   /** 彈性形式的下限週數是否超過實際可寫週數 */
   const minWeeksInvalid =
     settings.weekMode === "flexible" &&
@@ -871,6 +900,59 @@ export default function SelfDirectedLearningSettingsPage({
               加入
             </button>
           </div>
+        </div>
+      </details>
+
+      <details className="border-themed bg-card rounded-lg" open>
+        <summary className="text-t1 flex cursor-pointer items-center gap-2 p-4 font-medium">
+          <DisclosureArrow />
+          審核期限
+        </summary>
+        <div className="space-y-4 px-4 pb-4">
+          <p className="text-t3 text-xs">
+            設定審核起訖後，審核人員的頁面會顯示期限、剩餘天數與逾期提醒，以督促於期限內完成審核。
+            期限僅供提示，逾期仍可審核；留空表示不設期限。
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="text-t2 block space-y-1 text-sm">
+              <span>審核開始時間</span>
+              <input
+                type="datetime-local"
+                className="input-theme w-full rounded px-3 py-2 text-sm"
+                value={toDateTimeLocal(settings.reviewStartAt)}
+                onChange={(event) =>
+                  patch({ reviewStartAt: fromDateTimeLocal(event.target.value) })
+                }
+              />
+            </label>
+            <label className="text-t2 block space-y-1 text-sm">
+              <span>審核截止時間</span>
+              <input
+                type="datetime-local"
+                className="input-theme w-full rounded px-3 py-2 text-sm"
+                value={toDateTimeLocal(settings.reviewEndAt)}
+                onChange={(event) => patch({ reviewEndAt: fromDateTimeLocal(event.target.value) })}
+              />
+            </label>
+          </div>
+          <p className="text-t3 text-sm">
+            目前設定：{formatDateTime(settings.reviewStartAt)} ～{" "}
+            {formatDateTime(settings.reviewEndAt)}（{REVIEW_STATE_LABEL[reviewState]}
+            {reviewState === "open" && reviewRemainingDays !== null
+              ? `，剩餘 ${Math.max(reviewRemainingDays, 0)} 天`
+              : ""}
+            {reviewState === "ended" && reviewOverdueDays !== null
+              ? `，已逾期 ${Math.max(reviewOverdueDays, 0)} 天`
+              : ""}
+            ）
+          </p>
+          {settings.reviewStartAt !== null &&
+            settings.closeAt !== null &&
+            settings.reviewStartAt < settings.closeAt && (
+              <p className="text-warning text-xs">
+                審核開始時間早於開放撰寫截止時間：審核人員可能在學生仍可送出或抽回時就開始審核。
+              </p>
+            )}
         </div>
       </details>
 

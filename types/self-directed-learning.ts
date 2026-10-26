@@ -121,6 +121,10 @@ export interface SelfDirectedLearningSettings {
   openAt: number | null;
   /** 開放撰寫截止（epoch ms；null＝尚未設定） */
   closeAt: number | null;
+  /** 審核期限開始（epoch ms；null＝未設定，僅供提示與督促，不阻止審核） */
+  reviewStartAt: number | null;
+  /** 審核期限截止（epoch ms；null＝未設定，僅供提示與督促，不阻止審核） */
+  reviewEndAt: number | null;
   /** 週數填寫形式（full＝全學期皆須填寫，週數由行事曆自動判斷；flexible＝至少填到下限週數） */
   weekMode: WeekMode;
   /** 彈性形式的下限週數（建議至少 6 週；全學期形式不使用） */
@@ -148,6 +152,8 @@ export const DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS: SelfDirectedLearningSettin
   enabled: true,
   openAt: null,
   closeAt: null,
+  reviewStartAt: null,
+  reviewEndAt: null,
   weekMode: "full",
   minWeeks: 6,
   slots: [],
@@ -253,6 +259,8 @@ export function normalizeSettings(raw: unknown): SelfDirectedLearningSettings {
         : DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS.enabled,
     openAt: asEpoch(source.openAt),
     closeAt: asEpoch(source.closeAt),
+    reviewStartAt: asEpoch(source.reviewStartAt),
+    reviewEndAt: asEpoch(source.reviewEndAt),
     weekMode: source.weekMode === "flexible" ? "flexible" : "full",
     minWeeks: Math.min(Math.max(minWeeksRaw, 1), MAX_PLAN_WEEKS),
     slots,
@@ -293,10 +301,21 @@ export function parseSettingsInput(raw: unknown): ParseResult {
   const body = raw as Record<string, unknown>;
   const openAt = asEpoch(body.openAt);
   const closeAt = asEpoch(body.closeAt);
+  const reviewStartAt = asEpoch(body.reviewStartAt);
+  const reviewEndAt = asEpoch(body.reviewEndAt);
   if (body.openAt !== null && openAt === null) return { ok: false, message: "開放開始時間格式錯誤" };
   if (body.closeAt !== null && closeAt === null) return { ok: false, message: "開放截止時間格式錯誤" };
+  if (body.reviewStartAt !== null && reviewStartAt === null) {
+    return { ok: false, message: "審核開始時間格式錯誤" };
+  }
+  if (body.reviewEndAt !== null && reviewEndAt === null) {
+    return { ok: false, message: "審核截止時間格式錯誤" };
+  }
   if (openAt !== null && closeAt !== null && closeAt <= openAt) {
     return { ok: false, message: "截止時間必須晚於開始時間" };
+  }
+  if (reviewStartAt !== null && reviewEndAt !== null && reviewEndAt <= reviewStartAt) {
+    return { ok: false, message: "審核截止時間必須晚於審核開始時間" };
   }
   const value = normalizeSettings(body);
   if ("enabled" in body && typeof body.enabled !== "boolean") {
@@ -328,6 +347,17 @@ export function openStateOf(
   if (settings.openAt === null || settings.closeAt === null) return "unset";
   if (now < settings.openAt) return "closed";
   if (now > settings.closeAt) return "ended";
+  return "open";
+}
+
+/** 審核期限狀態：unset（未設定）／closed（未開始）／open（進行中）／ended（已截止） */
+export function reviewStateOf(
+  settings: Pick<SelfDirectedLearningSettings, "reviewStartAt" | "reviewEndAt">,
+  now: number = Date.now()
+): "unset" | "closed" | "open" | "ended" {
+  if (settings.reviewStartAt === null || settings.reviewEndAt === null) return "unset";
+  if (now < settings.reviewStartAt) return "closed";
+  if (now > settings.reviewEndAt) return "ended";
   return "open";
 }
 

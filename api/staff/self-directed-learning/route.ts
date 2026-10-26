@@ -89,11 +89,16 @@ export async function GET(request: NextRequest) {
     const roles = await staffRolesOf(session as VerifiedSession, settings);
     const mode = request.nextUrl.searchParams.get("mode") === "class" ? "class" : "review";
     const period = periodLabelOf(await getCurrentPeriod());
+    // 審核期限：只提供起訖（供審核頁顯示與逾期提醒，不阻止審核）
+    const reviewWindow = {
+      startAt: settings.reviewStartAt,
+      endAt: settings.reviewEndAt,
+    };
 
     // 總開關關閉：非管理端只回維護旗標（計畫清單不回傳）
     if (!settings.enabled) {
       return NextResponse.json(
-        { success: true, maintenance: true, mode, roles, period, plans: [] },
+        { success: true, maintenance: true, mode, roles, period, reviewWindow, plans: [] },
         { headers: noStore }
       );
     }
@@ -107,7 +112,7 @@ export async function GET(request: NextRequest) {
       }
       const plans = await listClassPlans(period, roles.classCode);
       return NextResponse.json(
-        { success: true, mode, roles, period, plans },
+        { success: true, mode, roles, period, reviewWindow, plans },
         { headers: noStore }
       );
     }
@@ -122,7 +127,7 @@ export async function GET(request: NextRequest) {
     }
     const plans = await listSubmittedPlansForScope(period, roles.scope);
     return NextResponse.json(
-      { success: true, mode, roles, period, plans },
+      { success: true, mode, roles, period, reviewWindow, plans },
       { headers: noStore }
     );
   } catch (error) {

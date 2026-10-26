@@ -285,6 +285,63 @@ export async function setStudentPlanDeleted(input: {
   return { ok: true, plan: next };
 }
 
+export type WithdrawPlanResult =
+  | { ok: true; plan: SelfDirectedLearningPlan }
+  | { ok: false; status: 400 | 403 | 404 | 409; message: string };
+
+/**
+ * 學生抽回審核中的計畫（限開放撰寫期間、限本學期）：
+ * 抽回後回到草稿狀態，可修改後重新送出。
+ * 以 transaction 重讀確認仍是 submitted，避免與審核人員同時處理。
+ */
+export async function withdrawStudentPlan(input: {
+  planId: string;
+  studentUid: string;
+  /** 目前學期識別（只允許抽回本學期的計畫） */
+  period: string;
+  settings: SelfDirectedLearningSettings;
+  now?: number;
+}): Promise<WithdrawPlanResult> {
+  const now = input.now ?? Date.now();
+  if (openStateOf(input.settings, now) !== "open") {
+    return { ok: false, status: 400, message: "目前非開放撰寫期間，無法抽回計畫" };
+  }
+  const db = getAdminDb();
+  const planRef = plansRef().doc(input.planId);
+  const outcome = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(planRef);
+    if (!snap.exists) return { kind: "missing" as const };
+    const plan = readPlan(planRef.id, (snap.data() || {}) as Record<string, unknown>);
+    if (plan.studentUid !== input.studentUid) return { kind: "forbidden" as const };
+    if (plan.deletedAt) return { kind: "deleted" as const };
+    if (plan.status !== "submitted") return { kind: "badStatus" as const };
+    if (plan.period !== input.period) return { kind: "wrongPeriod" as const };
+    const next: SelfDirectedLearningPlan = {
+      ...plan,
+      status: "draft",
+      submittedAt: null,
+      updatedAt: now,
+    };
+    tx.set(planRef, { status: "draft", submittedAt: null, updatedAt: now }, { merge: true });
+    return { kind: "ok" as const, plan: next };
+  });
+
+  switch (outcome.kind) {
+    case "missing":
+      return { ok: false, status: 404, message: "查無此計畫" };
+    case "forbidden":
+      return { ok: false, status: 403, message: "無權操作此計畫" };
+    case "deleted":
+      return { ok: false, status: 409, message: "此計畫在垃圾桶，無法抽回" };
+    case "badStatus":
+      return { ok: false, status: 409, message: "只有審核中的計畫可以抽回修改" };
+    case "wrongPeriod":
+      return { ok: false, status: 409, message: "只能抽回本學期的計畫" };
+    default:
+      return { ok: true, plan: outcome.plan };
+  }
+}
+
 /* ——— 教職員端：審核佇列與全班瀏覽 ——— */
 
 function readPlansFromSnapshot(snap: {

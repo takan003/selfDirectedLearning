@@ -10,6 +10,7 @@ import {
   getStudentPlans,
   saveStudentPlan,
   setStudentPlanDeleted,
+  withdrawStudentPlan,
   type StudentIdentityLite,
 } from "../../../lib/self-directed-learning-plans";
 import { getCurrentPeriod } from "@/lib/settings-server";
@@ -197,6 +198,43 @@ export async function POST(request: NextRequest) {
           success: true,
           plan: trashResult.plan,
           message: deleted ? "已移至垃圾桶" : "已還原",
+        },
+        { headers: noStore }
+      );
+    }
+
+    // 抽回審核中的計畫（限開放撰寫期間）：回到草稿後可修改再送出
+    if (requestedAction === "withdraw") {
+      if (!planId) {
+        return NextResponse.json(
+          { success: false, message: "缺少計畫識別" },
+          { status: 400, headers: noStore }
+        );
+      }
+      const withdrawResult = await withdrawStudentPlan({
+        planId,
+        studentUid: student.uid,
+        period: periodLabelOf(await getCurrentPeriod()),
+        settings,
+      });
+      if (!withdrawResult.ok) {
+        return NextResponse.json(
+          { success: false, message: withdrawResult.message },
+          { status: withdrawResult.status, headers: noStore }
+        );
+      }
+      await logActivity({
+        userId: student.uid,
+        role: session.role,
+        action: "self_directed_learning_plan_withdrawn",
+        ip: getClientIp(request),
+        details: `抽回自主學習計畫：${withdrawResult.plan.topic}`,
+      });
+      return NextResponse.json(
+        {
+          success: true,
+          plan: withdrawResult.plan,
+          message: "已抽回，可在草稿匣修改後重新送出",
         },
         { headers: noStore }
       );
