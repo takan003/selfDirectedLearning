@@ -45,12 +45,6 @@ const FONT_SIZES = [
   { value: "7", label: "特大" },
 ] as const;
 
-const ALIGNMENTS = [
-  { value: "left", label: "靠左對齊", command: "justifyLeft" },
-  { value: "center", label: "置中對齊", command: "justifyCenter" },
-  { value: "right", label: "靠右對齊", command: "justifyRight" },
-] as const;
-
 /** 文字顏色選色盤（內容色，非主題色） */
 const TEXT_COLORS = [
   { value: "#111827", label: "黑色" },
@@ -61,6 +55,18 @@ const TEXT_COLORS = [
   { value: "#2563eb", label: "藍色" },
   { value: "#7c3aed", label: "紫色" },
   { value: "#6b7280", label: "灰色" },
+] as const;
+
+/** 文字底色選色盤（淺色為主） */
+const HIGHLIGHT_COLORS = [
+  { value: "#fef08a", label: "黃色" },
+  { value: "#bbf7d0", label: "綠色" },
+  { value: "#bfdbfe", label: "藍色" },
+  { value: "#fbcfe8", label: "粉紅" },
+  { value: "#fed7aa", label: "橘色" },
+  { value: "#e9d5ff", label: "紫色" },
+  { value: "#e5e7eb", label: "灰色" },
+  { value: "#ffffff", label: "白色" },
 ] as const;
 
 function hasRichHtmlTag(value: string): boolean {
@@ -146,6 +152,73 @@ function Divider() {
   return <span aria-hidden="true" className="border-themed mx-1 h-4 border-r" />;
 }
 
+function AlignIcon({ align }: { align: "left" | "center" | "right" }) {
+  const path =
+    align === "left"
+      ? "M4 6h16M4 10h10M4 14h16M4 18h8"
+      : align === "center"
+        ? "M4 6h16M7 10h10M4 14h16M8 18h8"
+        : "M4 6h16M10 10h10M4 14h16M12 18h8";
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+      <path d={path} />
+    </svg>
+  );
+}
+
+function ColorPalette({
+  colors,
+  value,
+  onPick,
+  onCustomChange,
+}: {
+  colors: readonly { value: string; label: string }[];
+  value: string;
+  onPick: (color: string) => void;
+  onCustomChange: (color: string) => void;
+}) {
+  return (
+    <div
+      className="border-themed bg-card absolute bottom-full left-0 z-20 mb-1 border p-2 shadow-lg"
+      style={{ width: "9.5rem", borderRadius: 0 }}
+    >
+      <div className="flex flex-wrap gap-1">
+        {colors.map((color) => (
+          <button
+            key={color.value}
+            type="button"
+            title={color.label}
+            aria-label={color.label}
+            className="border-themed h-5 w-5 border"
+            style={{ backgroundColor: color.value, borderRadius: 0 }}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => onPick(color.value)}
+          />
+        ))}
+      </div>
+      <label className="border-themed mt-2 flex items-center justify-between gap-2 border-t pt-2">
+        <span className="text-t3 text-xs">自訂</span>
+        <input
+          type="color"
+          value={value}
+          aria-label="自訂顏色"
+          className="h-6 w-10 cursor-pointer border-0 bg-transparent p-0"
+          onChange={(event) => onCustomChange(event.target.value)}
+        />
+      </label>
+    </div>
+  );
+}
+
 export interface RichTextEditorProps {
   value: string;
   onChange: (html: string) => void;
@@ -170,9 +243,11 @@ export function RichTextEditor({
   const editorRef = useRef<HTMLDivElement | null>(null);
   const savedRangeRef = useRef<Range | null>(null);
   const [colorOpen, setColorOpen] = useState(false);
+  const [highlightOpen, setHighlightOpen] = useState(false);
+  const [customTextColor, setCustomTextColor] = useState("#111827");
+  const [customHighlightColor, setCustomHighlightColor] = useState("#fef08a");
   const [fontFamily, setFontFamily] = useState("sans-serif");
   const [fontSize, setFontSize] = useState("3");
-  const [alignment, setAlignment] = useState("left");
 
   const plainText = useMemo(() => stripHtmlToText(value).trim(), [value]);
   const empty = plainText.length === 0;
@@ -395,60 +470,86 @@ export function RichTextEditor({
             aria-expanded={colorOpen}
             disabled={disabled}
             className="text-t1 hover:bg-card px-2 py-1 text-xs leading-none disabled:cursor-not-allowed disabled:opacity-50"
-      style={{ borderRadius: 0 }}
+            style={{ borderRadius: 0 }}
             onMouseDown={(event) => event.preventDefault()}
-            onClick={() => setColorOpen((open) => !open)}
+            onClick={() => {
+              setHighlightOpen(false);
+              setColorOpen((open) => !open);
+            }}
           >
-            <span style={{ textDecoration: "underline" }}>A</span> ▾
+            <span style={{ textDecoration: "underline", textDecorationColor: customTextColor }}>A</span> ▾
           </button>
           {colorOpen && !disabled && (
-            <div
-              className="border-themed bg-card absolute bottom-full right-0 z-20 mb-1 flex flex-wrap gap-1 border p-2 shadow-lg"
-              style={{ width: "8.5rem", borderRadius: 0 }}
-            >
-              {TEXT_COLORS.map((color) => (
-                <button
-                  key={color.value}
-                  type="button"
-                  title={color.label}
-                  aria-label={color.label}
-                  className="border-themed h-5 w-5 border"
-                  style={{ backgroundColor: color.value, borderRadius: 0 }}
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => {
-                    exec("foreColor", color.value);
-                    setColorOpen(false);
-                  }}
-                />
-              ))}
-            </div>
+            <ColorPalette
+              colors={TEXT_COLORS}
+              value={customTextColor}
+              onPick={(color) => {
+                setCustomTextColor(color);
+                exec("foreColor", color);
+                setColorOpen(false);
+              }}
+              onCustomChange={(color) => {
+                setCustomTextColor(color);
+                exec("foreColor", color);
+                setColorOpen(false);
+              }}
+            />
+          )}
+        </div>
+
+        <div className="relative">
+          <button
+            type="button"
+            title="文字底色"
+            aria-label="文字底色"
+            aria-expanded={highlightOpen}
+            disabled={disabled}
+            className="text-t1 hover:bg-card px-2 py-1 text-xs leading-none disabled:cursor-not-allowed disabled:opacity-50"
+            style={{ borderRadius: 0 }}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => {
+              setColorOpen(false);
+              setHighlightOpen((open) => !open);
+            }}
+          >
+            <span className="inline-flex flex-col items-center leading-none">
+              <span>A</span>
+              <span
+                className="mt-0.5 block h-1 w-3"
+                style={{ backgroundColor: customHighlightColor }}
+              />
+            </span>
+            <span> ▾</span>
+          </button>
+          {highlightOpen && !disabled && (
+            <ColorPalette
+              colors={HIGHLIGHT_COLORS}
+              value={customHighlightColor}
+              onPick={(color) => {
+                setCustomHighlightColor(color);
+                exec("hiliteColor", color);
+                setHighlightOpen(false);
+              }}
+              onCustomChange={(color) => {
+                setCustomHighlightColor(color);
+                exec("hiliteColor", color);
+                setHighlightOpen(false);
+              }}
+            />
           )}
         </div>
 
         <Divider />
 
-        <span className="text-t2 text-xs" aria-hidden="true">
-          ≡
-        </span>
-        <select
-          aria-label="對齊方式"
-          title="對齊方式"
-          className="text-t1 bg-transparent px-1 py-1 text-xs"
-          style={{ borderRadius: 0 }}
-          value={alignment}
-          disabled={disabled}
-          onChange={(event) => {
-            const option = ALIGNMENTS.find((item) => item.value === event.target.value);
-            setAlignment(event.target.value);
-            if (option) exec(option.command);
-          }}
-        >
-          {ALIGNMENTS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        <ToolButton title="靠左對齊" disabled={disabled} onClick={() => exec("justifyLeft")}>
+          <AlignIcon align="left" />
+        </ToolButton>
+        <ToolButton title="置中對齊" disabled={disabled} onClick={() => exec("justifyCenter")}>
+          <AlignIcon align="center" />
+        </ToolButton>
+        <ToolButton title="靠右對齊" disabled={disabled} onClick={() => exec("justifyRight")}>
+          <AlignIcon align="right" />
+        </ToolButton>
 
         <ToolButton title="編號清單" disabled={disabled} onClick={() => exec("insertOrderedList")}>
           1.

@@ -684,6 +684,7 @@ const RICH_TEXT_DROP_ELEMENTS =
 /** 允許保留的 CSS 屬性（其餘一律丟棄） */
 const RICH_TEXT_STYLE_PROPS = new Set([
   "color",
+  "background-color",
   "font-family",
   "font-size",
   "text-align",
@@ -702,6 +703,7 @@ const RICH_TEXT_SAFE_ALIGN = /^(left|right|center|justify)$/i;
 function isSafeRichStyleValue(property: string, value: string): boolean {
   switch (property) {
     case "color":
+    case "background-color":
       return RICH_TEXT_SAFE_COLOR.test(value);
     case "font-size":
       return RICH_TEXT_SAFE_FONT_SIZE.test(value);
@@ -787,6 +789,8 @@ function sanitizeRichAttributes(tag: string, raw: string): string {
       attributes.push(`size="${value}"`);
     } else if (name === "color" && RICH_TEXT_SAFE_COLOR.test(value)) {
       attributes.push(`color="${value}"`);
+    } else if (name === "bgcolor" && RICH_TEXT_SAFE_COLOR.test(value)) {
+      attributes.push(`bgcolor="${value}"`);
     } else if (name === "face" && value.length <= 120 && RICH_TEXT_SAFE_FONT_FAMILY.test(value)) {
       attributes.push(`face="${value.replace(/&/g, "&amp;").replace(/"/g, "&quot;")}"`);
     }
@@ -795,7 +799,7 @@ function sanitizeRichAttributes(tag: string, raw: string): string {
 }
 
 /**
- * 富文本白名單淨化：只留安全標籤（粗體、斜體、底線、刪除線、顏色／字級、
+ * 富文本白名單淨化：只留安全標籤（粗體、斜體、底線、刪除線、顏色／底色／字級、
  * 段落、清單、引用等）與安全屬性；移除 script／iframe／事件屬性／javascript:／url()。
  * 純文字輸入會被跳脫，因此可安全地以 `dangerouslySetInnerHTML` 呈現。
  */
