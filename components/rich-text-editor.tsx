@@ -27,6 +27,15 @@ const FONT_FAMILIES = [
   { value: "sans-serif", label: "Sans Serif" },
   { value: "serif", label: "Serif" },
   { value: "monospace", label: "Monospace" },
+  { value: '"Microsoft JhengHei", "微軟正黑體", sans-serif', label: "微軟正黑體" },
+  { value: '"PMingLiU", "新細明體", serif', label: "新細明體" },
+  { value: '"DFKai-SB", "標楷體", serif', label: "標楷體" },
+  { value: '"Noto Sans TC", "思源黑體", sans-serif', label: "思源黑體" },
+  { value: '"PingFang TC", "蘋方-繁", sans-serif', label: "蘋方-繁" },
+  { value: "Arial, Helvetica, sans-serif", label: "Arial" },
+  { value: '"Times New Roman", Times, serif', label: "Times New Roman" },
+  { value: "Georgia, serif", label: "Georgia" },
+  { value: '"Courier New", monospace', label: "Courier New" },
 ] as const;
 
 const FONT_SIZES = [
@@ -288,8 +297,8 @@ export function RichTextEditor({
           className={`input-theme min-h-24 w-full px-3 py-2 text-sm ${disabled ? "opacity-60" : ""}`}
           style={{
             minHeight: "6rem",
-            resize: disabled ? "none" : "vertical",
-            overflowY: "auto",
+            resize: disabled ? "none" : "both",
+            overflow: "auto",
             borderRadius: 0,
           }}
           onInput={handleInput}
@@ -368,13 +377,13 @@ export function RichTextEditor({
         <Divider />
 
         <ToolButton title="粗體" disabled={disabled} onClick={() => exec("bold")}>
-          <span className="font-bold">B</span>
+          <span style={{ fontWeight: 700 }}>B</span>
         </ToolButton>
         <ToolButton title="斜體" disabled={disabled} onClick={() => exec("italic")}>
-          <span className="italic">I</span>
+          <span style={{ fontStyle: "italic" }}>I</span>
         </ToolButton>
         <ToolButton title="底線" disabled={disabled} onClick={() => exec("underline")}>
-          <span className="underline">U</span>
+          <span style={{ textDecoration: "underline" }}>U</span>
         </ToolButton>
 
         <div className="relative">
@@ -389,7 +398,7 @@ export function RichTextEditor({
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => setColorOpen((open) => !open)}
           >
-            <span className="underline">A</span> ▾
+            <span style={{ textDecoration: "underline" }}>A</span> ▾
           </button>
           {colorOpen && !disabled && (
             <div
@@ -463,13 +472,27 @@ export function RichTextEditor({
         <Divider />
 
         <ToolButton title="刪除線" disabled={disabled} onClick={() => exec("strikeThrough")}>
-          <span className="line-through">S</span>
+          <span style={{ textDecoration: "line-through" }}>S</span>
         </ToolButton>
 
         <Divider />
 
         <ToolButton title="清除格式" disabled={disabled} onClick={() => exec("removeFormat")}>
-          T\
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="m7 21-4.3-4.3a1 1 0 0 1 0-1.4l9.6-9.6a1 1 0 0 1 1.4 0l5.6 5.6a1 1 0 0 1 0 1.4L11 21" />
+            <path d="M22 21H7" />
+            <path d="m5 12 5.6 5.6" />
+          </svg>
         </ToolButton>
       </div>
     </div>

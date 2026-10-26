@@ -665,7 +665,7 @@ const RICH_TEXT_STYLE_PROPS = new Set([
 const RICH_TEXT_SAFE_COLOR = /^(#[0-9a-f]{3,8}|rgba?\(\s*[\d.%,\s]+\)|[a-z]{3,20})$/i;
 const RICH_TEXT_SAFE_FONT_SIZE =
   /^(\d+(\.\d+)?(px|pt|em|rem|%)|xx-small|x-small|small|medium|large|x-large|xx-large)$/i;
-const RICH_TEXT_SAFE_FONT_FAMILY = /^[a-z0-9\s,"'-]+$/i;
+const RICH_TEXT_SAFE_FONT_FAMILY = /^[\p{L}\p{N}\s,"'_.-]+$/u;
 const RICH_TEXT_SAFE_SPACING = /^-?\d+(\.\d+)?(px|pt|em|rem|%)$/i;
 const RICH_TEXT_SAFE_ALIGN = /^(left|right|center|justify)$/i;
 

@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.42",
+    "version": "0.0.43",
     "releasedAt": "2026-10-26"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -55,6 +55,16 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.43",
+      "releasedAt": "2026-10-26",
+      "notes": [
+        "字型選單新增電腦常見的中英文字型：微軟正黑體、新細明體、標楷體、思源黑體、蘋方-繁、Arial、Times New Roman、Georgia、Courier New；字型名稱現在允許中文",
+        "工具列的粗體、斜體、底線、刪除線與顏色按鈕改用行內樣式，確保斜體 I 與刪除線 S 在任何環境都正確顯示",
+        "清除格式按鈕改用橡皮擦圖示",
+        "學習安排編輯框恢復可上下左右拖曳調整大小"
+      ]
+    },
     {
       "version": "0.0.42",
       "releasedAt": "2026-10-26",
