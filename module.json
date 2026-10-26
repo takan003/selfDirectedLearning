@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.50",
+    "version": "0.0.51",
     "releasedAt": "2026-10-26"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -57,6 +57,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.51",
+      "releasedAt": "2026-10-26",
+      "notes": [
+        "修正場地版面：自行輸入的文字框放在場地下拉選單的右側（同一列），空間不足時才自動換行；不是把整個場地控制項靠右"
+      ]
+    },
     {
       "version": "0.0.50",
       "releasedAt": "2026-10-26",
