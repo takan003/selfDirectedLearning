@@ -6,10 +6,12 @@ import { rosterCollection } from "@/types/roster";
 import {
   SELF_DIRECTED_LEARNING_PLANS_COLLECTION,
   SELF_DIRECTED_LEARNING_REVIEWS_COLLECTION,
+  normalizeWeekNotes,
   periodLabelOf,
   planDocIdOf,
   openStateOf,
   type PlanReview,
+  type PlanWeekReview,
   type ReviewScope,
   type SelfDirectedLearningPlan,
   type SelfDirectedLearningSettings,
@@ -93,6 +95,7 @@ function readReview(id: string, raw: Record<string, unknown>): PlanReview {
     reviewerName: typeof raw.reviewerName === "string" ? raw.reviewerName : "",
     decision: raw.decision === "returned" ? ("returned" as const) : ("approved" as const),
     note: typeof raw.note === "string" ? raw.note : "",
+    weekNotes: normalizeWeekNotes(raw.weekNotes),
     reviewedAt: typeof raw.reviewedAt === "number" ? raw.reviewedAt : 0,
   };
 }
@@ -499,6 +502,8 @@ export async function applyReview(input: {
   planId: string;
   action: "approve" | "return";
   note: string;
+  /** 逐週審查意見（富文本；可留空） */
+  weekNotes?: PlanWeekReview[];
   reviewerUid: string;
   reviewerName: string;
   /** 審查範圍；未提供＝全校（管理員或未設定範圍的審核人員） */
@@ -539,6 +544,7 @@ export async function applyReview(input: {
       reviewerName: input.reviewerName,
       decision: input.action === "approve" ? "approved" : "returned",
       note: input.note,
+      weekNotes: input.weekNotes ?? [],
       reviewedAt: now,
     });
     return {

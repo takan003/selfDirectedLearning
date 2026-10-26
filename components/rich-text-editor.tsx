@@ -226,6 +226,8 @@ export interface RichTextEditorProps {
   placeholder?: string;
   maxLength?: number;
   ariaLabel?: string;
+  /** 精簡工具列與高度（表格內逐週意見等狹窄欄位用） */
+  compact?: boolean;
 }
 
 /**
@@ -239,6 +241,7 @@ export function RichTextEditor({
   placeholder = "本週預計學習的內容、進度與方式",
   maxLength = 600,
   ariaLabel,
+  compact = false,
 }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const savedRangeRef = useRef<Range | null>(null);
@@ -369,9 +372,11 @@ export function RichTextEditor({
           aria-label={ariaLabel}
           contentEditable={!disabled}
           suppressContentEditableWarning
-          className={`input-theme min-h-24 w-full px-3 py-2 text-sm ${disabled ? "opacity-60" : ""}`}
+          className={`input-theme w-full px-3 py-2 text-sm ${
+            compact ? "min-h-16" : "min-h-24"
+          } ${disabled ? "opacity-60" : ""}`}
           style={{
-            minHeight: "6rem",
+            minHeight: compact ? "4rem" : "6rem",
             resize: disabled ? "none" : "both",
             overflow: "auto",
             borderRadius: 0,
@@ -406,51 +411,55 @@ export function RichTextEditor({
           ↷
         </ToolButton>
 
-        <Divider />
+        {!compact && (
+          <>
+            <Divider />
 
-        <select
-          aria-label="字型"
-          title="字型"
-          className="text-t1 bg-transparent px-1 py-1 text-xs"
-          style={{ borderRadius: 0 }}
-          value={fontFamily}
-          disabled={disabled}
-          onChange={(event) => {
-            setFontFamily(event.target.value);
-            exec("fontName", event.target.value);
-          }}
-        >
-          {FONT_FAMILIES.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+            <select
+              aria-label="字型"
+              title="字型"
+              className="text-t1 bg-transparent px-1 py-1 text-xs"
+              style={{ borderRadius: 0 }}
+              value={fontFamily}
+              disabled={disabled}
+              onChange={(event) => {
+                setFontFamily(event.target.value);
+                exec("fontName", event.target.value);
+              }}
+            >
+              {FONT_FAMILIES.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
 
-        <span className="text-t2 flex items-baseline gap-0.5" aria-hidden="true">
-          <span style={{ fontSize: "10px", lineHeight: 1 }}>T</span>
-          <span style={{ fontSize: "16px", lineHeight: 1 }}>T</span>
-        </span>
-        <select
-          aria-label="字級"
-          title="字級"
-          className="text-t1 bg-transparent px-1 py-1 text-xs"
-          style={{ borderRadius: 0 }}
-          value={fontSize}
-          disabled={disabled}
-          onChange={(event) => {
-            setFontSize(event.target.value);
-            exec("fontSize", event.target.value);
-          }}
-        >
-          {FONT_SIZES.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+            <span className="text-t2 flex items-baseline gap-0.5" aria-hidden="true">
+              <span style={{ fontSize: "10px", lineHeight: 1 }}>T</span>
+              <span style={{ fontSize: "16px", lineHeight: 1 }}>T</span>
+            </span>
+            <select
+              aria-label="字級"
+              title="字級"
+              className="text-t1 bg-transparent px-1 py-1 text-xs"
+              style={{ borderRadius: 0 }}
+              value={fontSize}
+              disabled={disabled}
+              onChange={(event) => {
+                setFontSize(event.target.value);
+                exec("fontSize", event.target.value);
+              }}
+            >
+              {FONT_SIZES.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
 
-        <Divider />
+            <Divider />
+          </>
+        )}
 
         <ToolButton title="粗體" disabled={disabled} onClick={() => exec("bold")}>
           <span style={{ fontWeight: 700 }}>B</span>
@@ -497,59 +506,67 @@ export function RichTextEditor({
           )}
         </div>
 
-        <div className="relative">
-          <button
-            type="button"
-            title="文字底色"
-            aria-label="文字底色"
-            aria-expanded={highlightOpen}
-            disabled={disabled}
-            className="text-t1 hover:bg-card px-2 py-1 text-xs leading-none disabled:cursor-not-allowed disabled:opacity-50"
-            style={{ borderRadius: 0 }}
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => {
-              setColorOpen(false);
-              setHighlightOpen((open) => !open);
-            }}
-          >
-            <span className="inline-flex flex-col items-center leading-none">
-              <span>A</span>
-              <span
-                className="mt-0.5 block h-1 w-3"
-                style={{ backgroundColor: customHighlightColor }}
+        {!compact && (
+          <div className="relative">
+            <button
+              type="button"
+              title="文字底色"
+              aria-label="文字底色"
+              aria-expanded={highlightOpen}
+              disabled={disabled}
+              className="text-t1 hover:bg-card px-2 py-1 text-xs leading-none disabled:cursor-not-allowed disabled:opacity-50"
+              style={{ borderRadius: 0 }}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                setColorOpen(false);
+                setHighlightOpen((open) => !open);
+              }}
+            >
+              <span className="inline-flex flex-col items-center leading-none">
+                <span>A</span>
+                <span
+                  className="mt-0.5 block h-1 w-3"
+                  style={{ backgroundColor: customHighlightColor }}
+                />
+              </span>
+              <span> ▾</span>
+            </button>
+            {highlightOpen && !disabled && (
+              <ColorPalette
+                colors={HIGHLIGHT_COLORS}
+                value={customHighlightColor}
+                onPick={(color) => {
+                  setCustomHighlightColor(color);
+                  exec("hiliteColor", color);
+                  setHighlightOpen(false);
+                }}
+                onCustomChange={(color) => {
+                  setCustomHighlightColor(color);
+                  exec("hiliteColor", color);
+                  setHighlightOpen(false);
+                }}
               />
-            </span>
-            <span> ▾</span>
-          </button>
-          {highlightOpen && !disabled && (
-            <ColorPalette
-              colors={HIGHLIGHT_COLORS}
-              value={customHighlightColor}
-              onPick={(color) => {
-                setCustomHighlightColor(color);
-                exec("hiliteColor", color);
-                setHighlightOpen(false);
-              }}
-              onCustomChange={(color) => {
-                setCustomHighlightColor(color);
-                exec("hiliteColor", color);
-                setHighlightOpen(false);
-              }}
-            />
-          )}
-        </div>
+            )}
+          </div>
+        )}
 
-        <Divider />
+        {!compact && (
+          <>
+            <Divider />
 
-        <ToolButton title="靠左對齊" disabled={disabled} onClick={() => exec("justifyLeft")}>
-          <AlignIcon align="left" />
-        </ToolButton>
-        <ToolButton title="置中對齊" disabled={disabled} onClick={() => exec("justifyCenter")}>
-          <AlignIcon align="center" />
-        </ToolButton>
-        <ToolButton title="靠右對齊" disabled={disabled} onClick={() => exec("justifyRight")}>
-          <AlignIcon align="right" />
-        </ToolButton>
+            <ToolButton title="靠左對齊" disabled={disabled} onClick={() => exec("justifyLeft")}>
+              <AlignIcon align="left" />
+            </ToolButton>
+            <ToolButton title="置中對齊" disabled={disabled} onClick={() => exec("justifyCenter")}>
+              <AlignIcon align="center" />
+            </ToolButton>
+            <ToolButton title="靠右對齊" disabled={disabled} onClick={() => exec("justifyRight")}>
+              <AlignIcon align="right" />
+            </ToolButton>
+
+            <Divider />
+          </>
+        )}
 
         <ToolButton title="編號清單" disabled={disabled} onClick={() => exec("insertOrderedList")}>
           1.
@@ -557,27 +574,31 @@ export function RichTextEditor({
         <ToolButton title="項目符號清單" disabled={disabled} onClick={() => exec("insertUnorderedList")}>
           •
         </ToolButton>
-        <ToolButton title="減少縮排" disabled={disabled} onClick={() => exec("outdent")}>
-          ⇤
-        </ToolButton>
-        <ToolButton title="增加縮排" disabled={disabled} onClick={() => exec("indent")}>
-          ⇥
-        </ToolButton>
-        <ToolButton
-          title="引用區塊"
-          disabled={disabled}
-          onClick={() => exec("formatBlock", "blockquote")}
-        >
-          ”
-        </ToolButton>
+        {!compact && (
+          <>
+            <ToolButton title="減少縮排" disabled={disabled} onClick={() => exec("outdent")}>
+              ⇤
+            </ToolButton>
+            <ToolButton title="增加縮排" disabled={disabled} onClick={() => exec("indent")}>
+              ⇥
+            </ToolButton>
+            <ToolButton
+              title="引用區塊"
+              disabled={disabled}
+              onClick={() => exec("formatBlock", "blockquote")}
+            >
+              ”
+            </ToolButton>
 
-        <Divider />
+            <Divider />
 
-        <ToolButton title="刪除線" disabled={disabled} onClick={() => exec("strikeThrough")}>
-          <span style={{ textDecoration: "line-through" }}>S</span>
-        </ToolButton>
+            <ToolButton title="刪除線" disabled={disabled} onClick={() => exec("strikeThrough")}>
+              <span style={{ textDecoration: "line-through" }}>S</span>
+            </ToolButton>
 
-        <Divider />
+            <Divider />
+          </>
+        )}
 
         <ToolButton title="清除格式" disabled={disabled} onClick={() => exec("removeFormat")}>
           <svg

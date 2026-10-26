@@ -207,6 +207,7 @@ export async function POST(request: NextRequest) {
       planId: parsed.value.planId,
       action: parsed.value.action,
       note: parsed.value.note,
+      weekNotes: parsed.value.weekNotes,
       reviewerUid: session.uid,
       reviewerName,
       scope: roles.scope,

@@ -9,7 +9,7 @@ import { publishScheduleFromModule } from "@/lib/calendar";
 import { getCurrentPeriod } from "@/lib/settings-server";
 import { schoolWideAudience } from "@/types/announcements";
 import { getAvailableWeeks, getClassOptions, getFullWeeks, getSchoolScheduleOptions, getSettings, getSpaceOptions, getStaffCandidates, saveSettings } from "../../../lib/self-directed-learning";
-import { parseSettingsInput } from "../../../types/self-directed-learning";
+import { parseSettingsInput, stripHtmlToText } from "../../../types/self-directed-learning";
 
 const noStore = { "Cache-Control": "no-store" };
 
@@ -54,9 +54,9 @@ async function syncWindowHooks(
     if (openAt !== null && closeAt !== null) {
       const title = "自主學習計畫開放撰寫";
       const window = `開放撰寫時間：${formatDateTime(openAt)} ～ ${formatDateTime(closeAt)}。`;
-      const body = settings.instructions.trim()
-        ? `${window}\n${settings.instructions.trim()}`
-        : window;
+      // 說明可能含富文本格式：公告／行事曆內容一律轉為純文字
+      const instructionsText = stripHtmlToText(settings.instructions).trim();
+      const body = instructionsText ? `${window}\n${instructionsText}` : window;
 
       if (options.announcement) {
         const updated = await updateFromModule({

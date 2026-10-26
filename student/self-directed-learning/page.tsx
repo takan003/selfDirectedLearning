@@ -21,6 +21,7 @@ import {
   STUDY_GROUPS,
   WEEKDAY_LABELS,
   openStateOf,
+  stripHtmlToText,
   type PlanStatus,
   type PlanTiming,
   type PlanWeek,
@@ -886,9 +887,11 @@ export default function StudentSelfDirectedLearningPage() {
             <p className="text-t1 text-xs font-medium">
               審查意見（{review.reviewerName || "審核人員"}）
             </p>
-            <p className="text-t2 mt-1 whitespace-pre-wrap text-xs">
-              {review.note || "（無文字意見）"}
-            </p>
+            <RichTextContent
+              html={review.note}
+              emptyText="（無文字意見）"
+              className="text-t2 mt-1 text-xs"
+            />
           </div>
         )}
 
@@ -898,16 +901,28 @@ export default function StudentSelfDirectedLearningPage() {
             查看內容（{plan.weeks.length} 週）
           </summary>
           <ul className="mt-2 space-y-2">
-            {plan.weeks.map((week) => (
-              <li key={week.week} className="border border-themed bg-card rounded-md p-3">
-                <div className="text-t3 mb-1 flex flex-wrap gap-2 text-xs">
-                  <span className="text-t2 font-medium">第 {week.week} 週</span>
-                  <span>{PLAN_TIMING_LABELS[week.timing]}</span>
-                  <span>{week.venue || "—"}</span>
-                </div>
-                <RichTextContent html={week.content} className="text-t2 text-xs" />
-              </li>
-            ))}
+            {plan.weeks.map((week) => {
+              const weekReview = review?.weekNotes?.find((item) => item.week === week.week);
+              return (
+                <li key={week.week} className="border border-themed bg-card rounded-md p-3">
+                  <div className="text-t3 mb-1 flex flex-wrap gap-2 text-xs">
+                    <span className="text-t2 font-medium">第 {week.week} 週</span>
+                    <span>{PLAN_TIMING_LABELS[week.timing]}</span>
+                    <span>{week.venue || "—"}</span>
+                  </div>
+                  <RichTextContent html={week.content} className="text-t2 text-xs" />
+                  {weekReview && (
+                    <div className="border-l-primary border-themed bg-surface mt-2 rounded-md border border-l-4 p-2">
+                      <p className="text-t1 text-xs font-medium">審查意見</p>
+                      <RichTextContent
+                        html={weekReview.note}
+                        className="text-t2 text-xs"
+                      />
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </details>
       </article>
@@ -954,7 +969,7 @@ export default function StudentSelfDirectedLearningPage() {
 
   return renderShell(
     <>
-      {settings.instructions.trim() && (
+      {stripHtmlToText(settings.instructions).trim() && (
         <div className="overflow-hidden rounded-lg border border-themed bg-card shadow-sm">
           <div className="bg-primary" style={{ height: "0.25rem" }} />
           <details open>
@@ -971,7 +986,7 @@ export default function StudentSelfDirectedLearningPage() {
               <DisclosureArrow />
             </summary>
             <div className="px-5 py-4">
-              <p className="text-t2 whitespace-pre-wrap text-sm">{settings.instructions}</p>
+              <RichTextContent html={settings.instructions} className="text-t2 text-sm" />
             </div>
           </details>
         </div>
@@ -1173,12 +1188,10 @@ export default function StudentSelfDirectedLearningPage() {
           </div>
 
           <div className="space-y-6 p-5">
-            {settings.writingInstructions.trim() && (
+            {stripHtmlToText(settings.writingInstructions).trim() && (
               <div className="border-themed bg-surface border-l-4 border-l-primary space-y-1 rounded-md border p-4">
                 <p className="text-t1 text-sm font-semibold">自主學習計畫撰寫說明</p>
-                <p className="text-t2 whitespace-pre-wrap text-sm">
-                  {settings.writingInstructions}
-                </p>
+                <RichTextContent html={settings.writingInstructions} className="text-t2 text-sm" />
               </div>
             )}
 

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Toast, { type ToastMessage } from "@/components/Toast";
 import DisclosureArrow from "@/components/DisclosureArrow";
+import { RichTextEditor } from "../../components/rich-text-editor";
 import {
   DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS,
   WEEKDAY_LABELS,
@@ -52,31 +53,15 @@ const REVIEW_STATE_LABEL: Record<string, string> = {
   ended: "已超過審核期限",
 };
 
-/** 範例說明（插入後可再修改；空行不標號，其餘行自動 1. 2. 3. …） */
-const INSTRUCTIONS_TEMPLATE = [
-  "請於開放期間內完成填報並送出審核。",
-  "逐週學習安排與場地皆須填寫完整。",
-  "送出後請等待審核；退回時可依意見修改後再送。",
-].join("\n");
+/** 撰寫說明範例（富文本；以編號清單呈現，插入後可再修改） */
+const INSTRUCTIONS_TEMPLATE =
+  "<ol><li>請於開放期間內完成填報並送出審核。</li><li>逐週學習安排與場地皆須填寫完整。</li><li>送出後請等待審核；退回時可依意見修改後再送。</li></ol>";
 
-/** 實施說明範例（給學生、家長的總說明） */
-const IMPLEMENTATION_TEMPLATE = [
-  "自主學習計畫請於學校開放的期間內填報並送出審核。",
-  "學習活動請於學校規定的時間與場地實施。",
-  "計畫經審核通過後，始得依計畫內容實施。",
-].join("\n");
+/** 實施說明範例（給學生、家長的總說明；富文本） */
+const IMPLEMENTATION_TEMPLATE =
+  "<ol><li>自主學習計畫請於學校開放的期間內填報並送出審核。</li><li>學習活動請於學校規定的時間與場地實施。</li><li>計畫經審核通過後，始得依計畫內容實施。</li></ol>";
 
-/** 依行自動標號：先去掉行首既有數字標號再重編；空行保留不編號 */
-function renumberInstructions(raw: string): string {
-  let index = 0;
-  const lines = raw.split(/\r?\n/).map((line) => {
-    if (!line.trim()) return "";
-    index += 1;
-    const body = line.replace(/^\s*\d{1,3}[.、]\s*/, "").trim();
-    return `${index}. ${body}`;
-  });
-  return lines.join("\n");
-}
+/** 依行自動標號的功能已移除：說明改為富文本編輯器，編號清單由工具列處理 */
 
 /** 對象名單圖示 */
 function TargetListIcon() {
@@ -431,8 +416,6 @@ export default function SelfDirectedLearningSettingsPage({
       closeAt,
       reviewStartAt,
       reviewEndAt,
-      instructions: renumberInstructions(settings.instructions),
-      writingInstructions: renumberInstructions(settings.writingInstructions),
     };
     if (payload.openAt !== null && payload.closeAt !== null && payload.closeAt <= payload.openAt) {
       setToast({ kind: "error", text: "截止時間必須晚於開始時間" });
@@ -1253,22 +1236,22 @@ export default function SelfDirectedLearningSettingsPage({
         <div className="space-y-2 px-4 pb-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-t3 text-xs">
-              給學生、家長的總說明；按 Enter 分段，將自動標號 1. 2. 3. …
+              給學生、家長的總說明；可使用工具列格式化、字型、顏色與編號清單。
             </p>
             <button
               type="button"
               className="btn-theme h-8 px-3 text-sm"
-              onClick={() => setInstructions(renumberInstructions(IMPLEMENTATION_TEMPLATE))}
+              onClick={() => setInstructions(IMPLEMENTATION_TEMPLATE)}
             >
               插入範本
             </button>
           </div>
-          <textarea
-            className="input-theme min-h-32 w-full rounded px-3 py-2 text-sm"
+          <RichTextEditor
             value={settings.instructions}
-            onChange={(event) => patch({ instructions: event.target.value })}
-            onBlur={() => setInstructions(renumberInstructions(settings.instructions))}
-            placeholder="按 Enter 分段，儲存時自動標號…"
+            onChange={setInstructions}
+            maxLength={4000}
+            placeholder="輸入自主學習實施說明…"
+            ariaLabel="自主學習實施說明"
           />
         </div>
       </details>
@@ -1281,26 +1264,22 @@ export default function SelfDirectedLearningSettingsPage({
         <div className="space-y-2 px-4 pb-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-t3 text-xs">
-              給學生發起新計畫、編輯草稿時的撰寫說明；按 Enter 分段，將自動標號 1. 2. 3. …
+              給學生發起新計畫、編輯草稿時的撰寫說明；可使用工具列格式化與編號清單。
             </p>
             <button
               type="button"
               className="btn-theme h-8 px-3 text-sm"
-              onClick={() =>
-                setWritingInstructions(renumberInstructions(INSTRUCTIONS_TEMPLATE))
-              }
+              onClick={() => setWritingInstructions(INSTRUCTIONS_TEMPLATE)}
             >
               插入範本
             </button>
           </div>
-          <textarea
-            className="input-theme min-h-32 w-full rounded px-3 py-2 text-sm"
+          <RichTextEditor
             value={settings.writingInstructions}
-            onChange={(event) => patch({ writingInstructions: event.target.value })}
-            onBlur={() =>
-              setWritingInstructions(renumberInstructions(settings.writingInstructions))
-            }
-            placeholder="按 Enter 分段，儲存時自動標號…"
+            onChange={setWritingInstructions}
+            maxLength={4000}
+            placeholder="輸入自主學習計畫撰寫說明…"
+            ariaLabel="自主學習計畫撰寫說明"
           />
         </div>
       </details>

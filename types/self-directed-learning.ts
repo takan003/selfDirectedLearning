@@ -181,6 +181,12 @@ function asEpoch(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : null;
 }
 
+/** 多行說明／審查意見等富文本欄位：先白名單淨化，再限制 HTML 長度 */
+function normalizeRichHtmlField(value: unknown, maxHtml: number): string {
+  if (typeof value !== "string" || !value) return "";
+  return capRichHtmlLength(sanitizeRichHtml(value), maxHtml);
+}
+
 function asReviewerStudents(value: unknown): ReviewerStudentRef[] {
   if (!Array.isArray(value)) return [];
   const seen = new Set<string>();
@@ -270,12 +276,8 @@ export function normalizeSettings(raw: unknown): SelfDirectedLearningSettings {
         ? source.venueEditable
         : DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS.venueEditable,
     reviewers,
-    instructions:
-      typeof source.instructions === "string" ? source.instructions.slice(0, 4000) : "",
-    writingInstructions:
-      typeof source.writingInstructions === "string"
-        ? source.writingInstructions.slice(0, 4000)
-        : "",
+    instructions: normalizeRichHtmlField(source.instructions, 20000),
+    writingInstructions: normalizeRichHtmlField(source.writingInstructions, 20000),
     // 舊版單一開關（syncAnnouncementAndCalendar）一併視為兩者皆開啟，避免既有勾選失效
     publishAnnouncement:
       typeof source.publishAnnouncement === "boolean"
@@ -318,6 +320,14 @@ export function parseSettingsInput(raw: unknown): ParseResult {
     return { ok: false, message: "審核截止時間必須晚於審核開始時間" };
   }
   const value = normalizeSettings(body);
+  const instructionsPlain = stripHtmlToText(value.instructions).trim();
+  if (instructionsPlain.length > 4000) {
+    return { ok: false, message: "自主學習實施說明超過 4000 字上限" };
+  }
+  const writingPlain = stripHtmlToText(value.writingInstructions).trim();
+  if (writingPlain.length > 4000) {
+    return { ok: false, message: "自主學習計畫撰寫說明超過 4000 字上限" };
+  }
   if ("enabled" in body && typeof body.enabled !== "boolean") {
     return { ok: false, message: "功能總開關格式錯誤" };
   }
@@ -475,6 +485,12 @@ export interface SelfDirectedLearningPlan {
   updatedAt: number;
 }
 
+/** 單週審查意見（富文本；只存有填寫的週次） */
+export interface PlanWeekReview {
+  week: number;
+  note: string;
+}
+
 /** 審查意見（staff 端寫入；學生端讀最新一筆） */
 export interface PlanReview {
   id: string;
@@ -483,7 +499,10 @@ export interface PlanReview {
   reviewerName: string;
   /** "approved" | "returned" */
   decision: "approved" | "returned";
+  /** 整體審查意見（富文本） */
   note: string;
+  /** 逐週審查意見（富文本；沒有填寫的週次不會出現） */
+  weekNotes: PlanWeekReview[];
   reviewedAt: number;
 }
 
@@ -1022,11 +1041,39 @@ export function parsePlanDraft(
 
 export type ReviewAction = "approve" | "return";
 
+/** 逐週審查意見正規化：白名單淨化、限制週次、同日重複以第一筆為準、依週次排序 */
+export function normalizeWeekNotes(raw: unknown): PlanWeekReview[] {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<number>();
+  const items: PlanWeekReview[] = [];
+  for (const item of raw) {
+    if (items.length >= MAX_PLAN_WEEKS) break;
+    if (!item || typeof item !== "object") continue;
+    const source = item as Record<string, unknown>;
+    const week = typeof source.week === "number" ? source.week : NaN;
+    if (!Number.isInteger(week) || week < 1 || week > MAX_PLAN_WEEKS) continue;
+    if (seen.has(week)) continue;
+    const note = normalizeRichHtmlField(source.note, 5000);
+    if (!stripHtmlToText(note).trim()) continue;
+    seen.add(week);
+    items.push({ week, note });
+  }
+  return items.sort((a, b) => a.week - b.week);
+}
+
 export type ReviewParseResult =
-  | { ok: true; value: { planId: string; action: ReviewAction; note: string } }
+  | {
+      ok: true;
+      value: {
+        planId: string;
+        action: ReviewAction;
+        note: string;
+        weekNotes: PlanWeekReview[];
+      };
+    }
   | { ok: false; message: string };
 
-/** 審核輸入驗證（退回必填審查意見） */
+/** 審核輸入驗證（退回必填審查意見；逐週意見可留空） */
 export function parseReviewInput(raw: unknown): ReviewParseResult {
   if (!raw || typeof raw !== "object") return { ok: false, message: "請求內容格式錯誤" };
   const body = raw as Record<string, unknown>;
@@ -1036,9 +1083,21 @@ export function parseReviewInput(raw: unknown): ReviewParseResult {
   const isReturn = body.action === "return";
   if (!isApprove && !isReturn) return { ok: false, message: "審核動作不合法" };
   const action: ReviewAction = isApprove ? "approve" : "return";
-  const note = typeof body.note === "string" ? body.note.trim().slice(0, 1000) : "";
-  if (action === "return" && !note) {
+  // 審查意見改為富文本（所見即所得）；先淨化再檢查可見文字長度
+  const note = normalizeRichHtmlField(body.note, 20000);
+  const notePlain = stripHtmlToText(note).trim();
+  if (notePlain.length > 1000) {
+    return { ok: false, message: "審查意見超過 1000 字上限" };
+  }
+  if (action === "return" && !notePlain) {
     return { ok: false, message: "退回時必須填寫審查意見" };
   }
-  return { ok: true, value: { planId, action, note } };
+  const weekNotes = normalizeWeekNotes(body.weekNotes);
+  const tooLongWeek = weekNotes.find(
+    (item) => stripHtmlToText(item.note).trim().length > 1000
+  );
+  if (tooLongWeek) {
+    return { ok: false, message: `第 ${tooLongWeek.week} 週審查意見超過 1000 字上限` };
+  }
+  return { ok: true, value: { planId, action, note, weekNotes } };
 }

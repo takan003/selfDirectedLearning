@@ -8,7 +8,7 @@ import Toast, { type ToastMessage } from "@/components/Toast";
 import DisclosureArrow from "@/components/DisclosureArrow";
 import RevealListCard from "@/components/RevealListCard";
 import { useDataSaver } from "@/lib/data-saver";
-import { RichTextContent } from "../../components/rich-text-editor";
+import { RichTextContent, RichTextEditor } from "../../components/rich-text-editor";
 import { fetchSettings } from "@/lib/settings-client";
 import { logout } from "@/lib/session";
 import { Settings, defaultSettings } from "@/types/settings";
@@ -18,6 +18,7 @@ import {
   PLAN_STATUS_LABELS,
   PLAN_TIMING_LABELS,
   reviewStateOf,
+  stripHtmlToText,
   type SelfDirectedLearningPlan,
 } from "../../types/self-directed-learning";
 import SelfDirectedLearningManagerPanel from "../../components/manager-panel";
@@ -56,6 +57,70 @@ const REVIEW_STATE_LABEL: Record<string, string> = {
   ended: "已超過審核期限",
 };
 
+/** 表格內的時段短標籤（避免窄欄位逐字換行） */
+const TIMING_SHORT_LABELS: Record<string, string> = {
+  flexible: "彈性學習",
+  afterSchool: "課餘",
+};
+
+/** 逐週意見的常用罐頭語（5 種；點選後附加到該週意見） */
+const WEEK_NOTE_PHRASES = [
+  "本週學習安排請再具體一點。",
+  "本週場地請依學校開放場域選擇。",
+  "本週內容與主題的關聯性不足，請補充。",
+  "本週進度請補上可檢核的成果。",
+  "本週安排與學校活動衝堂，請調整。",
+] as const;
+
+/** 整體意見的常用罐頭語（5 種） */
+const OVERALL_NOTE_PHRASES = [
+  "請補齊各週的學習安排與場地。",
+  "學習目標請具體且可檢核。",
+  "請說明預期的學習成果與評量方式。",
+  "請確認指導老師與學群是否正確。",
+  "請依撰寫說明調整內容格式。",
+] as const;
+
+/** 把罐頭語附加到富文本意見（保留原有內容與格式） */
+function appendPhrase(current: string, phrase: string): string {
+  const base = (current || "").trim();
+  if (!base) return `<p>${phrase}</p>`;
+  return /<\/?[a-z][^>]*>/i.test(base) ? `${base}<p>${phrase}</p>` : `${base}<br>${phrase}`;
+}
+
+/** 常用語下拉：選取後回呼並自動回到提示選項 */
+function CannedPhraseSelect({
+  phrases,
+  onPick,
+  label,
+}: {
+  phrases: readonly string[];
+  onPick: (phrase: string) => void;
+  label: string;
+}) {
+  return (
+    <select
+      aria-label={label}
+      title={label}
+      className="input-theme text-t2 cursor-pointer rounded px-2 py-1 text-xs"
+      defaultValue=""
+      onChange={(event) => {
+        const value = event.target.value;
+        if (!value) return;
+        onPick(value);
+        event.target.value = "";
+      }}
+    >
+      <option value="">常用語…</option>
+      {phrases.map((phrase) => (
+        <option key={phrase} value={phrase}>
+          {phrase}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 /** 純前端切片：分頁不增加任何資料庫讀取 */
 function paginate<T>(items: T[], page: number, pageSize: number): T[] {
   const size = Math.max(1, pageSize);
@@ -77,6 +142,8 @@ export default function StaffSelfDirectedLearningPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [notes, setNotes] = useState<Record<string, string>>({});
+  /** 逐週審查意見（key＝plan id → 週次 → 富文本） */
+  const [weekNotes, setWeekNotes] = useState<Record<string, Record<number, string>>>({});
   const [pending, setPending] = useState<PendingReview | null>(null);
   const [toast, setToast] = useState<ToastMessage | null>(null);
   /** 總開關關閉：只顯示維護說明 */
@@ -212,6 +279,8 @@ export default function StaffSelfDirectedLearningPage() {
 
   const confirmReview = async () => {
     if (!pending) return;
+    const reviewedPlanId = pending.planId;
+    const planWeekNotes = weekNotes[reviewedPlanId] ?? {};
     setBusy(true);
     try {
       const response = await fetch("/api/staff/self-directed-learning", {
@@ -221,6 +290,10 @@ export default function StaffSelfDirectedLearningPage() {
           planId: pending.planId,
           action: pending.action,
           note: notes[pending.planId] || "",
+          weekNotes: Object.entries(planWeekNotes).map(([week, note]) => ({
+            week: Number(week),
+            note,
+          })),
         }),
       });
       const data = await response.json();
@@ -233,6 +306,8 @@ export default function StaffSelfDirectedLearningPage() {
         text: pending.action === "approve" ? "已通過審核" : "已退回並送出意見",
       });
       setPending(null);
+      setNotes((prev) => ({ ...prev, [reviewedPlanId]: "" }));
+      setWeekNotes((prev) => ({ ...prev, [reviewedPlanId]: {} }));
       await load(tab);
     } catch {
       setToast({ kind: "error", text: "審核處理失敗" });
@@ -244,6 +319,17 @@ export default function StaffSelfDirectedLearningPage() {
   const hasAnyRole = Boolean(
     roles?.isReviewer || roles?.isTutor || (roles?.permissions?.length ?? 0) > 0
   );
+
+  /** 審查意見的可見文字（富文本）：退回必填檢查用 */
+  const notePlainOf = (planId: string) => stripHtmlToText(notes[planId] || "").trim();
+  /** 逐週意見讀寫 */
+  const weekNoteOf = (planId: string, week: number) => weekNotes[planId]?.[week] ?? "";
+  const setWeekNote = (planId: string, week: number, value: string) => {
+    setWeekNotes((prev) => ({
+      ...prev,
+      [planId]: { ...(prev[planId] ?? {}), [week]: value },
+    }));
+  };
 
   const roleSummary = [
     roles?.isReviewer ? "你具有審核資格。" : "",
@@ -434,7 +520,7 @@ export default function StaffSelfDirectedLearningPage() {
       )}
 
       {loading ? (
-        <div className="border-themed bg-card text-t2 rounded-lg p-4 text-sm">載入中…</div>
+        <div className="border border-themed bg-card text-t2 rounded-lg p-4 text-sm">載入中…</div>
       ) : tab === "review" && saverOn && !revealed && reviewCount > 0 ? (
         <div className="border-themed bg-card overflow-hidden rounded-lg border">
           <RevealListCard
@@ -444,13 +530,13 @@ export default function StaffSelfDirectedLearningPage() {
           />
         </div>
       ) : plans.length === 0 ? (
-        <div className="border-themed bg-card text-t2 rounded-lg p-4 text-sm">
+        <div className="border border-themed bg-card text-t2 rounded-lg p-4 text-sm">
           {tab === "review" ? "目前沒有待審核的計畫。" : "本班目前沒有自主學習計畫資料。"}
         </div>
       ) : (
         <div className="space-y-3">
           {pagedPlans.map((plan) => (
-            <article key={plan.id} className="border-themed bg-card overflow-hidden rounded-lg">
+            <article key={plan.id} className="border border-themed bg-card overflow-hidden rounded-lg">
               <details>
                 <summary className="flex cursor-pointer flex-wrap items-start justify-between gap-2 p-4">
                   <span className="flex min-w-0 items-start gap-2">
@@ -459,10 +545,8 @@ export default function StaffSelfDirectedLearningPage() {
                     </span>
                     <span className="min-w-0 space-y-1">
                       <span className="flex flex-wrap items-center gap-2">
-                        <span className="text-t1 font-medium">{plan.studentName}</span>
-                        <span className="text-t3 text-xs">
-                          {plan.grade}
-                          {plan.className || plan.classCode}
+                        <span className="text-t1 font-medium">
+                          {plan.classCode || plan.className || "—"} {plan.studentName}
                         </span>
                       </span>
                       <span className="text-t2 block text-sm">
@@ -502,39 +586,113 @@ export default function StaffSelfDirectedLearningPage() {
                 </summary>
 
                 <div className="border-themed space-y-3 border-t p-4">
-                  <details className="border-themed bg-surface rounded-md">
-                    <summary className="text-t1 flex cursor-pointer items-center gap-2 px-3 py-2 text-sm">
-                      <DisclosureArrow />
-                      檢視逐週安排（{plan.weeks.length} 週）
-                    </summary>
-                    <ul className="space-y-2 px-3 pb-3">
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse text-sm">
+                      <thead>
+                        <tr>
+                          <th
+                            scope="col"
+                            className="border border-themed bg-surface text-t1 px-2 py-2 text-left text-xs"
+                            style={{ width: "14%" }}
+                          >
+                            週次
+                          </th>
+                          <th
+                            scope="col"
+                            className="border border-themed bg-surface text-t1 px-2 py-2 text-left text-xs"
+                          >
+                            學習安排
+                          </th>
+                          <th
+                            scope="col"
+                            className="border border-themed bg-surface text-t1 px-2 py-2 text-left text-xs"
+                            style={{ width: "16%" }}
+                          >
+                            場地
+                          </th>
+                        </tr>
+                      </thead>
                       {plan.weeks.map((week) => (
-                        <li key={week.week} className="text-t2 border-themed rounded-md p-2 text-sm">
-                          <div className="text-t1 mb-1 flex flex-wrap gap-3 text-xs font-medium">
-                            <span>第 {week.week} 週</span>
-                            <span>{PLAN_TIMING_LABELS[week.timing]}</span>
-                            <span className="text-t3">{week.venue}</span>
-                          </div>
-                          <RichTextContent html={week.content} />
-                        </li>
+                        <tbody key={week.week}>
+                          <tr>
+                            <td className="border border-themed px-2 py-2 align-top text-xs">
+                              <div className="text-t1 font-medium whitespace-nowrap">
+                                第 {week.week} 週
+                              </div>
+                              <div className="text-t3">
+                                {TIMING_SHORT_LABELS[week.timing] ??
+                                  PLAN_TIMING_LABELS[week.timing]}
+                              </div>
+                            </td>
+                            <td className="border border-themed px-2 py-2 align-top">
+                              <RichTextContent html={week.content} />
+                            </td>
+                            <td className="border border-themed text-t2 px-2 py-2 align-top text-xs">
+                              {week.venue || "—"}
+                            </td>
+                          </tr>
+                          {roles?.isReviewer && plan.status === "submitted" && (
+                            <tr>
+                              <td
+                                colSpan={3}
+                                className="border border-themed bg-surface px-2 py-2"
+                              >
+                                <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+                                  <span className="text-t2 text-xs font-medium">
+                                    第 {week.week} 週審查意見
+                                  </span>
+                                  <CannedPhraseSelect
+                                    phrases={WEEK_NOTE_PHRASES}
+                                    label={`第 ${week.week} 週常用語`}
+                                    onPick={(phrase) =>
+                                      setWeekNote(
+                                        plan.id,
+                                        week.week,
+                                        appendPhrase(weekNoteOf(plan.id, week.week), phrase)
+                                      )
+                                    }
+                                  />
+                                </div>
+                                <RichTextEditor
+                                  compact
+                                  value={weekNoteOf(plan.id, week.week)}
+                                  onChange={(value) => setWeekNote(plan.id, week.week, value)}
+                                  maxLength={1000}
+                                  placeholder="本週審查意見…"
+                                  ariaLabel={`第 ${week.week} 週審查意見`}
+                                />
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
                       ))}
-                    </ul>
-                  </details>
+                    </table>
+                  </div>
 
                   {roles?.isReviewer && plan.status === "submitted" && (
                     <div className="space-y-2">
-                      <label className="text-t2 block space-y-1 text-sm">
-                        <span>審查意見（退回時必填）</span>
-                        <textarea
-                          className="input-theme min-h-16 w-full rounded px-3 py-2 text-sm"
-                          maxLength={1000}
-                          value={notes[plan.id] || ""}
-                          onChange={(event) =>
-                            setNotes((prev) => ({ ...prev, [plan.id]: event.target.value }))
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-t2 block text-sm">整體審查意見（退回時必填）</span>
+                        <CannedPhraseSelect
+                          phrases={OVERALL_NOTE_PHRASES}
+                          label="整體意見常用語"
+                          onPick={(phrase) =>
+                            setNotes((prev) => ({
+                              ...prev,
+                              [plan.id]: appendPhrase(prev[plan.id] || "", phrase),
+                            }))
                           }
-                          placeholder="給學生的審查意見…"
                         />
-                      </label>
+                      </div>
+                      <RichTextEditor
+                        value={notes[plan.id] || ""}
+                        onChange={(value) =>
+                          setNotes((prev) => ({ ...prev, [plan.id]: value }))
+                        }
+                        maxLength={1000}
+                        placeholder="給學生的整體審查意見…"
+                        ariaLabel={`${plan.studentName} 的整體審查意見`}
+                      />
                       <div className="flex flex-wrap justify-end gap-2">
                         <button
                           type="button"
@@ -638,7 +796,7 @@ export default function StaffSelfDirectedLearningPage() {
             </h2>
             <p className="text-t2 mb-4 text-sm">
               《{pending.topic}》
-              {pending.action === "return" && !(notes[pending.planId] || "").trim()
+              {pending.action === "return" && !notePlainOf(pending.planId)
                 ? "　退回必填審查意見，請先於卡片填寫。"
                 : ""}
             </p>
@@ -657,7 +815,7 @@ export default function StaffSelfDirectedLearningPage() {
                 }`}
                 disabled={
                   busy ||
-                  (pending.action === "return" && !(notes[pending.planId] || "").trim())
+                  (pending.action === "return" && !notePlainOf(pending.planId))
                 }
                 onClick={() => void confirmReview()}
               >
