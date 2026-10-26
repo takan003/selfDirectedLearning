@@ -14,7 +14,6 @@ import {
   DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS,
   MAINTENANCE_HINT,
   MAINTENANCE_TITLE,
-  MAX_PLAN_WEEKS,
   PLAN_STATUS_LABELS,
   PLAN_TIMING_LABELS,
   PRINT_PREVIEW_DATA,
@@ -111,6 +110,14 @@ function fitWeeks(
     next.push({ week: next.length + 1, content: "", venue: "", timing: "flexible" });
   }
   return next.map((week, index) => ({ ...week, week: index + 1 }));
+}
+
+/** 依指定週次建立（或沿用）逐週安排；用於彈性形式的起迄週次區間 */
+function weeksForNumbers(numbers: number[], existing: PlanWeek[]): PlanWeek[] {
+  return numbers.map((weekNo) => {
+    const previous = existing.find((week) => week.week === weekNo);
+    return previous ?? { week: weekNo, content: "", venue: "", timing: "flexible" };
+  });
 }
 
 function FolderTabIcon() {
@@ -237,6 +244,11 @@ export default function StudentSelfDirectedLearningPage() {
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
   /** 我的計畫分頁：文件匣／草稿匣／垃圾桶 */
   const [planTab, setPlanTab] = useState<PlanTab>("documents");
+  /** 彈性形式的週次區間（可寫週次；full 模式不使用） */
+  const [rangeStart, setRangeStart] = useState<number | null>(null);
+  const [rangeEnd, setRangeEnd] = useState<number | null>(null);
+  /** 週次顛倒時等待使用者確認調換 */
+  const [rangeSwap, setRangeSwap] = useState<{ start: number; end: number } | null>(null);
   /** 正在假性刪除／還原的計畫 id */
   const [planBusy, setPlanBusy] = useState<string | null>(null);
   const formSectionRef = useRef<HTMLElement | null>(null);
@@ -258,6 +270,38 @@ export default function StudentSelfDirectedLearningPage() {
   const currentApproved = activePlans.some(
     (plan) => plan.status === "approved" && plan.period === currentPeriod
   );
+  /** 可寫週次（有設定節次時：該週至少一個時段未衝堂；未設定節次時：全部視為可寫） */
+  const availableWeekNumbers = useMemo(() => {
+    if (weekSchedule.length > 0) {
+      return weekSchedule.filter((week) => week.writable !== false).map((week) => week.week);
+    }
+    const total = fullWeeks ?? Math.max(settings.minWeeks, 1);
+    return Array.from({ length: total }, (_, index) => index + 1);
+  }, [weekSchedule, fullWeeks, settings.minWeeks]);
+  /** 目前選取區間內的可寫週次與數量 */
+  const rangeWeekNumbers =
+    rangeStart !== null && rangeEnd !== null
+      ? availableWeekNumbers.filter((week) => week >= rangeStart && week <= rangeEnd)
+      : [];
+  const rangeCount = rangeWeekNumbers.length;
+  /** 可選的開始週次：扣掉「從這裡開始不足下限」的週次（總數本身不足時全列，並顯示警示） */
+  const startOptionNumbers = useMemo(() => {
+    const enough = availableWeekNumbers.filter(
+      (week, index) => availableWeekNumbers.length - index >= settings.minWeeks
+    );
+    return enough.length > 0 ? enough : availableWeekNumbers;
+  }, [availableWeekNumbers, settings.minWeeks]);
+  const rangeValid =
+    settings.weekMode !== "flexible" ||
+    (rangeStart !== null &&
+      rangeEnd !== null &&
+      rangeStart <= rangeEnd &&
+      rangeCount >= settings.minWeeks);
+  const rangeSwapCount = rangeSwap
+    ? availableWeekNumbers.filter(
+        (week) => week >= rangeSwap.start && week <= rangeSwap.end
+      ).length
+    : 0;
   /** 週次 → 該週彈性學習時間與衝堂資訊 */
   const weekScheduleByNo = useMemo(
     () => new Map(weekSchedule.map((row) => [row.week, row])),
@@ -266,6 +310,43 @@ export default function StudentSelfDirectedLearningPage() {
   /** 列印預覽分頁與最近一次送出的預覽內容 */
   const previewWindowRef = useRef<Window | null>(null);
   const printPayloadRef = useRef<PrintPreviewPayload | null>(null);
+
+  /** 套用彈性形式的起迄週次（只保留區間內可寫的週次） */
+  const applyWeekRange = (start: number, end: number) => {
+    if (start > end) return;
+    const numbers = availableWeekNumbers.filter((week) => week >= start && week <= end);
+    setRangeStart(start);
+    setRangeEnd(end);
+    setDraft((prev) => ({
+      ...prev,
+      weeks: weeksForNumbers(numbers, prev.weeks),
+    }));
+  };
+
+  /** 新計畫的預設區間：從第一個可寫週次開始，取到滿足下限週數為止 */
+  const defaultRange = (): { start: number; end: number; numbers: number[] } | null => {
+    if (availableWeekNumbers.length === 0) return null;
+    const start = availableWeekNumbers[0];
+    const count = Math.min(Math.max(settings.minWeeks, 1), availableWeekNumbers.length);
+    const end = availableWeekNumbers[count - 1];
+    return {
+      start,
+      end,
+      numbers: availableWeekNumbers.filter((week) => week >= start && week <= end),
+    };
+  };
+
+  /** 起迄週次變更：順序顛倒時先跳出確認，確認後才調換 */
+  const requestRangeChange = (source: "start" | "end", value: number) => {
+    const start = source === "start" ? value : rangeStart;
+    const end = source === "end" ? value : rangeEnd;
+    if (start === null || end === null) return;
+    if (start > end) {
+      setRangeSwap({ start: Math.min(start, end), end: Math.max(start, end) });
+      return;
+    }
+    applyWeekRange(start, end);
+  };
 
   const load = useCallback(async () => {
     try {
@@ -352,20 +433,6 @@ export default function StudentSelfDirectedLearningPage() {
 
   const patchDraft = (partial: Partial<Draft>) => setDraft((prev) => ({ ...prev, ...partial }));
 
-  const setWeekCount = (count: number) => {
-    setDraft((prev) => {
-      const weeks = [...prev.weeks];
-      if (count > weeks.length) {
-        while (weeks.length < count) {
-          weeks.push({ week: weeks.length + 1, content: "", venue: "", timing: "flexible" });
-        }
-      } else {
-        weeks.length = count;
-      }
-      return { ...prev, weeks: weeks.map((week, index) => ({ ...week, week: index + 1 })) };
-    });
-  };
-
   const patchWeek = (weekNo: number, partial: Partial<PlanWeek>) => {
     setDraft((prev) => ({
       ...prev,
@@ -381,21 +448,79 @@ export default function StudentSelfDirectedLearningPage() {
 
   const startNewPlan = () => {
     setEditingPlanId(null);
-    setDraft({ ...EMPTY_DRAFT, weeks: fitWeeks(emptyWeeks(1), settings, fullWeeks) });
+    if (settings.weekMode === "flexible") {
+      const range = defaultRange();
+      if (range) {
+        setRangeStart(range.start);
+        setRangeEnd(range.end);
+        setDraft({ ...EMPTY_DRAFT, weeks: weeksForNumbers(range.numbers, []) });
+      } else {
+        setRangeStart(null);
+        setRangeEnd(null);
+        setDraft({ ...EMPTY_DRAFT, weeks: [] });
+      }
+    } else {
+      setRangeStart(null);
+      setRangeEnd(null);
+      setDraft({ ...EMPTY_DRAFT, weeks: fitWeeks(emptyWeeks(1), settings, fullWeeks) });
+    }
     setFormOpen(true);
     revealForm();
   };
 
   const startEditPlan = (plan: SelfDirectedLearningPlan) => {
     if (plan.status !== "draft" && plan.status !== "returned") return;
-    const weeks = plan.weeks.length ? plan.weeks : emptyWeeks(1);
     setEditingPlanId(plan.id);
-    setDraft({
-      topic: plan.topic,
-      studyGroup: plan.studyGroup,
-      advisor: plan.advisor,
-      weeks: fitWeeks(weeks, settings, fullWeeks),
-    });
+    if (settings.weekMode === "flexible") {
+      const stored = plan.weeks;
+      if (stored.length === 0) {
+        const range = defaultRange();
+        setRangeStart(range?.start ?? null);
+        setRangeEnd(range?.end ?? null);
+        setDraft({
+          topic: plan.topic,
+          studyGroup: plan.studyGroup,
+          advisor: plan.advisor,
+          weeks: range ? weeksForNumbers(range.numbers, []) : [],
+        });
+      } else {
+        const spanStart = Math.min(...stored.map((week) => week.week));
+        const spanEnd = Math.max(...stored.map((week) => week.week));
+        const numbers = availableWeekNumbers.filter(
+          (week) => week >= spanStart && week <= spanEnd
+        );
+        if (numbers.length > 0) {
+          setRangeStart(numbers[0]);
+          setRangeEnd(numbers[numbers.length - 1]);
+          setDraft({
+            topic: plan.topic,
+            studyGroup: plan.studyGroup,
+            advisor: plan.advisor,
+            weeks: weeksForNumbers(numbers, stored),
+          });
+        } else {
+          // 既有資料的週次都不在目前可寫清單（例如後續新增了學校活動）：保留原內容，讓使用者自行調整
+          setRangeStart(spanStart);
+          setRangeEnd(spanEnd);
+          setDraft({
+            topic: plan.topic,
+            studyGroup: plan.studyGroup,
+            advisor: plan.advisor,
+            weeks: stored,
+          });
+        }
+      }
+    } else {
+      setRangeStart(null);
+      setRangeEnd(null);
+      const weeks = plan.weeks.length ? plan.weeks : emptyWeeks(1);
+      setDraft({
+        topic: plan.topic,
+        studyGroup: plan.studyGroup,
+        advisor: plan.advisor,
+        weeks: fitWeeks(weeks, settings, fullWeeks),
+      });
+    }
     setFormOpen(true);
     revealForm();
   };
@@ -507,7 +632,7 @@ export default function StudentSelfDirectedLearningPage() {
   };
 
   const windowState = openStateOf(settings);
-  const canSubmit = withinWindow && !locked && saving === null;
+  const canSubmit = withinWindow && !locked && saving === null && rangeValid;
   const canStartNew = withinWindow && !currentApproved && !formOpen && !loading;
 
   const formActionButtons = (
@@ -974,29 +1099,58 @@ export default function StudentSelfDirectedLearningPage() {
                 <h3 className="text-t1 text-sm font-semibold">逐週課程安排</h3>
               </div>
               {settings.weekMode === "flexible" ? (
-                <label className="text-t2 flex flex-wrap items-center gap-2 text-sm">
-                  方案週數（至少 {settings.minWeeks} 週
-                  {fullWeeks !== null ? `，至多 ${fullWeeks} 週` : ""}）
-                  <input
-                    type="number"
-                    min={settings.minWeeks}
-                    max={fullWeeks ?? MAX_PLAN_WEEKS}
-                    className="input-theme w-24 rounded px-3 py-2 text-sm"
-                    value={draft.weeks.length}
-                    disabled={locked}
-                    onChange={(event) => {
-                      const parsed = Number(event.target.value);
-                      if (Number.isInteger(parsed)) {
-                        setWeekCount(
-                          Math.min(
-                            Math.max(parsed, settings.minWeeks),
-                            fullWeeks ?? MAX_PLAN_WEEKS
-                          )
-                        );
-                      }
-                    }}
-                  />
-                </label>
+                <div className="flex flex-wrap items-end gap-3">
+                  <label className="text-t2 block space-y-1 text-xs">
+                    <span>開始週次</span>
+                    <select
+                      className="input-theme rounded px-3 py-2 text-sm"
+                      value={rangeStart ?? ""}
+                      disabled={locked || availableWeekNumbers.length === 0}
+                      onChange={(event) => requestRangeChange("start", Number(event.target.value))}
+                    >
+                      {startOptionNumbers.map((week) => (
+                        <option key={week} value={week}>
+                          第 {week} 週
+                        </option>
+                      ))}
+                      {rangeStart !== null && !startOptionNumbers.includes(rangeStart) && (
+                        <option value={rangeStart}>第 {rangeStart} 週（原填寫）</option>
+                      )}
+                    </select>
+                  </label>
+                  <span className="text-t3 pb-2 text-sm">～</span>
+                  <label className="text-t2 block space-y-1 text-xs">
+                    <span>結束週次</span>
+                    <select
+                      className="input-theme rounded px-3 py-2 text-sm"
+                      value={rangeEnd ?? ""}
+                      disabled={locked || availableWeekNumbers.length === 0}
+                      onChange={(event) => requestRangeChange("end", Number(event.target.value))}
+                    >
+                      {availableWeekNumbers
+                        .filter((week) => rangeStart === null || week >= rangeStart)
+                        .map((week) => (
+                          <option key={week} value={week}>
+                            第 {week} 週
+                          </option>
+                        ))}
+                      {rangeEnd !== null &&
+                        !(
+                          availableWeekNumbers.includes(rangeEnd) &&
+                          (rangeStart === null || rangeEnd >= rangeStart)
+                        ) && (
+                          <option value={rangeEnd}>第 {rangeEnd} 週（原填寫）</option>
+                        )}
+                    </select>
+                  </label>
+                  <p
+                    className={`pb-2 text-xs ${
+                      rangeCount < settings.minWeeks ? "text-danger" : "text-t3"
+                    }`}
+                  >
+                    可寫 {rangeCount} 週（下限 {settings.minWeeks} 週）
+                  </p>
+                </div>
               ) : (
                 <p className="text-t2 text-sm">
                   {fullWeeks !== null
@@ -1005,6 +1159,21 @@ export default function StudentSelfDirectedLearningPage() {
                 </p>
               )}
             </div>
+
+            {settings.weekMode === "flexible" &&
+              (availableWeekNumbers.length === 0 ? (
+                <p className="text-danger text-xs">
+                  目前沒有可寫週次，請確認彈性學習節次與學校活動設定。
+                </p>
+              ) : rangeCount < settings.minWeeks ? (
+                <p className="text-danger text-xs">
+                  此區間只有 {rangeCount} 個可寫週次，未達下限 {settings.minWeeks} 週；請調整開始／結束週次（剩餘週次不足的地方不能當開始週次）。
+                </p>
+              ) : (
+                <p className="text-t3 text-xs">
+                  已選 {rangeCount} 個可寫週次；送出審核前仍需填寫每一週的學習安排與場地。
+                </p>
+              ))}
 
             <datalist id="sdl-venues">
               {settings.venues.map((venue) => (
@@ -1040,6 +1209,13 @@ export default function StudentSelfDirectedLearningPage() {
                   </tr>
                 </thead>
                 <tbody>
+                  {draft.weeks.length === 0 && (
+                    <tr>
+                      <td colSpan={3} className="text-t3 px-3 py-6 text-center text-sm">
+                        目前沒有可寫週次，請調整開始／結束週次。
+                      </td>
+                    </tr>
+                  )}
                   {draft.weeks.map((week) => {
                     const scheduleRow = weekScheduleByNo.get(week.week);
                     const slots = scheduleRow?.slots ?? [];
@@ -1157,6 +1333,50 @@ export default function StudentSelfDirectedLearningPage() {
             </div>
           </div>
         </section>
+      )}
+
+      {rangeSwap && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          style={{ backgroundColor: "color-mix(in srgb, var(--bg) 75%, transparent)" }}
+          role="alertdialog"
+          aria-modal="true"
+          aria-label="週次順序確認"
+        >
+          <div className="border-themed bg-card w-full max-w-md rounded-lg border p-5 shadow-lg">
+            <p className="text-t1 text-base font-semibold">開始與結束週次相反</p>
+            <p className="text-t2 mt-2 text-sm">
+              開始週次晚於結束週次。是否自動調換為「第 {rangeSwap.start} 週 ～ 第 {rangeSwap.end} 週」？
+            </p>
+            <p
+              className={`mt-1 text-xs ${
+                rangeSwapCount < settings.minWeeks ? "text-danger" : "text-t3"
+              }`}
+            >
+              調換後可寫 {rangeSwapCount} 週（下限 {settings.minWeeks} 週）
+              {rangeSwapCount < settings.minWeeks ? "，仍不足下限，送出審核會先被擋下。" : "。"}
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                className="btn-theme px-4 py-2 text-sm"
+                onClick={() => setRangeSwap(null)}
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                className="btn-primary btn-theme px-4 py-2 text-sm"
+                onClick={() => {
+                  applyWeekRange(rangeSwap.start, rangeSwap.end);
+                  setRangeSwap(null);
+                }}
+              >
+                確認調換
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {formOpen && (

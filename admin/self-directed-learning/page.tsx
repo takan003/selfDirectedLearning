@@ -107,6 +107,11 @@ export default function SelfDirectedLearningSettingsPage({
   const [settings, setSettings] = useState<SelfDirectedLearningSettings>(DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS);
   /** 全學期形式的須填週數（由學期起訖自動判斷；null＝學校尚未設定起訖） */
   const [fullWeeks, setFullWeeks] = useState<number | null>(null);
+  /** 實際可寫週數（全校層級活動；供下限週數檢核） */
+  const [availableWeeks, setAvailableWeeks] = useState<{
+    total: number;
+    available: number;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
@@ -155,6 +160,17 @@ export default function SelfDirectedLearningSettingsPage({
       }
       setSettings(data.settings as SelfDirectedLearningSettings);
       setFullWeeks(typeof data.fullWeeks === "number" ? data.fullWeeks : null);
+      setAvailableWeeks(
+        data.availableWeeks &&
+          typeof data.availableWeeks === "object" &&
+          typeof data.availableWeeks.total === "number" &&
+          typeof data.availableWeeks.available === "number"
+          ? {
+              total: data.availableWeeks.total,
+              available: data.availableWeeks.available,
+            }
+          : null
+      );
       setPeriodOptions(Array.isArray(data.periodOptions) ? (data.periodOptions as PeriodOption[]) : []);
       setSchoolDays(
         Array.isArray(data.schoolDays) && data.schoolDays.length
@@ -410,6 +426,17 @@ export default function SelfDirectedLearningSettingsPage({
       setToast({ kind: "error", text: "截止時間必須晚於開始時間" });
       return;
     }
+    if (
+      settings.weekMode === "flexible" &&
+      availableWeeks &&
+      settings.minWeeks > availableWeeks.available
+    ) {
+      setToast({
+        kind: "error",
+        text: `可寫週數只有 ${availableWeeks.available} 週，下限 ${settings.minWeeks} 週會使學生無法填滿；請降低下限或調整節次行程／學校活動。`,
+      });
+      return;
+    }
     setSaving(true);
     try {
       const response = await fetch("/api/admin/self-directed-learning", {
@@ -423,6 +450,17 @@ export default function SelfDirectedLearningSettingsPage({
         return;
       }
       setSettings(data.settings as SelfDirectedLearningSettings);
+      if (
+        data.availableWeeks &&
+        typeof data.availableWeeks === "object" &&
+        typeof data.availableWeeks.total === "number" &&
+        typeof data.availableWeeks.available === "number"
+      ) {
+        setAvailableWeeks({
+          total: data.availableWeeks.total,
+          available: data.availableWeeks.available,
+        });
+      }
       if (data.hookWarning) {
         setToast({ kind: "error", text: String(data.hookWarning) });
       } else {
@@ -436,6 +474,11 @@ export default function SelfDirectedLearningSettingsPage({
   };
 
   const state = openStateOf(settings);
+  /** 彈性形式的下限週數是否超過實際可寫週數 */
+  const minWeeksInvalid =
+    settings.weekMode === "flexible" &&
+    availableWeeks !== null &&
+    settings.minWeeks > availableWeeks.available;
 
   /** 重新讀取／儲存設定：標題列（上）與頁尾（下）共用同一組按鈕 */
   const actionButtons = (
@@ -452,7 +495,8 @@ export default function SelfDirectedLearningSettingsPage({
         type="button"
         className="btn-primary btn-theme h-10 px-6 text-sm cursor-pointer disabled:opacity-50"
         onClick={() => void save()}
-        disabled={loading || saving}
+        disabled={loading || saving || minWeeksInvalid}
+        title={minWeeksInvalid ? "下限週數超過可寫週數，請先調整" : ""}
       >
         {saving ? "儲存中…" : "儲存設定"}
       </button>
@@ -588,24 +632,37 @@ export default function SelfDirectedLearningSettingsPage({
               </span>
             </label>
             {settings.weekMode === "flexible" && (
-              <label className="text-t2 block space-y-1 text-sm">
-                <span>下限週數（學生至少須填寫；建議至少 6 週）</span>
-                <input
-                  type="number"
-                  min={1}
-                  className="input-theme w-32 rounded px-3 py-2 text-sm"
-                  value={minWeeksInput ?? String(settings.minWeeks)}
-                  onChange={(event) => {
-                    const text = event.target.value;
-                    setMinWeeksInput(text);
-                    const parsed = Number(text);
-                    if (text.trim() !== "" && Number.isInteger(parsed)) {
-                      patch({ minWeeks: parsed });
-                    }
-                  }}
-                  onBlur={() => setMinWeeksInput(null)}
-                />
-              </label>
+              <div className="space-y-2">
+                <label className="text-t2 block space-y-1 text-sm">
+                  <span>下限週數（學生至少須填寫；建議至少 6 週）</span>
+                  <input
+                    type="number"
+                    min={1}
+                    className="input-theme w-32 rounded px-3 py-2 text-sm"
+                    value={minWeeksInput ?? String(settings.minWeeks)}
+                    onChange={(event) => {
+                      const text = event.target.value;
+                      setMinWeeksInput(text);
+                      const parsed = Number(text);
+                      if (text.trim() !== "" && Number.isInteger(parsed)) {
+                        patch({ minWeeks: parsed });
+                      }
+                    }}
+                    onBlur={() => setMinWeeksInput(null)}
+                  />
+                </label>
+                <p className={`text-xs ${minWeeksInvalid ? "text-danger" : "text-t3"}`}>
+                  {availableWeeks
+                    ? `目前可寫週數：${availableWeeks.available} 週（總週數 ${availableWeeks.total} 週；依目前儲存的節次行程與學校活動計算）。下限不可超過可寫週數；班級個別活動造成的衝堂會由學生端即時檢核。`
+                    : "學校尚未設定學期起訖，暫無法檢核可寫週數。"}
+                </p>
+                {minWeeksInvalid && (
+                  <p className="text-danger text-xs">
+                    下限 {settings.minWeeks} 週超過可寫週數 {availableWeeks?.available} 週——另外的週次要寫在哪裡？
+                    請降低下限，或調整節次行程／學校活動。
+                  </p>
+                )}
+              </div>
             )}
           </div>
         </div>

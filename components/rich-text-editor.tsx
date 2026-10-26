@@ -352,8 +352,9 @@ export function RichTextEditor({
           ))}
         </select>
 
-        <span className="text-t2 text-xs" aria-hidden="true">
-          TT
+        <span className="text-t2 flex items-baseline gap-0.5" aria-hidden="true">
+          <span style={{ fontSize: "10px", lineHeight: 1 }}>T</span>
+          <span style={{ fontSize: "16px", lineHeight: 1 }}>T</span>
         </span>
         <select
           aria-label="字級"

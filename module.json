@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.45",
+    "version": "0.0.46",
     "releasedAt": "2026-10-26"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -57,6 +57,16 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.46",
+      "releasedAt": "2026-10-26",
+      "notes": [
+        "所見即所得編輯器的字級圖示改為小 T／大 T",
+        "彈性週數形式改為選擇開始／結束週次：只列出可寫週次、即時計算可寫週數並擋下未達下限的區間（例如剩餘週次不足的地方不能當開始週次）",
+        "起迄週次顛倒時跳出主題化確認視窗，確認後自動調換；調換後仍不足下限會明確提示",
+        "管理端下限週數新增可寫週數檢核：以下限超過實際可寫週數時顯示警示並停用儲存，伺服器端同步拒絕，避免學生無處可寫"
+      ]
+    },
     {
       "version": "0.0.45",
       "releasedAt": "2026-10-26",

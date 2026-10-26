@@ -515,6 +515,8 @@ export interface WeekSchedule {
   slots: WeekSlotSchedule[];
   /** 該週所有彈性學習時段皆與學校活動衝堂（整週不提供撰寫、不列入必填） */
   blocked: boolean;
+  /** 該週是否有可撰寫的彈性學習時段（未設定節次行程時全部視為可寫） */
+  writable: boolean;
 }
 
 const MS_PER_DAY = 86_400_000;
@@ -588,6 +590,7 @@ export function buildWeekSchedule(input: {
   );
   const clockByName = new Map(input.periods.map((period) => [period.name, period]));
   const orderedSlots = [...input.slots].sort((a, b) => a.day - b.day);
+  const hasSlots = input.slots.length > 0;
 
   const rows: WeekSchedule[] = [];
   for (let index = 0; index < totalWeeks; index += 1) {
@@ -616,12 +619,14 @@ export function buildWeekSchedule(input: {
       }
       slots.push({ day: slot.day, date, periods: [...slot.periods], blockedBy });
     }
+    const blocked = slots.length > 0 && slots.every((slot) => slot.blockedBy !== null);
     rows.push({
       week: index + 1,
       startDate: formatDateOnly(sundayMs),
       endDate: formatDateOnly(sundayMs + 6 * MS_PER_DAY),
       slots,
-      blocked: slots.length > 0 && slots.every((slot) => slot.blockedBy !== null),
+      blocked,
+      writable: hasSlots ? slots.length > 0 && !blocked : true,
     });
   }
   return rows;
