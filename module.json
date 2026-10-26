@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.58",
+    "version": "0.0.59",
     "releasedAt": "2026-10-26"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -58,6 +58,14 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.59",
+      "releasedAt": "2026-10-26",
+      "notes": [
+        "修正送出審查時出現 `documentPath` 不是有效資源路徑的錯誤：主程式 Firestore 計讀／計寫 Proxy 會把無參數的 `.doc()` 轉成 `.doc(undefined)`，審核紀錄改以自行產生的文件 id，不再依賴自動 id",
+        "審核請求的計畫識別新增 `/` 檢查；非法識別改回「缺少計畫識別」，避免底層 Firestore 錯誤訊息直接顯示在畫面"
+      ]
+    },
     {
       "version": "0.0.58",
       "releasedAt": "2026-10-26",

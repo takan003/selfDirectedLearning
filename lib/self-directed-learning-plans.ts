@@ -497,6 +497,11 @@ export type ApplyReviewResult =
   | { ok: true; plan: SelfDirectedLearningPlan }
   | { ok: false; status: 403 | 404 | 409; message: string };
 
+/** 產生審核紀錄文件 id（避免依賴 `.doc()` 無參數自動 id；主程式計讀 Proxy 不支援） */
+function newReviewDocId(): string {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 /**
  * 套用審核結果（transaction：僅 submitted 可審，寫 review＋更新狀態）。
  * 審核不受開放期間限制。
@@ -514,7 +519,11 @@ export async function applyReview(input: {
 }): Promise<ApplyReviewResult> {
   const db = getAdminDb();
   const planRef = plansRef().doc(input.planId);
-  const reviewRef = db.collection(SELF_DIRECTED_LEARNING_REVIEWS_COLLECTION).doc();
+  // 主程式 Firestore 計讀／計寫 Proxy 會把 `doc()` 的無參數呼叫轉成 `doc(undefined)`，
+  // 造成 documentPath 驗證失敗；這裡自行產生合法 id，確保審核可送出。
+  const reviewRef = db
+    .collection(SELF_DIRECTED_LEARNING_REVIEWS_COLLECTION)
+    .doc(newReviewDocId());
 
   const outcome = await db.runTransaction(async (tx) => {
     const snap = await tx.get(planRef);

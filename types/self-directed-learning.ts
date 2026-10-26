@@ -1098,7 +1098,8 @@ export function parseReviewInput(raw: unknown): ReviewParseResult {
   if (!raw || typeof raw !== "object") return { ok: false, message: "請求內容格式錯誤" };
   const body = raw as Record<string, unknown>;
   const planId = typeof body.planId === "string" ? body.planId.trim() : "";
-  if (!planId) return { ok: false, message: "缺少計畫識別" };
+  // Firestore 文件 id 不可含 "/"；提早以友善訊息擋掉，避免底層路徑錯誤直接回前端
+  if (!planId || planId.includes("/")) return { ok: false, message: "缺少計畫識別" };
   const isApprove = body.action === "approve";
   const isReturn = body.action === "return";
   if (!isApprove && !isReturn) return { ok: false, message: "審核動作不合法" };
