@@ -639,6 +639,13 @@ export default function StudentSelfDirectedLearningPage() {
   };
 
   const windowState = openStateOf(settings);
+  /** 開放狀態的提示色（主題變數） */
+  const windowTone =
+    windowState === "open"
+      ? "var(--success)"
+      : windowState === "ended"
+        ? "var(--warning)"
+        : "var(--t3)";
   const canSubmit = withinWindow && !locked && saving === null && rangeValid;
   const canStartNew = withinWindow && !currentApproved && !formOpen && !loading;
 
@@ -886,8 +893,8 @@ export default function StudentSelfDirectedLearningPage() {
         aria-label="我的計畫"
       >
         <div className="bg-primary" style={{ height: "0.25rem" }} />
-        <div className="border-themed bg-surface border-b px-5 py-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="border-themed bg-surface border-b">
+          <div className="flex flex-wrap items-start justify-between gap-3 px-5 py-4">
             <div className="flex items-start gap-3">
               <span className="border-themed bg-card text-primary flex h-10 w-10 items-center justify-center rounded-lg border">
                 <FolderTabIcon />
@@ -898,13 +905,6 @@ export default function StudentSelfDirectedLearningPage() {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <span
-                className={`border-themed bg-card rounded-full border px-3 py-1 text-xs ${
-                  windowState === "open" ? "text-success" : "text-t3"
-                }`}
-              >
-                {WINDOW_LABEL[windowState]}
-              </span>
               {canStartNew && (
                 <button
                   type="button"
@@ -916,11 +916,44 @@ export default function StudentSelfDirectedLearningPage() {
               )}
             </div>
           </div>
-          {currentApproved && (
-            <p className="text-t3 mt-2 text-xs">
-              本學期已有正式計畫；如需修改請聯絡審核人員。
-            </p>
-          )}
+          <div
+            className="border-themed flex flex-wrap items-center justify-between gap-2 border-t px-5 py-3"
+            style={
+              windowState === "open"
+                ? {
+                    backgroundColor: "color-mix(in srgb, var(--success) 10%, var(--card))",
+                    borderColor: "color-mix(in srgb, var(--success) 35%, var(--bd))",
+                  }
+                : undefined
+            }
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <span
+                className="inline-block h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: windowTone }}
+                aria-hidden="true"
+              />
+              <span
+                className={`text-sm font-semibold ${
+                  windowState === "open"
+                    ? "text-success"
+                    : windowState === "ended"
+                      ? "text-warning"
+                      : "text-t2"
+                }`}
+              >
+                {WINDOW_LABEL[windowState]}
+              </span>
+              <span className="text-t3 text-xs">
+                {settings.openAt !== null || settings.closeAt !== null
+                  ? `開放期間：${formatDateTime(settings.openAt)} ～ ${formatDateTime(settings.closeAt)}`
+                  : "開放時間尚未設定"}
+              </span>
+            </div>
+            {currentApproved && (
+              <span className="text-t3 text-xs">本學期已有正式計畫；如需修改請聯絡審核人員。</span>
+            )}
+          </div>
         </div>
 
         <div className="space-y-4 p-5">

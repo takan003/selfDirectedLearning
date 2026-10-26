@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.47",
+    "version": "0.0.48",
     "releasedAt": "2026-10-26"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -57,6 +57,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.48",
+      "releasedAt": "2026-10-26",
+      "notes": [
+        "「我的計畫」的開放狀態改為醒目提示條：成功色淡底、狀態圓點、開放撰寫中字樣與完整開放期間，比原本的小膠囊更明顯；已截止時改用警示色"
+      ]
+    },
     {
       "version": "0.0.47",
       "releasedAt": "2026-10-26",
