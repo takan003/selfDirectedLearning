@@ -13,8 +13,8 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.59",
-    "releasedAt": "2026-10-26"
+    "version": "0.0.60",
+    "releasedAt": "2026-10-27"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
   "managerPermissions": [
@@ -58,6 +58,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.60",
+      "releasedAt": "2026-10-27",
+      "notes": [
+        "教職員管理面板（被指派管理權限的教職員）不再顯示「管理員僅負責功能的規則設定，計畫審核、管理等請授權給指定的管理人員」提示；該提示僅對（超級）管理員顯示"
+      ]
+    },
     {
       "version": "0.0.59",
       "releasedAt": "2026-10-26",

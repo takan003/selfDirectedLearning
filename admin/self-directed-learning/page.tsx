@@ -93,9 +93,12 @@ function RemoveIcon() {
 
 export default function SelfDirectedLearningSettingsPage({
   fill = false,
+  delegated = false,
 }: {
   /** 嵌入教職員頁管理面板時為 true：縮小外框、不出頁首返回列 */
   fill?: boolean;
+  /** 由被指派的教職員檢視時為 true：不顯示給（超級）管理員的提示 */
+  delegated?: boolean;
 }) {
   const [settings, setSettings] = useState<SelfDirectedLearningSettings>(DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS);
   /** 全學期形式的須填週數（由學期起訖自動判斷；null＝學校尚未設定起訖） */
@@ -547,14 +550,16 @@ export default function SelfDirectedLearningSettingsPage({
         {actionButtons}
       </header>
 
-      <div
-        role="note"
-        className="border border-warning/60 bg-warning/10 text-warning space-y-1 rounded-lg p-3 text-sm"
-      >
-        <p className="font-medium">
-          管理員僅負責功能的規則設定，計畫審核、管理等請授權給指定的管理人員。
-        </p>
-      </div>
+      {!delegated && (
+        <div
+          role="note"
+          className="border border-warning/60 bg-warning/10 text-warning space-y-1 rounded-lg p-3 text-sm"
+        >
+          <p className="font-medium">
+            管理員僅負責功能的規則設定，計畫審核、管理等請授權給指定的管理人員。
+          </p>
+        </div>
+      )}
 
       <details className="border-themed bg-card rounded-lg" open>
         <summary className="text-t1 flex cursor-pointer items-center gap-2 p-4 font-medium">
