@@ -2065,22 +2065,20 @@ export default function StudentSelfDirectedLearningPage() {
             aria-label="儲存執行成果紀錄"
             disabled={!recordCanSave || recordsBusy === recordPlan.id}
             className="border-themed bg-surface text-t1 hover:bg-card flex items-center justify-center border shadow-md disabled:cursor-not-allowed disabled:opacity-50"
-            style={{ width: "2.75rem", height: "2.75rem", borderLeftWidth: 0 }}
+            style={{ width: "2.125rem", height: "2.125rem", borderLeftWidth: 0 }}
           >
             <svg
-              width="20"
-              height="20"
+              width="22"
+              height="22"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              strokeWidth="1.8"
+              strokeWidth="1.7"
               strokeLinecap="round"
               strokeLinejoin="round"
               aria-hidden="true"
             >
-              <path d="M9 3.75h4.5a2.25 2.25 0 0 1 2.25 2.25v12.75" />
-              <path d="M9 3.75H7.5A2.25 2.25 0 0 0 5.25 6v13.5A2.25 2.25 0 0 0 7.5 21.75h7a2.25 2.25 0 0 0 2.25-2.25" />
-              <path d="m8.25 14.25 2.25 2.25 4.5-5.25" />
+              <path d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
             </svg>
           </button>
           <button
@@ -2090,15 +2088,15 @@ export default function StudentSelfDirectedLearningPage() {
             aria-label={recordsExpanded ? "收合執行成果編輯區" : "展開執行成果編輯區"}
             aria-pressed={recordsExpanded}
             className="border-themed bg-surface text-t1 hover:bg-card flex items-center justify-center border shadow-md"
-            style={{ width: "2.75rem", height: "2.75rem", borderLeftWidth: 0 }}
+            style={{ width: "2.125rem", height: "2.125rem", borderLeftWidth: 0 }}
           >
             <svg
-              width="20"
-              height="20"
+              width="22"
+              height="22"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              strokeWidth="1.8"
+              strokeWidth="1.7"
               strokeLinecap="round"
               strokeLinejoin="round"
               aria-hidden="true"
@@ -2128,15 +2126,15 @@ export default function StudentSelfDirectedLearningPage() {
             aria-label="儲存草稿"
             disabled={locked || saving !== null || loading}
             className="border-themed bg-surface text-t1 hover:bg-card flex items-center justify-center border shadow-md disabled:cursor-not-allowed disabled:opacity-50"
-            style={{ width: "2.75rem", height: "2.75rem", borderLeftWidth: 0 }}
+            style={{ width: "2.125rem", height: "2.125rem", borderLeftWidth: 0 }}
           >
             <svg
-              width="20"
-              height="20"
+              width="22"
+              height="22"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              strokeWidth="1.8"
+              strokeWidth="1.7"
               strokeLinecap="round"
               strokeLinejoin="round"
               aria-hidden="true"
@@ -2151,15 +2149,15 @@ export default function StudentSelfDirectedLearningPage() {
             title="列印預覽（新分頁）"
             aria-label="在新分頁預覽列印"
             className="border-themed bg-surface text-t1 hover:bg-card flex items-center justify-center border shadow-md"
-            style={{ width: "2.75rem", height: "2.75rem", borderLeftWidth: 0 }}
+            style={{ width: "2.125rem", height: "2.125rem", borderLeftWidth: 0 }}
           >
             <svg
-              width="20"
-              height="20"
+              width="22"
+              height="22"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              strokeWidth="1.8"
+              strokeWidth="1.7"
               strokeLinecap="round"
               strokeLinejoin="round"
               aria-hidden="true"

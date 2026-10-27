@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.73",
+    "version": "0.0.74",
     "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -60,6 +60,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.74",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "左側浮動 SVG 按鈕改版：外框由 44px 縮小為 34px、圖示由 20px 放大為 22px，儲存鈕改用簡潔的勾選圈圖示；撰寫表單的浮動按鈕同步調整，兩組外觀一致"
+      ]
+    },
     {
       "version": "0.0.73",
       "releasedAt": "2026-10-28",
