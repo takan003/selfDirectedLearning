@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.71",
+    "version": "0.0.72",
     "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -60,6 +60,15 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.72",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "執行成果紀錄的編輯區從表格第四欄移到「每一週列下方」整列寬度（與逐週審查意見同一種呈現方式），編輯空間更大、表格也回到週次／學習安排／場地三欄",
+        "執行成果紀錄與學習反思心得改用完整所見即所得編輯器（字型、字級、顏色與底色、對齊、清單、縮排、引用等），不再使用精簡工具列",
+        "撰寫截止時間顯示改為含年份（YYYY/MM/DD HH:mm），避免跨年時看不懂"
+      ]
+    },
     {
       "version": "0.0.71",
       "releasedAt": "2026-10-28",

@@ -1071,7 +1071,7 @@ export default function StudentSelfDirectedLearningPage() {
               </div>
             </div>
           )}
-          {/* 逐週內容以表格呈現（與教職員審核頁一致：週次／學習安排／場地；另加執行成果紀錄欄） */}
+          {/* 逐週內容以表格呈現（與教職員審核頁一致：週次／學習安排／場地） */}
           <div className="mt-2 overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
@@ -1093,16 +1093,9 @@ export default function StudentSelfDirectedLearningPage() {
                   <th
                     scope="col"
                     className="border border-themed bg-surface text-t1 px-2 py-2 text-xs"
-                    style={{ width: "12%", textAlign: "center" }}
+                    style={{ width: "16%", textAlign: "center" }}
                   >
                     場地
-                  </th>
-                  <th
-                    scope="col"
-                    className="border border-themed bg-surface text-t1 px-2 py-2 text-xs"
-                    style={{ width: "30%", textAlign: "center" }}
-                  >
-                    執行成果紀錄
                   </th>
                 </tr>
               </thead>
@@ -1115,7 +1108,7 @@ export default function StudentSelfDirectedLearningPage() {
                   .map((slot) => `${monthDayText(slot.date)} ${WEEKDAY_LABELS[slot.day - 1]}`)
                   .join("、");
                 const periodText = slots.flatMap((slot) => slot.periods).join("、");
-                // 執行成果紀錄：該週規劃時間過了、且未超過成果撰寫截止日才能寫
+                // 執行成果紀錄：計畫通過後，該週規劃時間過了才開放，並受成果撰寫截止時間限制
                 const info = recordInfoOf(plan);
                 const weekOpen = info.weekOpen(week.week);
                 const canEditRecord =
@@ -1123,6 +1116,8 @@ export default function StudentSelfDirectedLearningPage() {
                   plan.period === currentPeriod &&
                   weekOpen &&
                   info.withinDeadline;
+                const savedRecord =
+                  plan.executionRecords.find((item) => item.week === week.week)?.note ?? "";
                 return (
                   <tbody key={week.week}>
                     <tr>
@@ -1146,38 +1141,50 @@ export default function StudentSelfDirectedLearningPage() {
                       <td className="border border-themed text-t2 px-2 py-2 align-top text-xs">
                         {week.venue || "—"}
                       </td>
-                      <td className="border border-themed px-2 py-2 align-top text-xs">
-                        {plan.status !== "approved" ? (
-                          <span className="text-t3">計畫通過後才能填寫</span>
-                        ) : plan.period !== currentPeriod ? (
-                          <span className="text-t3">—</span>
-                        ) : canEditRecord ? (
-                          <RichTextEditor
-                            compact
-                            value={recordValueOf(plan, week.week)}
-                            onChange={(value) => setRecordValue(plan, week.week, value)}
-                            maxLength={2000}
-                            placeholder="寫下這一週實際執行的成果…"
-                            ariaLabel={`第 ${week.week} 週執行成果紀錄`}
-                          />
-                        ) : weekOpen ? (
-                          <RichTextContent
-                            html={plan.executionRecords.find((item) => item.week === week.week)?.note ?? ""}
-                            emptyText="（未填寫）"
-                            className="text-t2 text-xs"
-                          />
-                        ) : (
-                          <span className="text-t3">
-                            {info.openAtOf(week.week) > 0
-                              ? `${formatShortDateTime(info.openAtOf(week.week))} 後開放`
-                              : "尚未開放"}
-                          </span>
-                        )}
-                      </td>
                     </tr>
+                    {plan.status === "approved" && plan.period === currentPeriod && (
+                      <tr>
+                        <td colSpan={3} className="border border-themed bg-surface px-3 py-3">
+                          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                            <span className="text-t1 text-xs font-medium">
+                              第 {week.week} 週執行成果紀錄
+                            </span>
+                            {!weekOpen && (
+                              <span className="text-t3 text-xs">
+                                {info.openAtOf(week.week) > 0
+                                  ? `${formatShortDateTime(info.openAtOf(week.week))} 後開放`
+                                  : "尚未開放"}
+                              </span>
+                            )}
+                            {weekOpen && !info.withinDeadline && (
+                              <span className="text-danger text-xs">已超過撰寫截止時間</span>
+                            )}
+                          </div>
+                          {canEditRecord ? (
+                            <RichTextEditor
+                              value={recordValueOf(plan, week.week)}
+                              onChange={(value) => setRecordValue(plan, week.week, value)}
+                              maxLength={2000}
+                              placeholder="寫下這一週實際執行的成果（學習內容、遇到的狀況、收穫…）"
+                              ariaLabel={`第 ${week.week} 週執行成果紀錄`}
+                            />
+                          ) : weekOpen ? (
+                            <RichTextContent
+                              html={savedRecord}
+                              emptyText="（未填寫）"
+                              className="text-t2 text-xs"
+                            />
+                          ) : (
+                            <p className="text-t3 text-xs">
+                              這一週的規劃時間還沒到，時間過了之後才能填寫執行成果紀錄。
+                            </p>
+                          )}
+                        </td>
+                      </tr>
+                    )}
                     {weekReview && (
                       <tr>
-                        <td colSpan={4} className="border border-themed bg-surface px-2 py-2">
+                        <td colSpan={3} className="border border-themed bg-surface px-2 py-2">
                           <p className="text-t1 text-xs font-medium">
                             第 {week.week} 週審查意見
                           </p>
@@ -1197,7 +1204,7 @@ export default function StudentSelfDirectedLearningPage() {
           {plan.status === "approved" && plan.period === currentPeriod && (
             <p className="text-t3 mt-2 text-xs">
               {recordInfoOf(plan).deadlineAt !== null
-                ? `執行成果紀錄撰寫截止：${formatShortDateTime(recordInfoOf(plan).deadlineAt as number)}；每一週需等該週規劃時間過了才能填寫。`
+                ? `執行成果紀錄撰寫截止：${formatDateTime(recordInfoOf(plan).deadlineAt as number)}；每一週需等該週規劃時間過了才能填寫。`
                 : "學校尚未設定成果撰寫截止時間：目前不限制填寫期限（每一週仍需等該週規劃時間過了才能填寫）。"}
             </p>
           )}
@@ -1208,7 +1215,6 @@ export default function StudentSelfDirectedLearningPage() {
               <div className="border border-themed bg-card rounded-md p-3">
                 {recordInfoOf(plan).reflectionOpen && recordInfoOf(plan).withinDeadline ? (
                   <RichTextEditor
-                    compact
                     value={reflectionValueOf(plan)}
                     onChange={(value) => setReflectionValue(plan, value)}
                     maxLength={2000}
