@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.63",
+    "version": "0.0.64",
     "releasedAt": "2026-10-27"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -58,6 +58,14 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.64",
+      "releasedAt": "2026-10-27",
+      "notes": [
+        "補強「同一學期僅能送審一件」規則：先前只檢查正式計畫（每學期一份），未擋下同時有兩件審核中；現在送出審核時會檢查同學期是否已有另一件審核中的計畫，有則回 409「本學期已有計畫在審核中，請等待審查結果或先抽回該計畫後再送出」",
+        "學生端「送出審核」按鈕在有計畫審核中、或本學期已有通過的正式計畫時停用，並在表單上方以警示色說明原因；多筆草稿仍可自由新增與編輯"
+      ]
+    },
     {
       "version": "0.0.63",
       "releasedAt": "2026-10-27",
