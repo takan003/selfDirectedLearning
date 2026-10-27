@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.60",
+    "version": "0.0.61",
     "releasedAt": "2026-10-27"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -58,6 +58,14 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.61",
+      "releasedAt": "2026-10-27",
+      "notes": [
+        "教職員審核的逐週表格：表頭「週次／學習安排／場地」改為水平置中；週次欄改為上下垂直置中，並新增該週的日期與節次（各一行）",
+        "週次欄的日期與節次由學期起訖、管理端勾選的節次行程與課表作息推算，與班級無關，整份清單共用一次計算（不增加資料庫讀取）"
+      ]
+    },
     {
       "version": "0.0.60",
       "releasedAt": "2026-10-27",

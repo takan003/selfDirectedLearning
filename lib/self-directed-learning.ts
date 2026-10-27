@@ -273,6 +273,28 @@ export async function getWeekSchedule(
   return buildWeekSchedule({ ...base, slots: settings.slots, events: occurrences });
 }
 
+/**
+ * 逐週日期／節次（不做衝堂比對）：審核端逐週表格顯示用。
+ * 只取決於學期起訖、節次行程與課表作息，與班級無關，整頁共用一份。
+ */
+export async function getWeekSlotSchedule(): Promise<WeekSchedule[]> {
+  const window = await getSemesterWindow();
+  if (!window) return [];
+  const weeks = countWeeksBetween(window.start, window.end);
+  if (!weeks) return [];
+  const [settings, schedule] = await Promise.all([getSettings(), getSchoolScheduleOptions()]);
+  return buildWeekSchedule({
+    semesterStart: window.start,
+    semesterEnd: window.end,
+    weeks,
+    periods: schedule.periods,
+    grade: "",
+    classCode: "",
+    slots: settings.slots,
+    events: [],
+  });
+}
+
 /** 讀取行事曆中「有學校活動層級」的行程，轉成衝堂比對用資料 */
 async function loadSchoolActivityOccurrences(
   classCode: string,
