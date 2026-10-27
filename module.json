@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.62",
+    "version": "0.0.63",
     "releasedAt": "2026-10-27"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -58,6 +58,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.63",
+      "releasedAt": "2026-10-27",
+      "notes": [
+        "修正逐週表格表頭置中無效：主程式 globals.css 的 th 規則未包 @layer，優先於 Tailwind 的 text-center 工具類，改用行內 text-align 讓「週次／學習安排／場地」確實水平置中"
+      ]
+    },
     {
       "version": "0.0.62",
       "releasedAt": "2026-10-27",

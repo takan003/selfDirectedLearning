@@ -613,27 +613,29 @@ export default function StaffSelfDirectedLearningPage() {
                     />
                   </div>
 
+                  {/* 主程式 globals.css 的 th 規則未包 @layer，會蓋過 Tailwind 的 text-center，故標題以行內樣式水平置中 */}
                   <div className="overflow-x-auto">
                     <table className="w-full border-collapse text-sm">
                       <thead>
                         <tr>
                           <th
                             scope="col"
-                            className="border border-themed bg-surface text-t1 px-2 py-2 text-center text-xs"
-                            style={{ width: "14%" }}
+                            className="border border-themed bg-surface text-t1 px-2 py-2 text-xs"
+                            style={{ width: "14%", textAlign: "center" }}
                           >
                             週次
                           </th>
                           <th
                             scope="col"
-                            className="border border-themed bg-surface text-t1 px-2 py-2 text-center text-xs"
+                            className="border border-themed bg-surface text-t1 px-2 py-2 text-xs"
+                            style={{ textAlign: "center" }}
                           >
                             學習安排
                           </th>
                           <th
                             scope="col"
-                            className="border border-themed bg-surface text-t1 px-2 py-2 text-center text-xs"
-                            style={{ width: "16%" }}
+                            className="border border-themed bg-surface text-t1 px-2 py-2 text-xs"
+                            style={{ width: "16%", textAlign: "center" }}
                           >
                             場地
                           </th>
