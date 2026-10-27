@@ -649,7 +649,7 @@ export default function StaffSelfDirectedLearningPage() {
                         return (
                           <tbody key={week.week}>
                             <tr>
-                              <td className="border border-themed px-2 py-2 text-center align-middle text-xs">
+                              <td className="border border-themed px-2 py-2 align-middle text-xs">
                                 <div className="text-t1 font-medium whitespace-nowrap">
                                   第 {week.week} 週
                                 </div>

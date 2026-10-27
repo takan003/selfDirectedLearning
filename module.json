@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.61",
+    "version": "0.0.62",
     "releasedAt": "2026-10-27"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -58,6 +58,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.62",
+      "releasedAt": "2026-10-27",
+      "notes": [
+        "水平置中只套用在表頭標題「週次／學習安排／場地」；逐週表格的週次欄維持垂直置中、水平仍靠左對齊"
+      ]
+    },
     {
       "version": "0.0.61",
       "releasedAt": "2026-10-27",
