@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.64",
+    "version": "0.0.65",
     "releasedAt": "2026-10-27"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -54,10 +54,20 @@
   "dataCollections": [
     "selfDirectedLearningSettings",
     "selfDirectedLearningPlans",
-    "selfDirectedLearningReviews"
+    "selfDirectedLearningReviews",
+    "selfDirectedLearningLocks"
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.65",
+      "releasedAt": "2026-10-27",
+      "notes": [
+        "送出審核一律歸為本學期的計畫：舊學期的草稿送出時寫入目前學期（此前會沿用草稿建立時的學期，導致教職員審核佇列看不到、學生卡在審核中）",
+        "新增「學生＋學期」鎖定文件（selfDirectedLearningLocks，doc id＝`<學期>_<uid>`）：送出審核、抽回、通過／退回都在交易內讀寫同一份鎖定文件，杜絕兩分頁同時送審、兩位審核者同時通過的競態",
+        "「僅一件審核中」「僅一件通過」改以目前學期檢核，並保留既有計畫掃描以相容沒有鎖定文件的舊資料"
+      ]
+    },
     {
       "version": "0.0.64",
       "releasedAt": "2026-10-27",

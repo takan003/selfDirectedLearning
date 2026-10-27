@@ -285,15 +285,9 @@ export default function StudentSelfDirectedLearningPage() {
   const currentApproved = activePlans.some(
     (plan) => plan.status === "approved" && plan.period === currentPeriod
   );
-  /** 本次要送出的學期：編輯既有計畫時依該計畫的學期，其餘依目前學期 */
-  const submittingPeriod = editingPlan?.period || currentPeriod;
-  /** 同一學期已有另一件計畫在審核中（一個學期僅能送審一件） */
+  /** 送出審核一律歸為本學期的計畫，因此以目前學期檢核「僅一件審核中」 */
   const otherSubmittedPlan =
-    submittedPlans.find((plan) => plan.period === submittingPeriod) ?? null;
-  /** 同一學期已有通過的正式計畫（一個學期僅能通過一件） */
-  const approvedInPeriod = activePlans.some(
-    (plan) => plan.status === "approved" && plan.period === submittingPeriod
-  );
+    submittedPlans.find((plan) => plan.period === currentPeriod) ?? null;
   /** 可寫週次（有設定節次時：該週至少一個時段未衝堂；未設定節次時：全部視為可寫） */
   const availableWeekNumbers = useMemo(() => {
     if (weekSchedule.length > 0) {
@@ -739,7 +733,7 @@ export default function StudentSelfDirectedLearningPage() {
     saving === null &&
     rangeValid &&
     !otherSubmittedPlan &&
-    !approvedInPeriod;
+    !currentApproved;
   const canStartNew = withinWindow && !currentApproved && !formOpen && !loading;
 
   const formActionButtons = (
@@ -758,7 +752,7 @@ export default function StudentSelfDirectedLearningPage() {
         disabled={!canSubmit || loading}
         onClick={() => void submit("submit")}
         title={
-          approvedInPeriod
+          currentApproved
             ? "本學期已有通過審核的正式計畫，無法再送出其他計畫"
             : otherSubmittedPlan
               ? "本學期已有計畫在審核中，請等待審查結果或先抽回後再送出"
@@ -1221,10 +1215,10 @@ export default function StudentSelfDirectedLearningPage() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p
                 className={
-                  approvedInPeriod || otherSubmittedPlan ? "text-danger text-xs" : "text-t3 text-xs"
+                  currentApproved || otherSubmittedPlan ? "text-danger text-xs" : "text-t3 text-xs"
                 }
               >
-                {approvedInPeriod
+                {currentApproved
                   ? "本學期已有通過審核的正式計畫，無法再送出其他計畫。"
                   : otherSubmittedPlan
                     ? "本學期已有計畫在審核中：請等待審查結果，或先抽回該計畫後再送出。"

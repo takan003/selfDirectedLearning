@@ -375,6 +375,8 @@ export function reviewStateOf(
 
 export const SELF_DIRECTED_LEARNING_PLANS_COLLECTION = "selfDirectedLearningPlans";
 export const SELF_DIRECTED_LEARNING_REVIEWS_COLLECTION = "selfDirectedLearningReviews";
+/** 學生＋學期的送審鎖定文件（序列化同時送審／同時通過，杜絕競態） */
+export const SELF_DIRECTED_LEARNING_LOCKS_COLLECTION = "selfDirectedLearningLocks";
 
 /** 安排時段：學校彈性學習時間／課餘時間（課綱） */
 export type PlanTiming = "flexible" | "afterSchool";

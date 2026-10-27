@@ -4,6 +4,7 @@ import { getCurrentPeriod } from "@/lib/settings-server";
 import { isActiveEntry } from "@/lib/roster";
 import { rosterCollection } from "@/types/roster";
 import {
+  SELF_DIRECTED_LEARNING_LOCKS_COLLECTION,
   SELF_DIRECTED_LEARNING_PLANS_COLLECTION,
   SELF_DIRECTED_LEARNING_REVIEWS_COLLECTION,
   normalizeWeekNotes,
@@ -19,6 +20,17 @@ import {
 
 function plansRef() {
   return getAdminDb().collection(SELF_DIRECTED_LEARNING_PLANS_COLLECTION);
+}
+
+/**
+ * 「學生＋學期」送審鎖定文件的參照（doc id＝`<學期>_<uid>`，單一文件、免複合索引）。
+ * 用途：送出審核與審核結果都在同一份文件上讀寫，讓同一學生同一學期的狀態轉換序列化，
+ * 杜絕兩分頁同時送審、兩個審核者同時通過的競態。
+ */
+function submissionLockRef(period: string, studentUid: string) {
+  return getAdminDb()
+    .collection(SELF_DIRECTED_LEARNING_LOCKS_COLLECTION)
+    .doc(planDocIdOf(period, studentUid));
 }
 
 /** 學生視角儀表資料 */
@@ -203,7 +215,9 @@ export async function saveStudentPlan(input: {
     }
   }
 
-  const period = target?.period || currentPeriod;
+  // 送出審核一律視為「本學期」的計畫（草稿可跨學期保留，送出時歸到目前學期）
+  const period =
+    input.action === "submit" ? currentPeriod : target?.period || currentPeriod;
   const studentPlans = await getStudentPlans(input.student.uid);
   const approvedElsewhere = studentPlans.find(
     (plan) => plan.period === period && plan.status === "approved" && plan.id !== requestedId
@@ -260,7 +274,69 @@ export async function saveStudentPlan(input: {
     submittedAt: input.action === "submit" ? now : target?.submittedAt ?? null,
     updatedAt: now,
   };
-  await plansRef().doc(id).set(next, { merge: true });
+
+  if (input.action !== "submit") {
+    await plansRef().doc(id).set(next, { merge: true });
+    return { ok: true, plan: next };
+  }
+
+  // 送審：以「學生＋學期」鎖定文件序列化，杜絕兩分頁同時送審的競態
+  // （上面的檢查是快速回饋；真正把關在交易內重讀鎖定文件與被鎖定的計畫）
+  const lockRef = submissionLockRef(period, input.student.uid);
+  const outcome = await getAdminDb().runTransaction(async (tx) => {
+    const lockSnap = await tx.get(lockRef);
+    const lock = (lockSnap.exists ? lockSnap.data() : null) as Record<string, unknown> | null;
+    const lockedSubmittedId =
+      typeof lock?.submittedPlanId === "string" ? lock.submittedPlanId : "";
+    if (lockedSubmittedId && lockedSubmittedId !== id) {
+      const lockedSnap = await tx.get(plansRef().doc(lockedSubmittedId));
+      if (lockedSnap.exists) {
+        const lockedPlan = readPlan(
+          lockedSnap.id,
+          (lockedSnap.data() || {}) as Record<string, unknown>
+        );
+        if (
+          lockedPlan.period === period &&
+          lockedPlan.status === "submitted" &&
+          !lockedPlan.deletedAt
+        ) {
+          return { kind: "submitted" as const };
+        }
+      }
+    }
+    const lockedApprovedId =
+      typeof lock?.approvedPlanId === "string" ? lock.approvedPlanId : "";
+    if (lockedApprovedId && lockedApprovedId !== id) {
+      const approvedSnap = await tx.get(plansRef().doc(lockedApprovedId));
+      if (approvedSnap.exists) {
+        const approvedPlan = readPlan(
+          approvedSnap.id,
+          (approvedSnap.data() || {}) as Record<string, unknown>
+        );
+        if (approvedPlan.period === period && approvedPlan.status === "approved") {
+          return { kind: "approved" as const };
+        }
+      }
+    }
+    tx.set(plansRef().doc(id), next, { merge: true });
+    tx.set(
+      lockRef,
+      { period, studentUid: input.student.uid, submittedPlanId: id, updatedAt: now },
+      { merge: true }
+    );
+    return { kind: "ok" as const };
+  });
+
+  if (outcome.kind === "submitted") {
+    return {
+      ok: false,
+      status: 409,
+      message: "本學期已有計畫在審核中，請等待審查結果或先抽回該計畫後再送出",
+    };
+  }
+  if (outcome.kind === "approved") {
+    return { ok: false, status: 409, message: "本學期已有正式計畫，無法再送出計畫" };
+  }
   return { ok: true, plan: next };
 }
 
@@ -345,7 +421,14 @@ export async function withdrawStudentPlan(input: {
       submittedAt: null,
       updatedAt: now,
     };
+    // 送審鎖定文件同步清除，讓同一學期可以再送另一件
+    const lockRef = submissionLockRef(plan.period, plan.studentUid);
+    const lockSnap = await tx.get(lockRef);
+    const lock = (lockSnap.exists ? lockSnap.data() : null) as Record<string, unknown> | null;
     tx.set(planRef, { status: "draft", submittedAt: null, updatedAt: now }, { merge: true });
+    if (lock && lock.submittedPlanId === plan.id) {
+      tx.set(lockRef, { submittedPlanId: null, updatedAt: now }, { merge: true });
+    }
     return { kind: "ok" as const, plan: next };
   });
 
@@ -551,8 +634,28 @@ export async function applyReview(input: {
     }
     if (current.deletedAt) return { kind: "badStatus" as const };
     if (current.status !== "submitted") return { kind: "badStatus" as const };
+
+    // 「學生＋學期」鎖定文件：與送審共用同一份文件，讓狀態轉換序列化
+    const lockRef = submissionLockRef(current.period, current.studentUid);
+    const lockSnap = await tx.get(lockRef);
+    const lock = (lockSnap.exists ? lockSnap.data() : null) as Record<string, unknown> | null;
+
     if (input.action === "approve") {
-      // 同一學生同一學期僅能有一份正式計畫：審核當下再檢查一次，避免兩筆待審先後通過
+      // 同一學生同一學期僅能有一份正式計畫：先查鎖定文件，再掃描既有計畫（相容沒有鎖定文件的舊資料）
+      const lockedApprovedId =
+        typeof lock?.approvedPlanId === "string" ? lock.approvedPlanId : "";
+      if (lockedApprovedId && lockedApprovedId !== current.id) {
+        const lockedSnap = await tx.get(plansRef().doc(lockedApprovedId));
+        if (lockedSnap.exists) {
+          const lockedPlan = readPlan(
+            lockedSnap.id,
+            (lockedSnap.data() || {}) as Record<string, unknown>
+          );
+          if (lockedPlan.period === current.period && lockedPlan.status === "approved") {
+            return { kind: "conflict" as const };
+          }
+        }
+      }
       const approvedSnap = await tx.get(
         plansRef().where("studentUid", "==", current.studentUid).limit(50)
       );
@@ -576,6 +679,22 @@ export async function applyReview(input: {
       weekNotes: input.weekNotes ?? [],
       reviewedAt: now,
     });
+    // 鎖定文件同步：通過＝記下正式計畫並清掉審核中；退回＝清掉審核中
+    if (input.action === "approve") {
+      tx.set(
+        lockRef,
+        {
+          period: current.period,
+          studentUid: current.studentUid,
+          approvedPlanId: current.id,
+          submittedPlanId: null,
+          updatedAt: now,
+        },
+        { merge: true }
+      );
+    } else if (lock && lock.submittedPlanId === current.id) {
+      tx.set(lockRef, { submittedPlanId: null, updatedAt: now }, { merge: true });
+    }
     return {
       kind: "ok" as const,
       plan: { ...current, status, updatedAt: now },
