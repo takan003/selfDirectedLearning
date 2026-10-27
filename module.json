@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.68",
+    "version": "0.0.69",
     "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -60,6 +60,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.69",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "「計畫成果撰寫截止」改為可設定到時與分（日期＋時間輸入），不再只到日；學生端顯示的截止時間同步改為日期＋時間"
+      ]
+    },
     {
       "version": "0.0.68",
       "releasedAt": "2026-10-28",

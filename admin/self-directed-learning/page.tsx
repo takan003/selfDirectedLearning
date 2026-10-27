@@ -39,28 +39,6 @@ function formatDateTime(epoch: number | null): string {
   return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-/** epoch → 日期輸入框值（`YYYY-MM-DD`） */
-function toDateInput(epoch: number | null): string {
-  if (!epoch) return "";
-  const d = new Date(epoch);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
-
-/** 日期輸入框值（`YYYY-MM-DD`）→ 當日 23:59:59.999 的 epoch ms */
-function endOfDayFromDate(value: string): number | null {
-  if (!value) return null;
-  const time = new Date(`${value}T23:59:59.999`).getTime();
-  return Number.isFinite(time) ? time : null;
-}
-
-function formatDate(epoch: number | null): string {
-  if (!epoch) return "未設定";
-  const d = new Date(epoch);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())}`;
-}
-
 const STATE_LABEL: Record<string, string> = {
   unset: "尚未設定開放時間",
   closed: "尚未開放",
@@ -632,23 +610,25 @@ export default function SelfDirectedLearningSettingsPage({
             目前設定：{formatDateTime(settings.openAt)} ～ {formatDateTime(settings.closeAt)}
           </p>
 
-          {/* 計畫成果撰寫截止日：執行成果紀錄與學習反思心得開放到此日止 */}
+          {/* 計畫成果撰寫截止時間：執行成果紀錄與學習反思心得開放到此時間為止 */}
           <label className="text-t2 block max-w-xs space-y-1 text-sm">
-            <span>計畫成果撰寫截止日</span>
+            <span>計畫成果撰寫截止時間</span>
             <input
-              type="date"
+              type="datetime-local"
               className="input-theme w-full rounded px-3 py-2 text-sm"
-              value={toDateInput(settings.resultDeadlineAt)}
-              onChange={(event) => patch({ resultDeadlineAt: endOfDayFromDate(event.target.value) })}
+              value={toDateTimeLocal(settings.resultDeadlineAt)}
+              onChange={(event) =>
+                patch({ resultDeadlineAt: fromDateTimeLocal(event.target.value) })
+              }
             />
             <span className="text-t3 block text-xs">
-              學生填寫「執行成果紀錄」與「學習反思心得」的截止日（含當日）；未設定＝不開放填寫。
-              每一週的成果紀錄需等該週規劃時間過了才會開放。
+              學生填寫「執行成果紀錄」與「學習反思心得」的截止時間（可設定到時與分）；
+              未設定＝不開放填寫。每一週的成果紀錄需等該週規劃時間過了才會開放。
             </span>
           </label>
           {settings.resultDeadlineAt !== null && (
             <p className="text-t3 text-sm">
-              目前設定：{formatDate(settings.resultDeadlineAt)} 截止
+              目前設定：{formatDateTime(settings.resultDeadlineAt)} 截止
             </p>
           )}
 

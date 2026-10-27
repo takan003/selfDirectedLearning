@@ -1198,7 +1198,7 @@ export default function StudentSelfDirectedLearningPage() {
           {plan.status === "approved" && plan.period === currentPeriod && (
             <p className="text-t3 mt-2 text-xs">
               {recordInfoOf(plan).deadlineAt !== null
-                ? `執行成果紀錄撰寫截止：${formatShortDate(recordInfoOf(plan).deadlineAt as number)}（含當日）；每一週需等該週規劃時間過了才能填寫。`
+                ? `執行成果紀錄撰寫截止：${formatShortDateTime(recordInfoOf(plan).deadlineAt as number)}；每一週需等該週規劃時間過了才能填寫。`
                 : "學校尚未設定計畫成果撰寫截止日，暫不開放填寫執行成果紀錄。"}
             </p>
           )}
