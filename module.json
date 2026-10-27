@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.70",
+    "version": "0.0.71",
     "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -60,6 +60,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.71",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "學生端與家長端的審查意見標題改為「學校審查意見回饋」，不再顯示審查人員姓名"
+      ]
+    },
     {
       "version": "0.0.70",
       "releasedAt": "2026-10-28",

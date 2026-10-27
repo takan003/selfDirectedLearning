@@ -1049,9 +1049,7 @@ export default function StudentSelfDirectedLearningPage() {
 
         {review && (
           <div className="border-l-4 border-l-primary border-themed bg-card rounded-md border p-3">
-            <p className="text-t1 text-xs font-medium">
-              審查意見（{review.reviewerName || "審核人員"}）
-            </p>
+            <p className="text-t1 text-xs font-medium">學校審查意見回饋</p>
             <RichTextContent
               html={review.note}
               emptyText="（無文字意見）"
