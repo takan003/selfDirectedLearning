@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.72",
+    "version": "0.0.73",
     "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -60,6 +60,15 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.73",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "學生端「查看內容」更名為「查看計畫與撰寫成果」",
+        "每一週的「執行成果紀錄」改為可單獨收合／展開（原生 details，預設收合），避免整頁都是編輯器、版面過長",
+        "左側新增兩顆浮動 SVG 按鈕：儲存執行成果紀錄、一次展開／收合全部成果編輯區（表格下方的儲存按鈕移除）"
+      ]
+    },
     {
       "version": "0.0.72",
       "releasedAt": "2026-10-28",

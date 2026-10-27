@@ -277,6 +277,8 @@ export default function StudentSelfDirectedLearningPage() {
   const [reflectionDrafts, setReflectionDrafts] = useState<Record<string, string>>({});
   /** 正在儲存成果紀錄的計畫 id */
   const [recordsBusy, setRecordsBusy] = useState<string | null>(null);
+  /** 是否展開所有「執行成果紀錄」編輯區（預設收合，避免版面過長） */
+  const [recordsExpanded, setRecordsExpanded] = useState(false);
   /** 學生姓名／班級（列印預覽表頭用） */
   const [studentInfo, setStudentInfo] = useState<StudentInfo | null>(null);
   /** 撰寫計畫區塊是否展開（預設隱藏；發起新計畫或編輯草稿才顯示） */
@@ -320,6 +322,9 @@ export default function StudentSelfDirectedLearningPage() {
   /** 送出審核一律歸為本學期的計畫，因此以目前學期檢核「僅一件審核中」 */
   const otherSubmittedPlan =
     submittedPlans.find((plan) => plan.period === currentPeriod) ?? null;
+  /** 目前學期已通過的計畫（執行成果紀錄的對象；每學期僅一件） */
+  const recordPlan =
+    plans.find((plan) => plan.status === "approved" && plan.period === currentPeriod) ?? null;
   /** 可寫週次（有設定節次時：該週至少一個時段未衝堂；未設定節次時：全部視為可寫） */
   const availableWeekNumbers = useMemo(() => {
     if (weekSchedule.length > 0) {
@@ -898,6 +903,16 @@ export default function StudentSelfDirectedLearningPage() {
     };
   };
 
+  /** 已通過計畫的成果編輯狀態（左側浮動按鈕用） */
+  const recordPlanInfo = recordPlan ? recordInfoOf(recordPlan) : null;
+  const recordCanSave = (() => {
+    if (!recordPlan || !recordPlanInfo || !recordPlanInfo.withinDeadline) return false;
+    return (
+      recordPlan.weeks.some((week) => recordPlanInfo.weekOpen(week.week)) ||
+      recordPlanInfo.reflectionOpen
+    );
+  })();
+
   /** 已填寫或草稿中的某一週執行成果 */
   const recordValueOf = (plan: SelfDirectedLearningPlan, week: number): string =>
     recordDrafts[plan.id]?.[week] ??
@@ -1061,7 +1076,7 @@ export default function StudentSelfDirectedLearningPage() {
         <details className="border-themed border-t pt-2">
           <summary className="text-t2 flex cursor-pointer items-center gap-1 text-xs">
             <DisclosureArrow />
-            查看內容（{plan.weeks.length} 週）
+            查看計畫與撰寫成果（{plan.weeks.length} 週）
           </summary>
           {plan.learningGoals && (
             <div className="mt-2 space-y-1">
@@ -1144,41 +1159,49 @@ export default function StudentSelfDirectedLearningPage() {
                     </tr>
                     {plan.status === "approved" && plan.period === currentPeriod && (
                       <tr>
-                        <td colSpan={3} className="border border-themed bg-surface px-3 py-3">
-                          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                            <span className="text-t1 text-xs font-medium">
+                        <td colSpan={3} className="border border-themed bg-surface px-3 py-2">
+                          <details open={recordsExpanded}>
+                            <summary className="text-t1 flex cursor-pointer items-center gap-2 text-xs font-medium">
+                              <DisclosureArrow />
                               第 {week.week} 週執行成果紀錄
-                            </span>
-                            {!weekOpen && (
-                              <span className="text-t3 text-xs">
-                                {info.openAtOf(week.week) > 0
-                                  ? `${formatShortDateTime(info.openAtOf(week.week))} 後開放`
-                                  : "尚未開放"}
-                              </span>
-                            )}
-                            {weekOpen && !info.withinDeadline && (
-                              <span className="text-danger text-xs">已超過撰寫截止時間</span>
-                            )}
-                          </div>
-                          {canEditRecord ? (
-                            <RichTextEditor
-                              value={recordValueOf(plan, week.week)}
-                              onChange={(value) => setRecordValue(plan, week.week, value)}
-                              maxLength={2000}
-                              placeholder="寫下這一週實際執行的成果（學習內容、遇到的狀況、收穫…）"
-                              ariaLabel={`第 ${week.week} 週執行成果紀錄`}
-                            />
-                          ) : weekOpen ? (
-                            <RichTextContent
-                              html={savedRecord}
-                              emptyText="（未填寫）"
-                              className="text-t2 text-xs"
-                            />
-                          ) : (
-                            <p className="text-t3 text-xs">
-                              這一週的規劃時間還沒到，時間過了之後才能填寫執行成果紀錄。
-                            </p>
-                          )}
+                              {!weekOpen && (
+                                <span className="text-t3 font-normal">
+                                  （
+                                  {info.openAtOf(week.week) > 0
+                                    ? `${formatShortDateTime(info.openAtOf(week.week))} 後開放`
+                                    : "尚未開放"}
+                                  ）
+                                </span>
+                              )}
+                              {weekOpen && !info.withinDeadline && (
+                                <span className="text-danger font-normal">（已超過撰寫截止時間）</span>
+                              )}
+                              {weekOpen && info.withinDeadline && !savedRecord && (
+                                <span className="text-t3 font-normal">（未填寫）</span>
+                              )}
+                            </summary>
+                            <div className="mt-2">
+                              {canEditRecord ? (
+                                <RichTextEditor
+                                  value={recordValueOf(plan, week.week)}
+                                  onChange={(value) => setRecordValue(plan, week.week, value)}
+                                  maxLength={2000}
+                                  placeholder="寫下這一週實際執行的成果（學習內容、遇到的狀況、收穫…）"
+                                  ariaLabel={`第 ${week.week} 週執行成果紀錄`}
+                                />
+                              ) : weekOpen ? (
+                                <RichTextContent
+                                  html={savedRecord}
+                                  emptyText="（未填寫）"
+                                  className="text-t2 text-xs"
+                                />
+                              ) : (
+                                <p className="text-t3 text-xs">
+                                  這一週的規劃時間還沒到，時間過了之後才能填寫執行成果紀錄。
+                                </p>
+                              )}
+                            </div>
+                          </details>
                         </td>
                       </tr>
                     )}
@@ -1238,22 +1261,6 @@ export default function StudentSelfDirectedLearningPage() {
             </div>
           )}
 
-          {plan.status === "approved" &&
-            plan.period === currentPeriod &&
-            recordInfoOf(plan).withinDeadline &&
-            (plan.weeks.some((week) => recordInfoOf(plan).weekOpen(week.week)) ||
-              recordInfoOf(plan).reflectionOpen) && (
-              <div className="mt-2 flex justify-end">
-                <button
-                  type="button"
-                  className="btn-primary btn-theme rounded px-4 py-2 text-xs"
-                  disabled={recordsBusy === plan.id}
-                  onClick={() => void saveRecords(plan)}
-                >
-                  {recordsBusy === plan.id ? "儲存中…" : "儲存執行成果紀錄"}
-                </button>
-              </div>
-            )}
         </details>
       </article>
     );
@@ -2037,6 +2044,69 @@ export default function StudentSelfDirectedLearningPage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {recordPlan && !maintenance && (
+        <div
+          className="flex flex-col gap-2 print:hidden"
+          style={{
+            position: "fixed",
+            left: 0,
+            top: formOpen ? "calc(50% + 6.5rem)" : "50%",
+            transform: "translateY(-50%)",
+            zIndex: 40,
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => void saveRecords(recordPlan)}
+            title="儲存執行成果紀錄"
+            aria-label="儲存執行成果紀錄"
+            disabled={!recordCanSave || recordsBusy === recordPlan.id}
+            className="border-themed bg-surface text-t1 hover:bg-card flex items-center justify-center border shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+            style={{ width: "2.75rem", height: "2.75rem", borderLeftWidth: 0 }}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M9 3.75h4.5a2.25 2.25 0 0 1 2.25 2.25v12.75" />
+              <path d="M9 3.75H7.5A2.25 2.25 0 0 0 5.25 6v13.5A2.25 2.25 0 0 0 7.5 21.75h7a2.25 2.25 0 0 0 2.25-2.25" />
+              <path d="m8.25 14.25 2.25 2.25 4.5-5.25" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            onClick={() => setRecordsExpanded((prev) => !prev)}
+            title={recordsExpanded ? "收合執行成果編輯區" : "展開執行成果編輯區"}
+            aria-label={recordsExpanded ? "收合執行成果編輯區" : "展開執行成果編輯區"}
+            aria-pressed={recordsExpanded}
+            className="border-themed bg-surface text-t1 hover:bg-card flex items-center justify-center border shadow-md"
+            style={{ width: "2.75rem", height: "2.75rem", borderLeftWidth: 0 }}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m7 15 5 5 5-5" />
+              <path d="m7 9 5-5 5 5" />
+            </svg>
+          </button>
         </div>
       )}
 
