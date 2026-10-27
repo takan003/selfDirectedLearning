@@ -13,8 +13,8 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.65",
-    "releasedAt": "2026-10-27"
+    "version": "0.0.66",
+    "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
   "managerPermissions": [
@@ -59,6 +59,14 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.66",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "學生端「我的計畫 → 查看內容」改與教職員審核頁相同的表格呈現：表頭週次／學習安排／場地水平置中，週次欄垂直置中並列出週次、時段、日期、節次，逐週審查意見改為該週列下方的整列區塊",
+        "學生端逐週日期／節次僅在本學期的計畫顯示（沿用目前學期的節次行程推算），舊學期計畫不顯示以免誤標日期"
+      ]
+    },
     {
       "version": "0.0.65",
       "releasedAt": "2026-10-27",

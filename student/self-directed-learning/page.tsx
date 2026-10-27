@@ -71,6 +71,12 @@ const WINDOW_LABEL: Record<string, string> = {
   ended: "已超過開放撰寫期限",
 };
 
+/** 表格內的時段短標籤（與教職員審核頁一致，避免窄欄位逐字換行） */
+const TIMING_SHORT_LABELS: Record<string, string> = {
+  flexible: "彈性學習",
+  afterSchool: "課餘",
+};
+
 function formatDateTime(epoch: number | null): string {
   if (!epoch) return "—";
   const d = new Date(epoch);
@@ -935,30 +941,85 @@ export default function StudentSelfDirectedLearningPage() {
               <RichTextContent html={plan.learningGoals} className="text-t2 text-xs" />
             </div>
           )}
-          <ul className="mt-2 space-y-2">
-            {plan.weeks.map((week) => {
-              const weekReview = review?.weekNotes?.find((item) => item.week === week.week);
-              return (
-                <li key={week.week} className="border border-themed bg-card rounded-md p-3">
-                  <div className="text-t3 mb-1 flex flex-wrap gap-2 text-xs">
-                    <span className="text-t2 font-medium">第 {week.week} 週</span>
-                    <span>{PLAN_TIMING_LABELS[week.timing]}</span>
-                    <span>{week.venue || "—"}</span>
-                  </div>
-                  <RichTextContent html={week.content} className="text-t2 text-xs" />
-                  {weekReview && (
-                    <div className="border-l-primary border-themed bg-surface mt-2 rounded-md border border-l-4 p-2">
-                      <p className="text-t1 text-xs font-medium">審查意見</p>
-                      <RichTextContent
-                        html={weekReview.note}
-                        className="text-t2 text-xs"
-                      />
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+          {/* 逐週內容以表格呈現（與教職員審核頁一致：週次／學習安排／場地，逐週審查意見置於該週下方） */}
+          <div className="mt-2 overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr>
+                  <th
+                    scope="col"
+                    className="border border-themed bg-surface text-t1 px-2 py-2 text-xs"
+                    style={{ width: "14%", textAlign: "center" }}
+                  >
+                    週次
+                  </th>
+                  <th
+                    scope="col"
+                    className="border border-themed bg-surface text-t1 px-2 py-2 text-xs"
+                    style={{ textAlign: "center" }}
+                  >
+                    學習安排
+                  </th>
+                  <th
+                    scope="col"
+                    className="border border-themed bg-surface text-t1 px-2 py-2 text-xs"
+                    style={{ width: "16%", textAlign: "center" }}
+                  >
+                    場地
+                  </th>
+                </tr>
+              </thead>
+              {plan.weeks.map((week) => {
+                const weekReview = review?.weekNotes?.find((item) => item.week === week.week);
+                // 日期／節次由目前學期的節次行程推算，僅適用於本學期的計畫
+                const showSchedule = plan.period === currentPeriod;
+                const slots = showSchedule ? weekScheduleByNo.get(week.week)?.slots ?? [] : [];
+                const dateText = slots
+                  .map((slot) => `${monthDayText(slot.date)} ${WEEKDAY_LABELS[slot.day - 1]}`)
+                  .join("、");
+                const periodText = slots.flatMap((slot) => slot.periods).join("、");
+                return (
+                  <tbody key={week.week}>
+                    <tr>
+                      <td className="border border-themed px-2 py-2 align-middle text-xs">
+                        <div className="text-t1 font-medium whitespace-nowrap">
+                          第 {week.week} 週
+                        </div>
+                        <div className="text-t3 whitespace-nowrap">
+                          {TIMING_SHORT_LABELS[week.timing] ?? PLAN_TIMING_LABELS[week.timing]}
+                        </div>
+                        {showSchedule && (
+                          <>
+                            <div className="text-t2 whitespace-nowrap">{dateText || "—"}</div>
+                            <div className="text-t2 whitespace-nowrap">{periodText || "—"}</div>
+                          </>
+                        )}
+                      </td>
+                      <td className="border border-themed px-2 py-2 align-top">
+                        <RichTextContent html={week.content} />
+                      </td>
+                      <td className="border border-themed text-t2 px-2 py-2 align-top text-xs">
+                        {week.venue || "—"}
+                      </td>
+                    </tr>
+                    {weekReview && (
+                      <tr>
+                        <td colSpan={3} className="border border-themed bg-surface px-2 py-2">
+                          <p className="text-t1 text-xs font-medium">
+                            第 {week.week} 週審查意見
+                          </p>
+                          <RichTextContent
+                            html={weekReview.note}
+                            className="text-t2 mt-1 text-xs"
+                          />
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                );
+              })}
+            </table>
+          </div>
         </details>
       </article>
     );
