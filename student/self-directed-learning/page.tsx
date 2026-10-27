@@ -936,9 +936,11 @@ export default function StudentSelfDirectedLearningPage() {
             查看內容（{plan.weeks.length} 週）
           </summary>
           {plan.learningGoals && (
-            <div className="border border-themed bg-card mt-2 rounded-md p-3">
+            <div className="mt-2 space-y-1">
               <p className="text-t1 text-xs font-medium">學習目標</p>
-              <RichTextContent html={plan.learningGoals} className="text-t2 text-xs" />
+              <div className="border border-themed bg-card rounded-md p-3">
+                <RichTextContent html={plan.learningGoals} className="text-t2 text-xs" />
+              </div>
             </div>
           )}
           {/* 逐週內容以表格呈現（與教職員審核頁一致：週次／學習安排／場地，逐週審查意見置於該週下方） */}

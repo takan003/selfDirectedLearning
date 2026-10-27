@@ -604,13 +604,15 @@ export default function StaffSelfDirectedLearningPage() {
                 </summary>
 
                 <div className="border-themed space-y-3 border-t p-4">
-                  <div className="border border-themed bg-surface rounded-md p-3">
+                  <div className="space-y-1">
                     <p className="text-t1 text-xs font-medium">學習目標</p>
-                    <RichTextContent
-                      html={plan.learningGoals}
-                      emptyText="（未填寫）"
-                      className="text-t2 text-sm"
-                    />
+                    <div className="border border-themed bg-surface rounded-md p-3">
+                      <RichTextContent
+                        html={plan.learningGoals}
+                        emptyText="（未填寫）"
+                        className="text-t2 text-sm"
+                      />
+                    </div>
                   </div>
 
                   {/* 主程式 globals.css 的 th 規則未包 @layer，會蓋過 Tailwind 的 text-center，故標題以行內樣式水平置中 */}

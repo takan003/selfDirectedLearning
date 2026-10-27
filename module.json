@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.66",
+    "version": "0.0.67",
     "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -59,6 +59,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.67",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "「學習目標」改為區塊標題：標題移到框線外（學生端查看內容、教職員審核頁一致），框內只放學習目標內容"
+      ]
+    },
     {
       "version": "0.0.66",
       "releasedAt": "2026-10-28",
