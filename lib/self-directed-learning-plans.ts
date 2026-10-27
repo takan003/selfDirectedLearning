@@ -413,11 +413,8 @@ export async function savePlanRecords(input: {
   if (plan.period !== periodLabelOf(await getCurrentPeriod())) {
     return { ok: false, status: 409, message: "只能填寫本學期計畫的執行成果紀錄" };
   }
-  if (input.settings.resultDeadlineAt === null) {
-    return { ok: false, status: 409, message: "學校尚未設定計畫成果撰寫截止日" };
-  }
-  if (now > input.settings.resultDeadlineAt) {
-    return { ok: false, status: 409, message: "已超過計畫成果撰寫截止日" };
+  if (input.settings.resultDeadlineAt !== null && now > input.settings.resultDeadlineAt) {
+    return { ok: false, status: 409, message: "已超過計畫成果撰寫截止時間" };
   }
 
   const window = await getRecordWindow(plan.grade, plan.classCode);

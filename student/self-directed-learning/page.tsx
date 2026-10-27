@@ -893,7 +893,8 @@ export default function StudentSelfDirectedLearningPage() {
       deadlineAt,
       weekOpen: (week: number) => openAtOf(week) > 0 && now >= openAtOf(week),
       reflectionOpen: reflectionOpenAt > 0 && now >= reflectionOpenAt,
-      withinDeadline: deadlineAt !== null && now <= deadlineAt,
+      /** 未設定截止時間＝不限制（只要該週時間到即可填寫） */
+      withinDeadline: deadlineAt === null || now <= deadlineAt,
     };
   };
 
@@ -1199,7 +1200,7 @@ export default function StudentSelfDirectedLearningPage() {
             <p className="text-t3 mt-2 text-xs">
               {recordInfoOf(plan).deadlineAt !== null
                 ? `執行成果紀錄撰寫截止：${formatShortDateTime(recordInfoOf(plan).deadlineAt as number)}；每一週需等該週規劃時間過了才能填寫。`
-                : "學校尚未設定計畫成果撰寫截止日，暫不開放填寫執行成果紀錄。"}
+                : "學校尚未設定成果撰寫截止時間：目前不限制填寫期限（每一週仍需等該週規劃時間過了才能填寫）。"}
             </p>
           )}
 

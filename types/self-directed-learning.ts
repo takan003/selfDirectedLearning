@@ -125,7 +125,7 @@ export interface SelfDirectedLearningSettings {
   reviewStartAt: number | null;
   /** 審核期限截止（epoch ms；null＝未設定，僅供提示與督促，不阻止審核） */
   reviewEndAt: number | null;
-  /** 計畫成果撰寫截止（epoch ms；null＝未設定，執行成果紀錄與學習反思心得不開放填寫） */
+  /** 計畫成果撰寫截止（epoch ms；null＝未設定，不限制填寫期限） */
   resultDeadlineAt: number | null;
   /** 週數填寫形式（full＝全學期皆須填寫，週數由行事曆自動判斷；flexible＝至少填到下限週數） */
   weekMode: WeekMode;

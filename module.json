@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.69",
+    "version": "0.0.70",
     "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -60,6 +60,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.70",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "修正「未設定成果撰寫截止時間時完全無法填寫」：未設定＝不限制填寫期限（只要該週規劃時間過了即可填寫），管理端設定截止時間後才以截止時間為準；學生端提示文字同步調整"
+      ]
+    },
     {
       "version": "0.0.69",
       "releasedAt": "2026-10-28",

@@ -623,7 +623,7 @@ export default function SelfDirectedLearningSettingsPage({
             />
             <span className="text-t3 block text-xs">
               學生填寫「執行成果紀錄」與「學習反思心得」的截止時間（可設定到時與分）；
-              未設定＝不開放填寫。每一週的成果紀錄需等該週規劃時間過了才會開放。
+              未設定＝不限制填寫期限。每一週的成果紀錄需等該週規劃時間過了才會開放。
             </span>
           </label>
           {settings.resultDeadlineAt !== null && (
