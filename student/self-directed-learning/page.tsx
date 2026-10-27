@@ -27,6 +27,7 @@ import {
   type PlanWeek,
   type PlanReview,
   type PrintPreviewPayload,
+  type RecordWindow,
   type SelfDirectedLearningPlan,
   type SelfDirectedLearningSettings,
   type WeekSchedule,
@@ -89,6 +90,20 @@ function monthDayText(date: string): string {
   const [, month, day] = date.split("-");
   if (!month || !day) return date;
   return `${Number(month)}/${Number(day)}`;
+}
+
+/** 短日期時間（`M/D HH:mm`；成果紀錄開放時間顯示用） */
+function formatShortDateTime(epoch: number): string {
+  if (!epoch) return "—";
+  const d = new Date(epoch);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** 短日期（`YYYY/M/D`；成果撰寫截止日顯示用） */
+function formatShortDate(epoch: number): string {
+  const d = new Date(epoch);
+  return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
 }
 
 /** 學期識別（如 115-1）轉為易讀文字 */
@@ -251,6 +266,17 @@ export default function StudentSelfDirectedLearningPage() {
   const [fullWeeks, setFullWeeks] = useState<number | null>(null);
   /** 逐週彈性學習時間（日期／節次）與學校活動衝堂 */
   const [weekSchedule, setWeekSchedule] = useState<WeekSchedule[]>([]);
+  /** 執行成果紀錄／學習反思心得開放資訊（逐週開放時間與截止日） */
+  const [recordWindow, setRecordWindow] = useState<RecordWindow>({
+    deadlineAt: null,
+    weeks: [],
+  });
+  /** 執行成果紀錄草稿（key＝plan id → 週次 → 富文本） */
+  const [recordDrafts, setRecordDrafts] = useState<Record<string, Record<number, string>>>({});
+  /** 學習反思心得草稿（key＝plan id） */
+  const [reflectionDrafts, setReflectionDrafts] = useState<Record<string, string>>({});
+  /** 正在儲存成果紀錄的計畫 id */
+  const [recordsBusy, setRecordsBusy] = useState<string | null>(null);
   /** 學生姓名／班級（列印預覽表頭用） */
   const [studentInfo, setStudentInfo] = useState<StudentInfo | null>(null);
   /** 撰寫計畫區塊是否展開（預設隱藏；發起新計畫或編輯草稿才顯示） */
@@ -385,6 +411,19 @@ export default function StudentSelfDirectedLearningPage() {
       setSettings(nextSettings);
       setFullWeeks(nextFullWeeks);
       setWeekSchedule(Array.isArray(data.weekSchedule) ? (data.weekSchedule as WeekSchedule[]) : []);
+      setRecordWindow(
+        data.recordWindow && typeof data.recordWindow === "object"
+          ? {
+              deadlineAt:
+                typeof (data.recordWindow as RecordWindow).deadlineAt === "number"
+                  ? (data.recordWindow as RecordWindow).deadlineAt
+                  : null,
+              weeks: Array.isArray((data.recordWindow as RecordWindow).weeks)
+                ? (data.recordWindow as RecordWindow).weeks
+                : [],
+            }
+          : { deadlineAt: null, weeks: [] }
+      );
       setStudentInfo(
         data.student && typeof data.student === "object"
           ? {
@@ -833,6 +872,96 @@ export default function StudentSelfDirectedLearningPage() {
     </div>
   );
 
+  /**
+   * 該計畫的「執行成果紀錄」開放狀態：
+   * 逐週需等該週規劃時間（最後一個節次結束）過了才開放；學習反思心得等最後一週過了才開放；
+   * 兩者都受管理端設定的成果撰寫截止日限制（含當日）。
+   */
+  const recordInfoOf = (plan: SelfDirectedLearningPlan) => {
+    const openByWeek = new Map(recordWindow.weeks.map((row) => [row.week, row.openAt]));
+    const endByWeek = new Map(recordWindow.weeks.map((row) => [row.week, row.endAt]));
+    const openAtOf = (week: number) => openByWeek.get(week) ?? 0;
+    const reflectionOpenAt = plan.weeks.reduce(
+      (max, week) => Math.max(max, endByWeek.get(week.week) ?? 0),
+      0
+    );
+    const deadlineAt = recordWindow.deadlineAt;
+    const now = Date.now();
+    return {
+      openAtOf,
+      reflectionOpenAt,
+      deadlineAt,
+      weekOpen: (week: number) => openAtOf(week) > 0 && now >= openAtOf(week),
+      reflectionOpen: reflectionOpenAt > 0 && now >= reflectionOpenAt,
+      withinDeadline: deadlineAt !== null && now <= deadlineAt,
+    };
+  };
+
+  /** 已填寫或草稿中的某一週執行成果 */
+  const recordValueOf = (plan: SelfDirectedLearningPlan, week: number): string =>
+    recordDrafts[plan.id]?.[week] ??
+    plan.executionRecords.find((record) => record.week === week)?.note ??
+    "";
+
+  const setRecordValue = (plan: SelfDirectedLearningPlan, week: number, value: string) => {
+    setRecordDrafts((prev) => {
+      const base =
+        prev[plan.id] ??
+        Object.fromEntries(plan.executionRecords.map((record) => [record.week, record.note]));
+      return { ...prev, [plan.id]: { ...base, [week]: value } };
+    });
+  };
+
+  const reflectionValueOf = (plan: SelfDirectedLearningPlan): string =>
+    reflectionDrafts[plan.id] ?? plan.reflection ?? "";
+
+  const setReflectionValue = (plan: SelfDirectedLearningPlan, value: string) => {
+    setReflectionDrafts((prev) => ({ ...prev, [plan.id]: value }));
+  };
+
+  /** 儲存執行成果紀錄與學習反思心得（只送已開放的週次與反思） */
+  const saveRecords = async (plan: SelfDirectedLearningPlan) => {
+    if (recordsBusy) return;
+    const info = recordInfoOf(plan);
+    const records = plan.weeks
+      .filter((week) => info.weekOpen(week.week))
+      .map((week) => ({ week: week.week, note: recordValueOf(plan, week.week) }));
+    setRecordsBusy(plan.id);
+    try {
+      const response = await fetch("/api/student/self-directed-learning", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "records",
+          planId: plan.id,
+          records,
+          ...(info.reflectionOpen ? { reflection: reflectionValueOf(plan) } : {}),
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        setToast({ kind: "error", text: data.message || "儲存失敗" });
+        return;
+      }
+      setToast({ kind: "success", text: data.message || "已儲存執行成果紀錄" });
+      setRecordDrafts((prev) => {
+        const next = { ...prev };
+        delete next[plan.id];
+        return next;
+      });
+      setReflectionDrafts((prev) => {
+        const next = { ...prev };
+        delete next[plan.id];
+        return next;
+      });
+      await load();
+    } catch {
+      setToast({ kind: "error", text: "儲存失敗" });
+    } finally {
+      setRecordsBusy(null);
+    }
+  };
+
   const renderPlanCard = (
     plan: SelfDirectedLearningPlan,
     options: {
@@ -943,7 +1072,7 @@ export default function StudentSelfDirectedLearningPage() {
               </div>
             </div>
           )}
-          {/* 逐週內容以表格呈現（與教職員審核頁一致：週次／學習安排／場地，逐週審查意見置於該週下方） */}
+          {/* 逐週內容以表格呈現（與教職員審核頁一致：週次／學習安排／場地；另加執行成果紀錄欄） */}
           <div className="mt-2 overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
@@ -965,9 +1094,16 @@ export default function StudentSelfDirectedLearningPage() {
                   <th
                     scope="col"
                     className="border border-themed bg-surface text-t1 px-2 py-2 text-xs"
-                    style={{ width: "16%", textAlign: "center" }}
+                    style={{ width: "12%", textAlign: "center" }}
                   >
                     場地
+                  </th>
+                  <th
+                    scope="col"
+                    className="border border-themed bg-surface text-t1 px-2 py-2 text-xs"
+                    style={{ width: "30%", textAlign: "center" }}
+                  >
+                    執行成果紀錄
                   </th>
                 </tr>
               </thead>
@@ -980,6 +1116,14 @@ export default function StudentSelfDirectedLearningPage() {
                   .map((slot) => `${monthDayText(slot.date)} ${WEEKDAY_LABELS[slot.day - 1]}`)
                   .join("、");
                 const periodText = slots.flatMap((slot) => slot.periods).join("、");
+                // 執行成果紀錄：該週規劃時間過了、且未超過成果撰寫截止日才能寫
+                const info = recordInfoOf(plan);
+                const weekOpen = info.weekOpen(week.week);
+                const canEditRecord =
+                  plan.status === "approved" &&
+                  plan.period === currentPeriod &&
+                  weekOpen &&
+                  info.withinDeadline;
                 return (
                   <tbody key={week.week}>
                     <tr>
@@ -1003,10 +1147,38 @@ export default function StudentSelfDirectedLearningPage() {
                       <td className="border border-themed text-t2 px-2 py-2 align-top text-xs">
                         {week.venue || "—"}
                       </td>
+                      <td className="border border-themed px-2 py-2 align-top text-xs">
+                        {plan.status !== "approved" ? (
+                          <span className="text-t3">計畫通過後才能填寫</span>
+                        ) : plan.period !== currentPeriod ? (
+                          <span className="text-t3">—</span>
+                        ) : canEditRecord ? (
+                          <RichTextEditor
+                            compact
+                            value={recordValueOf(plan, week.week)}
+                            onChange={(value) => setRecordValue(plan, week.week, value)}
+                            maxLength={2000}
+                            placeholder="寫下這一週實際執行的成果…"
+                            ariaLabel={`第 ${week.week} 週執行成果紀錄`}
+                          />
+                        ) : weekOpen ? (
+                          <RichTextContent
+                            html={plan.executionRecords.find((item) => item.week === week.week)?.note ?? ""}
+                            emptyText="（未填寫）"
+                            className="text-t2 text-xs"
+                          />
+                        ) : (
+                          <span className="text-t3">
+                            {info.openAtOf(week.week) > 0
+                              ? `${formatShortDateTime(info.openAtOf(week.week))} 後開放`
+                              : "尚未開放"}
+                          </span>
+                        )}
+                      </td>
                     </tr>
                     {weekReview && (
                       <tr>
-                        <td colSpan={3} className="border border-themed bg-surface px-2 py-2">
+                        <td colSpan={4} className="border border-themed bg-surface px-2 py-2">
                           <p className="text-t1 text-xs font-medium">
                             第 {week.week} 週審查意見
                           </p>
@@ -1022,6 +1194,61 @@ export default function StudentSelfDirectedLearningPage() {
               })}
             </table>
           </div>
+
+          {plan.status === "approved" && plan.period === currentPeriod && (
+            <p className="text-t3 mt-2 text-xs">
+              {recordInfoOf(plan).deadlineAt !== null
+                ? `執行成果紀錄撰寫截止：${formatShortDate(recordInfoOf(plan).deadlineAt as number)}（含當日）；每一週需等該週規劃時間過了才能填寫。`
+                : "學校尚未設定計畫成果撰寫截止日，暫不開放填寫執行成果紀錄。"}
+            </p>
+          )}
+
+          {plan.status === "approved" && plan.period === currentPeriod && plan.weeks.length > 0 && (
+            <div className="mt-2 space-y-1">
+              <p className="text-t1 text-xs font-medium">學習反思心得</p>
+              <div className="border border-themed bg-card rounded-md p-3">
+                {recordInfoOf(plan).reflectionOpen && recordInfoOf(plan).withinDeadline ? (
+                  <RichTextEditor
+                    compact
+                    value={reflectionValueOf(plan)}
+                    onChange={(value) => setReflectionValue(plan, value)}
+                    maxLength={2000}
+                    placeholder="寫下這學期自主學習的收穫與反思…"
+                    ariaLabel="學習反思心得"
+                  />
+                ) : recordInfoOf(plan).reflectionOpen ? (
+                  <RichTextContent
+                    html={plan.reflection}
+                    emptyText="（未填寫）"
+                    className="text-t2 text-xs"
+                  />
+                ) : (
+                  <p className="text-t3 text-xs">
+                    {recordInfoOf(plan).reflectionOpenAt > 0
+                      ? `${formatShortDate(recordInfoOf(plan).reflectionOpenAt + 1)} 起開放（最後一週結束後）`
+                      : "尚未開放"}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {plan.status === "approved" &&
+            plan.period === currentPeriod &&
+            recordInfoOf(plan).withinDeadline &&
+            (plan.weeks.some((week) => recordInfoOf(plan).weekOpen(week.week)) ||
+              recordInfoOf(plan).reflectionOpen) && (
+              <div className="mt-2 flex justify-end">
+                <button
+                  type="button"
+                  className="btn-primary btn-theme rounded px-4 py-2 text-xs"
+                  disabled={recordsBusy === plan.id}
+                  onClick={() => void saveRecords(plan)}
+                >
+                  {recordsBusy === plan.id ? "儲存中…" : "儲存執行成果紀錄"}
+                </button>
+              </div>
+            )}
         </details>
       </article>
     );

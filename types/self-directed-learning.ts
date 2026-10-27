@@ -125,6 +125,8 @@ export interface SelfDirectedLearningSettings {
   reviewStartAt: number | null;
   /** 審核期限截止（epoch ms；null＝未設定，僅供提示與督促，不阻止審核） */
   reviewEndAt: number | null;
+  /** 計畫成果撰寫截止（epoch ms；null＝未設定，執行成果紀錄與學習反思心得不開放填寫） */
+  resultDeadlineAt: number | null;
   /** 週數填寫形式（full＝全學期皆須填寫，週數由行事曆自動判斷；flexible＝至少填到下限週數） */
   weekMode: WeekMode;
   /** 彈性形式的下限週數（建議至少 6 週；全學期形式不使用） */
@@ -154,6 +156,7 @@ export const DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS: SelfDirectedLearningSettin
   closeAt: null,
   reviewStartAt: null,
   reviewEndAt: null,
+  resultDeadlineAt: null,
   weekMode: "full",
   minWeeks: 6,
   slots: [],
@@ -267,6 +270,7 @@ export function normalizeSettings(raw: unknown): SelfDirectedLearningSettings {
     closeAt: asEpoch(source.closeAt),
     reviewStartAt: asEpoch(source.reviewStartAt),
     reviewEndAt: asEpoch(source.reviewEndAt),
+    resultDeadlineAt: asEpoch(source.resultDeadlineAt),
     weekMode: source.weekMode === "flexible" ? "flexible" : "full",
     minWeeks: Math.min(Math.max(minWeeksRaw, 1), MAX_PLAN_WEEKS),
     slots,
@@ -312,6 +316,10 @@ export function parseSettingsInput(raw: unknown): ParseResult {
   }
   if (body.reviewEndAt !== null && reviewEndAt === null) {
     return { ok: false, message: "審核截止時間格式錯誤" };
+  }
+  const resultDeadlineAt = asEpoch(body.resultDeadlineAt);
+  if ("resultDeadlineAt" in body && body.resultDeadlineAt !== null && resultDeadlineAt === null) {
+    return { ok: false, message: "計畫成果撰寫截止日格式錯誤" };
   }
   if (openAt !== null && closeAt !== null && closeAt <= openAt) {
     return { ok: false, message: "截止時間必須晚於開始時間" };
@@ -426,6 +434,28 @@ export interface PlanWeek {
   timing: PlanTiming;
 }
 
+/** 單週執行成果紀錄（富文本；只存有填寫的週次） */
+export interface PlanExecutionRecord {
+  week: number;
+  note: string;
+}
+
+/** 單週「執行成果紀錄」的開放時間（該週最後一個規劃時段的結束） */
+export interface RecordWeekWindow {
+  week: number;
+  /** 開放填寫時間（epoch ms）；0＝無法推算（學期起訖或節次行程尚未設定） */
+  openAt: number;
+  /** 該週結束時間（週六 23:59:59.999；學習反思心得要等最後一週結束才開放） */
+  endAt: number;
+}
+
+/** 執行成果紀錄／學習反思心得的開放資訊 */
+export interface RecordWindow {
+  /** 管理端設定的計畫成果撰寫截止日（epoch ms）；null＝未設定，不開放填寫 */
+  deadlineAt: number | null;
+  weeks: RecordWeekWindow[];
+}
+
 /* ——— 列印預覽（學生端新分頁；以 postMessage 傳遞目前編輯內容） ——— */
 
 /** 預覽頁載入完成 → 撰寫頁回傳目前草稿 */
@@ -484,6 +514,10 @@ export interface SelfDirectedLearningPlan {
   /** 學習目標（富文本；送出審核時必填） */
   learningGoals: string;
   weeks: PlanWeek[];
+  /** 執行成果紀錄（逐週；只存有填寫的週次；計畫通過且該週時間過了才能寫） */
+  executionRecords: PlanExecutionRecord[];
+  /** 學習反思心得（富文本；最後一週時間過了才能寫） */
+  reflection: string;
   status: PlanStatus;
   /** 移至垃圾桶的時間（epoch ms）；null＝不在垃圾桶 */
   deletedAt: number | null;
@@ -902,7 +936,7 @@ function decodeCodePoint(code: number, fallback: string): string {
 }
 
 /** 依長度上限截斷富文本：切在最後一個完整標籤邊界，避免留下破損標籤 */
-function capRichHtmlLength(html: string, maxLength: number): string {
+export function capRichHtmlLength(html: string, maxLength: number): string {
   if (html.length <= maxLength) return html;
   const sliced = html.slice(0, maxLength);
   const boundary = sliced.lastIndexOf(">");
@@ -1056,7 +1090,11 @@ export function parsePlanDraft(
     weeks.push({ week: weekNo, content, venue, timing });
   }
   weeks.sort((a, b) => a.week - b.week);
-  return { ok: true, value: { topic, studyGroup, advisor, learningGoals, weeks } };
+  // 成果紀錄與學習反思心得不在草稿表單內（由「查看內容」於計畫通過後、時間到才填寫）
+  return {
+    ok: true,
+    value: { topic, studyGroup, advisor, learningGoals, weeks, executionRecords: [], reflection: "" },
+  };
 }
 
 /* ——— 教職員審核 ——— */

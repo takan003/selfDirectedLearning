@@ -3,14 +3,19 @@ import { getAdminDb } from "@/lib/firebase-admin";
 import { getCurrentPeriod } from "@/lib/settings-server";
 import { isActiveEntry } from "@/lib/roster";
 import { rosterCollection } from "@/types/roster";
+import { getRecordWindow } from "./self-directed-learning";
 import {
+  MAX_PLAN_WEEKS,
   SELF_DIRECTED_LEARNING_LOCKS_COLLECTION,
   SELF_DIRECTED_LEARNING_PLANS_COLLECTION,
   SELF_DIRECTED_LEARNING_REVIEWS_COLLECTION,
+  capRichHtmlLength,
   normalizeWeekNotes,
   periodLabelOf,
   planDocIdOf,
   openStateOf,
+  sanitizeRichHtml,
+  stripHtmlToText,
   type PlanReview,
   type PlanWeekReview,
   type ReviewScope,
@@ -69,6 +74,20 @@ function readPlan(id: string, raw: Record<string, unknown>): SelfDirectedLearnin
     raw.status === "submitted" || raw.status === "approved" || raw.status === "returned"
       ? raw.status
       : "draft";
+  const executionRecords = Array.isArray(raw.executionRecords)
+    ? raw.executionRecords
+        .map((item): SelfDirectedLearningPlan["executionRecords"][number] | null => {
+          if (!item || typeof item !== "object") return null;
+          const record = item as Record<string, unknown>;
+          const weekNo = typeof record.week === "number" ? record.week : NaN;
+          if (!Number.isInteger(weekNo) || weekNo < 1 || weekNo > MAX_PLAN_WEEKS) return null;
+          const note = typeof record.note === "string" ? record.note : "";
+          if (!note) return null;
+          return { week: weekNo, note };
+        })
+        .filter((record): record is NonNullable<typeof record> => record !== null)
+        .sort((a, b) => a.week - b.week)
+    : [];
   return {
     id,
     period: str(raw.period),
@@ -82,6 +101,8 @@ function readPlan(id: string, raw: Record<string, unknown>): SelfDirectedLearnin
     advisor: str(raw.advisor),
     learningGoals: str(raw.learningGoals),
     weeks,
+    executionRecords,
+    reflection: str(raw.reflection),
     status,
     deletedAt: typeof raw.deletedAt === "number" ? raw.deletedAt : null,
     submittedAt: typeof raw.submittedAt === "number" ? raw.submittedAt : null,
@@ -269,6 +290,9 @@ export async function saveStudentPlan(input: {
     advisor: input.draft.advisor,
     learningGoals: input.draft.learningGoals,
     weeks: input.draft.weeks,
+    // 成果紀錄與反思不隨草稿／送審變動（保留既有內容）
+    executionRecords: target?.executionRecords ?? [],
+    reflection: target?.reflection ?? "",
     status: input.action === "submit" ? "submitted" : "draft",
     deletedAt: null,
     submittedAt: input.action === "submit" ? now : target?.submittedAt ?? null,
@@ -343,6 +367,127 @@ export async function saveStudentPlan(input: {
 export type PlanTrashResult =
   | { ok: true; plan: SelfDirectedLearningPlan }
   | { ok: false; status: 400 | 403 | 404 | 409; message: string };
+
+/** 執行成果紀錄單一週的輸入（富文本；空字串＝清除該週） */
+export interface ExecutionRecordInput {
+  week: number;
+  note: string;
+}
+
+export type SaveRecordsResult =
+  | { ok: true; plan: SelfDirectedLearningPlan }
+  | { ok: false; status: 400 | 403 | 404 | 409; message: string };
+
+/** 執行成果紀錄的可見文字上限（富文本 HTML 上限 20000 字元） */
+const RECORD_PLAIN_LIMIT = 2000;
+
+/**
+ * 儲存執行成果紀錄與學習反思心得。
+ * - 僅限已通過審核（approved）的計畫：計畫執行後才有成果可寫。
+ * - 逐週開放：該週規劃時間（最後一個節次結束）過了才能寫。
+ * - 學習反思心得：最後一週時間過了才能寫。
+ * - 管理端設定的「計畫成果撰寫截止日」之後一律不可寫。
+ */
+export async function savePlanRecords(input: {
+  planId: string;
+  studentUid: string;
+  records: ExecutionRecordInput[];
+  /** undefined＝不動（例如反思尚未開放時不送） */
+  reflection?: string;
+  settings: SelfDirectedLearningSettings;
+  now?: number;
+}): Promise<SaveRecordsResult> {
+  const now = input.now ?? Date.now();
+  const snap = await plansRef().doc(input.planId).get();
+  if (!snap.exists) return { ok: false, status: 404, message: "查無此計畫" };
+  const plan = readPlan(input.planId, (snap.data() || {}) as Record<string, unknown>);
+  if (plan.studentUid !== input.studentUid) {
+    return { ok: false, status: 403, message: "無權修改此計畫" };
+  }
+  if (plan.deletedAt) {
+    return { ok: false, status: 409, message: "此計畫在垃圾桶，無法填寫執行成果" };
+  }
+  if (plan.status !== "approved") {
+    return { ok: false, status: 409, message: "計畫通過審核後才能填寫執行成果紀錄" };
+  }
+  if (plan.period !== periodLabelOf(await getCurrentPeriod())) {
+    return { ok: false, status: 409, message: "只能填寫本學期計畫的執行成果紀錄" };
+  }
+  if (input.settings.resultDeadlineAt === null) {
+    return { ok: false, status: 409, message: "學校尚未設定計畫成果撰寫截止日" };
+  }
+  if (now > input.settings.resultDeadlineAt) {
+    return { ok: false, status: 409, message: "已超過計畫成果撰寫截止日" };
+  }
+
+  const window = await getRecordWindow(plan.grade, plan.classCode);
+  const openByWeek = new Map(window.weeks.map((row) => [row.week, row.openAt]));
+  const endByWeek = new Map(window.weeks.map((row) => [row.week, row.endAt]));
+  const planWeeks = new Set(plan.weeks.map((week) => week.week));
+  const records = new Map(plan.executionRecords.map((record) => [record.week, record.note]));
+
+  for (const item of input.records.slice(0, MAX_PLAN_WEEKS)) {
+    if (!planWeeks.has(item.week)) {
+      return { ok: false, status: 400, message: "週次不在計畫內容內" };
+    }
+    const openAt = openByWeek.get(item.week) ?? 0;
+    if (openAt <= 0 || now < openAt) {
+      return {
+        ok: false,
+        status: 400,
+        message: `第 ${item.week} 週時間還沒到，尚不能填寫執行成果紀錄`,
+      };
+    }
+    const sanitized = sanitizeRichHtml(typeof item.note === "string" ? item.note : "");
+    const plain = stripHtmlToText(sanitized).trim();
+    if (plain.length > RECORD_PLAIN_LIMIT) {
+      return {
+        ok: false,
+        status: 400,
+        message: `第 ${item.week} 週執行成果紀錄超過 ${RECORD_PLAIN_LIMIT} 字上限`,
+      };
+    }
+    if (plain) records.set(item.week, capRichHtmlLength(sanitized, 20000));
+    else records.delete(item.week);
+  }
+
+  let reflection = plan.reflection;
+  if (typeof input.reflection === "string") {
+    // 學習反思心得：最後一週整週結束（下一週開始）才開放
+    const reflectionOpenAt = plan.weeks.reduce(
+      (max, week) => Math.max(max, endByWeek.get(week.week) ?? 0),
+      0
+    );
+    if (reflectionOpenAt <= 0 || now < reflectionOpenAt) {
+      return {
+        ok: false,
+        status: 400,
+        message: "最後一週時間還沒到，尚不能填寫學習反思心得",
+      };
+    }
+    const sanitized = sanitizeRichHtml(input.reflection);
+    const plain = stripHtmlToText(sanitized).trim();
+    if (plain.length > RECORD_PLAIN_LIMIT) {
+      return {
+        ok: false,
+        status: 400,
+        message: `學習反思心得超過 ${RECORD_PLAIN_LIMIT} 字上限`,
+      };
+    }
+    reflection = plain ? capRichHtmlLength(sanitized, 20000) : "";
+  }
+
+  const executionRecords = [...records.entries()]
+    .map(([week, note]) => ({ week, note }))
+    .sort((a, b) => a.week - b.week);
+  await plansRef()
+    .doc(plan.id)
+    .set({ executionRecords, reflection, updatedAt: now }, { merge: true });
+  return {
+    ok: true,
+    plan: { ...plan, executionRecords, reflection, updatedAt: now },
+  };
+}
 
 /**
  * 假性刪除／還原：只允許本人操作，且只針對草稿或退回修改的計畫。

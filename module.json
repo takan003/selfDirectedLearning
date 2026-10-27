@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.67",
+    "version": "0.0.68",
     "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -49,7 +49,8 @@
     "self_directed_learning_plan_reviewed",
     "self_directed_learning_plan_archived",
     "self_directed_learning_plan_trashed",
-    "self_directed_learning_plan_restored"
+    "self_directed_learning_plan_restored",
+    "self_directed_learning_plan_records_saved"
   ],
   "dataCollections": [
     "selfDirectedLearningSettings",
@@ -59,6 +60,16 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.68",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "新增「執行成果紀錄」：計畫通過審核後，學生可在「查看內容」逐週補寫成果；每一週需等該週規劃時間（最後一個節次結束）過了才開放，時間還沒到的週次顯示開放時間",
+        "新增「學習反思心得」：最後一週時間過了之後開放填寫（例如 6 週的計畫在第 7 週開放）",
+        "管理規則新增「計畫成果撰寫截止日」：執行成果紀錄與學習反思心得只開放到此日（含當日），未設定＝不開放；伺服器同步檢核（僅已通過、本學期、該週時間已到、未超過截止日）",
+        "成果紀錄與反思以所見即所得富文本儲存（可見文字上限 2000 字），由「儲存執行成果紀錄」按鈕一次儲存；新增稽核動作 self_directed_learning_plan_records_saved"
+      ]
+    },
     {
       "version": "0.0.67",
       "releasedAt": "2026-10-28",
