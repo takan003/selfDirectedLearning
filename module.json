@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.74",
+    "version": "0.0.75",
     "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -60,6 +60,14 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.75",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "左側浮動 SVG 按鈕改為只在展開「查看計畫與撰寫成果」時出現，避免平時占用版面",
+        "展開計畫後，該區塊的上方與下方各加一組文字按鈕：儲存執行成果紀錄、展開／收合全部成果編輯區，長頁面不必回到頂端或找左側按鈕"
+      ]
+    },
     {
       "version": "0.0.74",
       "releasedAt": "2026-10-28",

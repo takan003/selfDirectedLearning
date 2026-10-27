@@ -279,6 +279,8 @@ export default function StudentSelfDirectedLearningPage() {
   const [recordsBusy, setRecordsBusy] = useState<string | null>(null);
   /** 是否展開所有「執行成果紀錄」編輯區（預設收合，避免版面過長） */
   const [recordsExpanded, setRecordsExpanded] = useState(false);
+  /** 已展開「查看計畫與撰寫成果」的計畫（浮動按鈕只在展開時出現） */
+  const [openDetailPlans, setOpenDetailPlans] = useState<Record<string, boolean>>({});
   /** 學生姓名／班級（列印預覽表頭用） */
   const [studentInfo, setStudentInfo] = useState<StudentInfo | null>(null);
   /** 撰寫計畫區塊是否展開（預設隱藏；發起新計畫或編輯草稿才顯示） */
@@ -904,14 +906,14 @@ export default function StudentSelfDirectedLearningPage() {
   };
 
   /** 已通過計畫的成果編輯狀態（左側浮動按鈕用） */
-  const recordPlanInfo = recordPlan ? recordInfoOf(recordPlan) : null;
-  const recordCanSave = (() => {
-    if (!recordPlan || !recordPlanInfo || !recordPlanInfo.withinDeadline) return false;
+  const canSaveRecordsOf = (plan: SelfDirectedLearningPlan) => {
+    const info = recordInfoOf(plan);
     return (
-      recordPlan.weeks.some((week) => recordPlanInfo.weekOpen(week.week)) ||
-      recordPlanInfo.reflectionOpen
+      info.withinDeadline &&
+      (plan.weeks.some((week) => info.weekOpen(week.week)) || info.reflectionOpen)
     );
-  })();
+  };
+  const recordCanSave = recordPlan ? canSaveRecordsOf(recordPlan) : false;
 
   /** 已填寫或草稿中的某一週執行成果 */
   const recordValueOf = (plan: SelfDirectedLearningPlan, week: number): string =>
@@ -989,6 +991,27 @@ export default function StudentSelfDirectedLearningPage() {
   ) => {
     const review = reviews[plan.id];
     const busy = planBusy === plan.id;
+    /** 已通過且為本學期的計畫：在「查看計畫與撰寫成果」上下提供成果操作按鈕 */
+    const showRecordActions = plan.status === "approved" && plan.period === currentPeriod;
+    const recordActionButtons = (target: SelfDirectedLearningPlan) => (
+      <div className="mt-2 flex flex-wrap justify-end gap-2">
+        <button
+          type="button"
+          className="btn-theme rounded px-4 py-2 text-xs"
+          onClick={() => setRecordsExpanded((prev) => !prev)}
+        >
+          {recordsExpanded ? "收合全部成果編輯區" : "展開全部成果編輯區"}
+        </button>
+        <button
+          type="button"
+          className="btn-primary btn-theme rounded px-4 py-2 text-xs disabled:opacity-50"
+          disabled={recordsBusy === target.id || !canSaveRecordsOf(target)}
+          onClick={() => void saveRecords(target)}
+        >
+          {recordsBusy === target.id ? "儲存中…" : "儲存執行成果紀錄"}
+        </button>
+      </div>
+    );
     return (
       <article key={plan.id} className="border border-themed bg-surface space-y-3 rounded-lg p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1073,11 +1096,20 @@ export default function StudentSelfDirectedLearningPage() {
           </div>
         )}
 
-        <details className="border-themed border-t pt-2">
+        <details
+          className="border-themed border-t pt-2"
+          onToggle={(event) => {
+            const open = event.currentTarget.open;
+            setOpenDetailPlans((prev) =>
+              prev[plan.id] === open ? prev : { ...prev, [plan.id]: open }
+            );
+          }}
+        >
           <summary className="text-t2 flex cursor-pointer items-center gap-1 text-xs">
             <DisclosureArrow />
             查看計畫與撰寫成果（{plan.weeks.length} 週）
           </summary>
+          {showRecordActions && recordActionButtons(plan)}
           {plan.learningGoals && (
             <div className="mt-2 space-y-1">
               <p className="text-t1 text-xs font-medium">學習目標</p>
@@ -1261,6 +1293,7 @@ export default function StudentSelfDirectedLearningPage() {
             </div>
           )}
 
+          {showRecordActions && recordActionButtons(plan)}
         </details>
       </article>
     );
@@ -2047,7 +2080,7 @@ export default function StudentSelfDirectedLearningPage() {
         </div>
       )}
 
-      {recordPlan && !maintenance && (
+      {recordPlan && !maintenance && openDetailPlans[recordPlan.id] && (
         <div
           className="flex flex-col gap-2 print:hidden"
           style={{
