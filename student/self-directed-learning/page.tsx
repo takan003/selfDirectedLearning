@@ -640,18 +640,25 @@ export default function StudentSelfDirectedLearningPage() {
     setEditingPlanId(null);
   };
 
-  /** 開新分頁列印預覽：把目前草稿（含尚未儲存的變更）交給預覽頁 */
-  const openPrintPreview = () => {
+  /**
+   * 開新分頁列印預覽：
+   * - 不帶參數＝目前撰寫中的草稿（含尚未儲存的變更）
+   * - 帶入計畫＝已通過的計畫內容＋執行成果紀錄＋學習反思心得
+   */
+  const openPrintPreview = (plan?: SelfDirectedLearningPlan) => {
+    const weeks = plan ? plan.weeks : draft.weeks;
     const payload: PrintPreviewPayload = {
-      period: currentPeriod,
-      studentName: studentInfo?.name || editingPlan?.studentName || "",
-      className: studentInfo?.className || editingPlan?.className || "",
-      topic: draft.topic,
-      studyGroup: draft.studyGroup,
-      advisor: draft.advisor,
-      learningGoals: draft.learningGoals,
+      period: plan?.period || currentPeriod,
+      studentName: plan?.studentName || studentInfo?.name || editingPlan?.studentName || "",
+      className: plan?.className || studentInfo?.className || editingPlan?.className || "",
+      topic: plan ? plan.topic : draft.topic,
+      studyGroup: plan ? plan.studyGroup : draft.studyGroup,
+      advisor: plan ? plan.advisor : draft.advisor,
+      learningGoals: plan ? plan.learningGoals : draft.learningGoals,
+      reflection: plan?.reflection ?? "",
+      source: plan ? "approved" : "draft",
       generatedAt: Date.now(),
-      weeks: draft.weeks.map((week) => {
+      weeks: weeks.map((week) => {
         const scheduleRow = weekScheduleByNo.get(week.week);
         const slots = scheduleRow?.slots ?? [];
         return {
@@ -665,6 +672,8 @@ export default function StudentSelfDirectedLearningPage() {
             blockedBy: slot.blockedBy,
           })),
           blocked: scheduleRow?.blocked ?? false,
+          record:
+            plan?.executionRecords.find((item) => item.week === week.week)?.note ?? "",
         };
       }),
     };
@@ -995,6 +1004,13 @@ export default function StudentSelfDirectedLearningPage() {
     const showRecordActions = plan.status === "approved" && plan.period === currentPeriod;
     const recordActionButtons = (target: SelfDirectedLearningPlan) => (
       <div className="mt-2 flex flex-wrap justify-end gap-2">
+        <button
+          type="button"
+          className="btn-theme rounded px-4 py-2 text-xs"
+          onClick={() => openPrintPreview(target)}
+        >
+          預覽列印（計畫與成果）
+        </button>
         <button
           type="button"
           className="btn-theme rounded px-4 py-2 text-xs"
@@ -2209,7 +2225,7 @@ export default function StudentSelfDirectedLearningPage() {
           </button>
           <button
             type="button"
-            onClick={openPrintPreview}
+            onClick={() => openPrintPreview()}
             title="列印預覽（新分頁）"
             aria-label="在新分頁預覽列印"
             className="border-themed bg-surface text-t1 hover:bg-card flex items-center justify-center border shadow-md"

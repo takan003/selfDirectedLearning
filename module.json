@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.76",
+    "version": "0.0.77",
     "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -60,6 +60,14 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.77",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "新增「預覽列印（計畫與成果）」：已通過的計畫可在「查看計畫與撰寫成果」上下的按鈕列開啟 A4 列印預覽，內容包含學習目標、逐週安排、逐週執行成果紀錄與學習反思心得",
+        "列印預覽頁沿用原本的新分頁預覽（postMessage 傳資料），並依來源顯示不同頁尾：草稿（含未儲存變更）／已通過的計畫與成果"
+      ]
+    },
     {
       "version": "0.0.76",
       "releasedAt": "2026-10-28",

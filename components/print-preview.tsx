@@ -143,6 +143,16 @@ const PRINT_SHEET_STYLES = `
   color: #6b7280;
   text-align: right;
 }
+.sdl-print-section {
+  margin: 14px 0 4px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.sdl-print-reflection {
+  border: 1px solid #9ca3af;
+  padding: 6px 8px;
+  font-size: 12px;
+}
 @media print {
   @page {
     size: A4;
@@ -279,9 +289,50 @@ export function PrintPreviewSheet({ payload }: { payload: PrintPreviewPayload })
         </tbody>
       </table>
 
+      {payload.weeks.some((week) => week.record) && (
+        <>
+          <h2 className="sdl-print-section">執行成果紀錄</h2>
+          <table className="sdl-print-weeks">
+            <thead>
+              <tr>
+                <th scope="col" style={{ width: "14%" }}>
+                  週次
+                </th>
+                <th scope="col">執行成果</th>
+              </tr>
+            </thead>
+            <tbody>
+              {payload.weeks
+                .filter((week) => week.record)
+                .map((week) => (
+                  <tr key={`record-${week.week}`}>
+                    <td>
+                      <span className="sdl-print-week">第 {week.week} 週</span>
+                    </td>
+                    <td>
+                      <RichTextContent html={week.record} className="text-sm" />
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {payload.reflection && (
+        <>
+          <h2 className="sdl-print-section">學習反思心得</h2>
+          <div className="sdl-print-reflection">
+            <RichTextContent html={payload.reflection} className="text-sm" />
+          </div>
+        </>
+      )}
+
       <p className="sdl-print-footer">
-        本預覽為目前編輯內容（含尚未儲存的變更）｜產生時間：
-        {formatGeneratedAt(payload.generatedAt)}
+        {payload.source === "approved"
+          ? "已通過的計畫內容與執行成果紀錄"
+          : "本預覽為目前編輯內容（含尚未儲存的變更）"}
+        ｜產生時間：{formatGeneratedAt(payload.generatedAt)}
       </p>
     </div>
   );

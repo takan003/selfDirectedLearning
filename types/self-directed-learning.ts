@@ -479,6 +479,8 @@ export interface PrintPreviewWeek {
   venue: string;
   slots: PrintPreviewSlot[];
   blocked: boolean;
+  /** 該週執行成果紀錄（富文本；未填寫＝空字串） */
+  record: string;
 }
 
 /** 列印預覽內容（目前編輯中的草稿；不必先儲存） */
@@ -491,6 +493,10 @@ export interface PrintPreviewPayload {
   advisor: string;
   /** 學習目標（富文本） */
   learningGoals: string;
+  /** 學習反思心得（富文本；不含＝空字串） */
+  reflection: string;
+  /** 來源：draft＝撰寫中的草稿、approved＝已通過的計畫與執行成果紀錄 */
+  source: "draft" | "approved";
   generatedAt: number;
   weeks: PrintPreviewWeek[];
 }
