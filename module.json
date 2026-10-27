@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.75",
+    "version": "0.0.76",
     "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -60,6 +60,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.76",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "每週「執行成果紀錄」的標題列改為醒目的卡片式：白底圓角框、粗體標題，左側狀態 SVG（未開放＝時鐘、未填寫＝鉛筆、已填寫＝勾選圈、已截止＝驚嘆號），並加上「未填寫／已填寫」色框標籤與「點此填寫」提示，右側保留展開箭頭"
+      ]
+    },
     {
       "version": "0.0.75",
       "releasedAt": "2026-10-28",

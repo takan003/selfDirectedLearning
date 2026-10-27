@@ -1191,26 +1191,57 @@ export default function StudentSelfDirectedLearningPage() {
                     </tr>
                     {plan.status === "approved" && plan.period === currentPeriod && (
                       <tr>
-                        <td colSpan={3} className="border border-themed bg-surface px-3 py-2">
+                        <td colSpan={3} className="border border-themed bg-surface px-2 py-2">
                           <details open={recordsExpanded}>
-                            <summary className="text-t1 flex cursor-pointer items-center gap-2 text-xs font-medium">
-                              <DisclosureArrow />
-                              第 {week.week} 週執行成果紀錄
+                            <summary className="border-themed bg-card text-t1 flex cursor-pointer flex-wrap items-center gap-2 rounded-md border px-3 py-2 text-sm font-semibold">
+                              {/* 狀態圖示：未開放＝時鐘、已截止＝驚嘆號、已填寫＝勾選圈、未填寫＝鉛筆 */}
+                              {!weekOpen ? (
+                                <svg className="text-t3 h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                  <circle cx="12" cy="12" r="8.25" />
+                                  <path d="M12 7.5V12l2.75 1.75" />
+                                </svg>
+                              ) : !info.withinDeadline ? (
+                                <svg className="text-danger h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                  <circle cx="12" cy="12" r="8.25" />
+                                  <path d="M12 7.75v4.5" />
+                                  <path d="M12 15.75h.01" />
+                                </svg>
+                              ) : savedRecord ? (
+                                <svg className="text-success h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                  <path d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                </svg>
+                              ) : (
+                                <svg className="text-warning h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                  <path d="m16.86 4.49 2.65 2.65a1.5 1.5 0 0 1 0 2.12L9.4 19.37a2.25 2.25 0 0 1-1.06.58l-3.2.69a.75.75 0 0 1-.9-.9l.69-3.2c.08-.4.28-.77.58-1.06L15.68 4.49a1.5 1.5 0 0 1 2.12 0Z" />
+                                  <path d="m14.25 6.75 3 3" />
+                                </svg>
+                              )}
+                              <span>第 {week.week} 週執行成果紀錄</span>
                               {!weekOpen && (
-                                <span className="text-t3 font-normal">
-                                  （
+                                <span className="text-t3 text-xs font-normal">
                                   {info.openAtOf(week.week) > 0
                                     ? `${formatShortDateTime(info.openAtOf(week.week))} 後開放`
                                     : "尚未開放"}
-                                  ）
                                 </span>
                               )}
                               {weekOpen && !info.withinDeadline && (
-                                <span className="text-danger font-normal">（已超過撰寫截止時間）</span>
+                                <span className="text-danger text-xs font-normal">
+                                  已超過撰寫截止時間
+                                </span>
                               )}
-                              {weekOpen && info.withinDeadline && !savedRecord && (
-                                <span className="text-t3 font-normal">（未填寫）</span>
+                              {weekOpen && info.withinDeadline && (
+                                <span
+                                  className={`rounded-full border px-2 py-0.5 text-xs font-normal ${
+                                    savedRecord ? "border-success text-success" : "border-warning text-warning"
+                                  }`}
+                                >
+                                  {savedRecord ? "已填寫" : "未填寫"}
+                                </span>
                               )}
+                              <span className="text-t3 ml-auto flex items-center gap-1 text-xs font-normal">
+                                {canEditRecord && !savedRecord ? "點此填寫" : ""}
+                                <DisclosureArrow />
+                              </span>
                             </summary>
                             <div className="mt-2">
                               {canEditRecord ? (
