@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.81",
+    "version": "0.0.82",
     "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -60,6 +60,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.82",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "列印預覽的週次欄內容改為垂直置中：週次、時段、日期與節次在該列中上下居中對齊"
+      ]
+    },
     {
       "version": "0.0.81",
       "releasedAt": "2026-10-28",

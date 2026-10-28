@@ -119,6 +119,9 @@ const PRINT_SHEET_STYLES = `
   font-weight: 600;
   white-space: nowrap;
 }
+.sdl-print-weeks td.sdl-print-week-cell {
+  vertical-align: middle;
+}
 .sdl-print-timing {
   margin-top: 2px;
   font-size: 11px;
@@ -285,7 +288,7 @@ export function PrintPreviewSheet({ payload }: { payload: PrintPreviewPayload })
             return (
               <Fragment key={week.week}>
                 <tr>
-                  <td rowSpan={showRecord ? 3 : 1}>
+                  <td className="sdl-print-week-cell" rowSpan={showRecord ? 3 : 1}>
                     <div className="sdl-print-week">第 {week.week} 週</div>
                     <div className="sdl-print-timing">
                       {TIMING_SHORT_LABELS[week.timing] ?? week.timing}
