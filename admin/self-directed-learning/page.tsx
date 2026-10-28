@@ -614,6 +614,40 @@ export default function SelfDirectedLearningSettingsPage({
             </span>
           </label>
 
+          {/* 高中三年最低審核份數：放在總開關下方，使用主題主色左框 */}
+          <div className="border-themed bg-surface border-l-primary space-y-2 rounded-md border border-l-4 p-3">
+            <span className="text-t1 block text-sm font-medium">高中三年最低審核份數</span>
+            <label className="text-t2 block space-y-1 text-sm">
+              <span>
+                每位學生高中三年至少送出的計畫份數（0–{MAX_MIN_REVIEW_PLANS}；0＝不設定）
+              </span>
+              <input
+                type="number"
+                min={0}
+                max={MAX_MIN_REVIEW_PLANS}
+                className="input-theme w-32 rounded px-3 py-2 text-sm"
+                value={minReviewPlansInput ?? String(settings.minReviewPlans)}
+                onChange={(event) => {
+                  const text = event.target.value;
+                  setMinReviewPlansInput(text);
+                  const parsed = Number(text);
+                  if (
+                    text.trim() !== "" &&
+                    Number.isInteger(parsed) &&
+                    parsed >= 0 &&
+                    parsed <= MAX_MIN_REVIEW_PLANS
+                  ) {
+                    patch({ minReviewPlans: parsed });
+                  }
+                }}
+                onBlur={() => setMinReviewPlansInput(null)}
+              />
+            </label>
+            <p className="text-t3 text-xs">
+              0＝不設定。此設定目前僅保存，作為後續高中三年累計送審進度與檢核的依據。
+            </p>
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="text-t2 block space-y-1 text-sm">
               <span>開始時間</span>
@@ -762,40 +796,6 @@ export default function SelfDirectedLearningSettingsPage({
             </label>
             <p className="text-t3 text-xs">
               僅限制新增草稿；已達上限時仍可編輯既有草稿或刪除後再新增。退回修改的計畫也計入件數。
-            </p>
-          </div>
-
-          {/* 高中三年最低審核份數 */}
-          <div className="space-y-2">
-            <span className="text-t1 block text-sm font-medium">高中三年最低審核份數</span>
-            <label className="text-t2 block space-y-1 text-sm">
-              <span>
-                每位學生高中三年至少送出的計畫份數（0–{MAX_MIN_REVIEW_PLANS}；0＝不設定）
-              </span>
-              <input
-                type="number"
-                min={0}
-                max={MAX_MIN_REVIEW_PLANS}
-                className="input-theme w-32 rounded px-3 py-2 text-sm"
-                value={minReviewPlansInput ?? String(settings.minReviewPlans)}
-                onChange={(event) => {
-                  const text = event.target.value;
-                  setMinReviewPlansInput(text);
-                  const parsed = Number(text);
-                  if (
-                    text.trim() !== "" &&
-                    Number.isInteger(parsed) &&
-                    parsed >= 0 &&
-                    parsed <= MAX_MIN_REVIEW_PLANS
-                  ) {
-                    patch({ minReviewPlans: parsed });
-                  }
-                }}
-                onBlur={() => setMinReviewPlansInput(null)}
-              />
-            </label>
-            <p className="text-t3 text-xs">
-              0＝不設定。此設定目前僅保存，作為後續高中三年累計送審進度與檢核的依據。
             </p>
           </div>
         </div>
