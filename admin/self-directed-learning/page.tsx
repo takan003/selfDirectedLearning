@@ -7,7 +7,7 @@ import { RichTextEditor } from "../../components/rich-text-editor";
 import {
   DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS,
   MAX_DRAFT_PLANS,
-  MAX_MIN_REVIEW_PLANS,
+  MAX_MIN_SELF_DIRECTED_HOURS,
   WEEKDAY_LABELS,
   openStateOf,
   reviewStateOf,
@@ -131,7 +131,7 @@ export default function SelfDirectedLearningSettingsPage({
   /** 下限週數輸入框的暫存字串：允許清空後重打，失焦時回復現值 */
   const [minWeeksInput, setMinWeeksInput] = useState<string | null>(null);
   const [maxDraftsInput, setMaxDraftsInput] = useState<string | null>(null);
-  const [minReviewPlansInput, setMinReviewPlansInput] = useState<string | null>(null);
+  const [minSelfDirectedHoursInput, setMinSelfDirectedHoursInput] = useState<string | null>(null);
 
   /** 班級候選（主程式年段班級設定） */
   const [classOptions, setClassOptions] = useState<ClassOption[]>([]);
@@ -506,12 +506,12 @@ export default function SelfDirectedLearningSettingsPage({
       Number(maxDraftsInput) < 1 ||
       Number(maxDraftsInput) > MAX_DRAFT_PLANS);
   /** 高中三年最低審核份數是否不合法（0–6 的整數） */
-  const minReviewPlansInvalid =
-    minReviewPlansInput !== null &&
-    (minReviewPlansInput.trim() === "" ||
-      !Number.isInteger(Number(minReviewPlansInput)) ||
-      Number(minReviewPlansInput) < 0 ||
-      Number(minReviewPlansInput) > MAX_MIN_REVIEW_PLANS);
+  const minSelfDirectedHoursInvalid =
+    minSelfDirectedHoursInput !== null &&
+    (minSelfDirectedHoursInput.trim() === "" ||
+      !Number.isInteger(Number(minSelfDirectedHoursInput)) ||
+      Number(minSelfDirectedHoursInput) < 0 ||
+      Number(minSelfDirectedHoursInput) > MAX_MIN_SELF_DIRECTED_HOURS);
 
   /** 重新讀取／儲存設定：標題列（上）與頁尾（下）共用同一組按鈕 */
   const actionButtons = (
@@ -529,15 +529,15 @@ export default function SelfDirectedLearningSettingsPage({
         className="btn-primary btn-theme h-10 px-6 text-sm cursor-pointer disabled:opacity-50"
         onClick={() => void save()}
         disabled={
-          loading || saving || minWeeksInvalid || maxDraftsInvalid || minReviewPlansInvalid
+          loading || saving || minWeeksInvalid || maxDraftsInvalid || minSelfDirectedHoursInvalid
         }
         title={
           minWeeksInvalid
             ? "下限週數超過可寫週數，請先調整"
             : maxDraftsInvalid
               ? `草稿匣件數上限必須是 1–${MAX_DRAFT_PLANS} 的整數`
-              : minReviewPlansInvalid
-                ? `高中三年最低審核份數必須是 0–${MAX_MIN_REVIEW_PLANS} 的整數`
+              : minSelfDirectedHoursInvalid
+                ? `高中三年最低審核份數必須是 0–${MAX_MIN_SELF_DIRECTED_HOURS} 的整數`
                 : ""
         }
       >
@@ -614,7 +614,7 @@ export default function SelfDirectedLearningSettingsPage({
             </span>
           </label>
 
-          {/* 高中三年最低審核份數：放在總開關下方，使用主題危險色套色 */}
+          {/* 高中三年最低自主學習時數：放在總開關下方，使用主題危險色套色 */}
           <div
             className="border-themed bg-surface space-y-2 rounded-md border border-l-4 p-3"
             style={{
@@ -623,36 +623,37 @@ export default function SelfDirectedLearningSettingsPage({
             }}
           >
             <span className="text-danger block text-sm font-medium">
-              高中三年最低審核份數
+              高中三年最低自主學習時數
             </span>
             <label className="text-t2 block space-y-1 text-sm">
               <span>
-                每位學生高中三年至少送出的計畫份數（0–{MAX_MIN_REVIEW_PLANS}；0＝不設定）
+                每位學生高中三年至少完成的自主學習時數（0–{MAX_MIN_SELF_DIRECTED_HOURS}{" "}
+                小時；0＝不設定）
               </span>
               <input
                 type="number"
                 min={0}
-                max={MAX_MIN_REVIEW_PLANS}
+                max={MAX_MIN_SELF_DIRECTED_HOURS}
                 className="input-theme w-32 rounded px-3 py-2 text-sm"
-                value={minReviewPlansInput ?? String(settings.minReviewPlans)}
+                value={minSelfDirectedHoursInput ?? String(settings.minSelfDirectedHours)}
                 onChange={(event) => {
                   const text = event.target.value;
-                  setMinReviewPlansInput(text);
+                  setMinSelfDirectedHoursInput(text);
                   const parsed = Number(text);
                   if (
                     text.trim() !== "" &&
                     Number.isInteger(parsed) &&
                     parsed >= 0 &&
-                    parsed <= MAX_MIN_REVIEW_PLANS
+                    parsed <= MAX_MIN_SELF_DIRECTED_HOURS
                   ) {
-                    patch({ minReviewPlans: parsed });
+                    patch({ minSelfDirectedHours: parsed });
                   }
                 }}
-                onBlur={() => setMinReviewPlansInput(null)}
+                onBlur={() => setMinSelfDirectedHoursInput(null)}
               />
             </label>
             <p className="text-t3 text-xs">
-              依高級中等學校總綱規定，每位學生須完成至少18小時的自主學習，建議設定至少審核1份。
+              依高級中等學校總綱規定，每位學生須完成至少18小時的自主學習。
             </p>
           </div>
 

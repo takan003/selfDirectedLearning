@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.94",
+    "version": "0.0.95",
     "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -62,6 +62,15 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.95",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "「高中三年最低審核份數」改為「高中三年最低自主學習時數」：可設定 0–99 小時（0＝不設定，預設 18 小時）",
+        "依高級中等學校總綱規定，說明文字改為每位學生須完成至少 18 小時的自主學習",
+        "目前僅保存時數設定；實際時數計算、佐證與檢核機制尚未實作"
+      ]
+    },
     {
       "version": "0.0.94",
       "releasedAt": "2026-10-28",
