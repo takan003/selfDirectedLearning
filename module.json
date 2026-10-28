@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.95",
+    "version": "0.0.96",
     "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -62,6 +62,14 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.96",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "新增「顯示給學生」勾選（預設關閉）：開啟後，學生端「我的計畫」會顯示高中三年最低自主學習時數目標",
+        "學生端文案明確標示「僅供參考；實際完成時數由學校另行檢核」，不把目標當成已檢核時數"
+      ]
+    },
     {
       "version": "0.0.95",
       "releasedAt": "2026-10-28",

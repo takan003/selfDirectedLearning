@@ -141,6 +141,8 @@ export interface SelfDirectedLearningSettings {
   maxDrafts: number;
   /** 高中三年最低自主學習時數（0＝不設定；1–99 小時；預設 18） */
   minSelfDirectedHours: number;
+  /** 是否在學生端顯示高中三年最低時數目標（預設 false；僅參考，不代表已檢核） */
+  showHoursToStudent: boolean;
   /** 校內彈性學習節次行程 */
   slots: FlexibleSlot[];
   /** 開放場域 */
@@ -171,6 +173,7 @@ export const DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS: SelfDirectedLearningSettin
   minWeeks: 6,
   maxDrafts: 20,
   minSelfDirectedHours: 18,
+  showHoursToStudent: false,
   slots: [],
   venues: [],
   venueEditable: true,
@@ -299,6 +302,10 @@ export function normalizeSettings(raw: unknown): SelfDirectedLearningSettings {
       Math.max(minSelfDirectedHoursRaw, 0),
       MAX_MIN_SELF_DIRECTED_HOURS
     ),
+    showHoursToStudent:
+      typeof source.showHoursToStudent === "boolean"
+        ? source.showHoursToStudent
+        : DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS.showHoursToStudent,
     slots,
     venues: asStringArray(source.venues, 60, 80),
     venueEditable:
@@ -404,6 +411,9 @@ export function parseSettingsInput(raw: unknown): ParseResult {
   }
   if ("venueEditable" in body && typeof body.venueEditable !== "boolean") {
     return { ok: false, message: "場地輸入設定格式錯誤" };
+  }
+  if ("showHoursToStudent" in body && typeof body.showHoursToStudent !== "boolean") {
+    return { ok: false, message: "學生端時數顯示設定格式錯誤" };
   }
   return { ok: true, value };
 }

@@ -1635,6 +1635,14 @@ export default function StudentSelfDirectedLearningPage() {
           </div>
         </div>
 
+        {settings.showHoursToStudent && settings.minSelfDirectedHours > 0 && (
+          <div className="border-themed bg-surface flex flex-wrap items-center justify-between gap-2 border-t px-5 py-3">
+            <span className="text-t1 text-sm font-medium">高中三年自主學習時數目標</span>
+            <span className="text-t2 text-sm">至少 {settings.minSelfDirectedHours} 小時</span>
+            <span className="text-t3 text-xs">僅供參考；實際完成時數由學校另行檢核。</span>
+          </div>
+        )}
+
         <div className="space-y-4 p-5">
           <div
             role="tablist"
