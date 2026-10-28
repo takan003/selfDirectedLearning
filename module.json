@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.82",
+    "version": "0.0.83",
     "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -60,6 +60,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.83",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "融入式的「執行成果紀錄」標題列改用表頭元素，字體粗細、字級與顏色和其他欄位標題一致；標題列底色改為較深的淺灰"
+      ]
+    },
     {
       "version": "0.0.82",
       "releasedAt": "2026-10-28",

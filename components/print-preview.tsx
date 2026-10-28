@@ -127,16 +127,8 @@ const PRINT_SHEET_STYLES = `
   font-size: 11px;
   color: #374151;
 }
-.sdl-print-record-title-cell {
-  background: #f3f4f6;
-  font-size: 12px;
-  font-weight: 600;
-  color: #111827;
-  text-align: center;
-  vertical-align: middle;
-}
-.sdl-print-weeks td.sdl-print-record-title-cell {
-  text-align: center;
+.sdl-print-weeks th.sdl-print-record-title-cell {
+  background: #e5e7eb;
 }
 .sdl-print-record-body {
   font-size: 12px;
@@ -329,9 +321,9 @@ export function PrintPreviewSheet({ payload }: { payload: PrintPreviewPayload })
                 {showRecord && (
                   <>
                     <tr>
-                      <td colSpan={2} className="sdl-print-record-title-cell">
+                      <th colSpan={2} className="sdl-print-record-title-cell">
                         執行成果紀錄
-                      </td>
+                      </th>
                     </tr>
                     <tr>
                       <td colSpan={2} className="sdl-print-record-body">
