@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.98",
+    "version": "0.0.99",
     "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -62,6 +62,14 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.99",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "移除學生端與家長端的時數目標顯示，以及「顯示給學生／家長」兩個勾選；沒有實際檢核時不再顯示靜態目標，避免誤導",
+        "保留管理端「高中三年最低自主學習時數」設定，作為未來政策與檢核機制的依據"
+      ]
+    },
     {
       "version": "0.0.98",
       "releasedAt": "2026-10-28",
