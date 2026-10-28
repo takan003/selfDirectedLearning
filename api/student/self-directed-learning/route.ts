@@ -8,6 +8,7 @@ import { getFullWeeks, getRecordWindow, getSettings, getWeekSchedule } from "../
 import {
   getLatestReviews,
   getStudentPlans,
+  purgeStudentPlan,
   savePlanRecords,
   saveStudentPlan,
   setStudentPlanDeleted,
@@ -254,6 +255,34 @@ export async function POST(request: NextRequest) {
           plan: trashResult.plan,
           message: deleted ? "已移至垃圾桶" : "已還原",
         },
+        { headers: noStore }
+      );
+    }
+
+    // 永久刪除垃圾桶中的計畫（不可復原）：連同審查紀錄一併刪除
+    if (requestedAction === "purge") {
+      if (!planId) {
+        return NextResponse.json(
+          { success: false, message: "缺少計畫識別" },
+          { status: 400, headers: noStore }
+        );
+      }
+      const purgeResult = await purgeStudentPlan({ planId, studentUid: student.uid });
+      if (!purgeResult.ok) {
+        return NextResponse.json(
+          { success: false, message: purgeResult.message },
+          { status: purgeResult.status, headers: noStore }
+        );
+      }
+      await logActivity({
+        userId: student.uid,
+        role: session.role,
+        action: "self_directed_learning_plan_purged",
+        ip: getClientIp(request),
+        details: `永久刪除自主學習計畫：${purgeResult.plan.topic}`,
+      });
+      return NextResponse.json(
+        { success: true, message: "已永久刪除" },
         { headers: noStore }
       );
     }

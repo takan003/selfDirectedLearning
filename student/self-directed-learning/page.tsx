@@ -305,6 +305,8 @@ export default function StudentSelfDirectedLearningPage() {
   const [planBusy, setPlanBusy] = useState<string | null>(null);
   /** 準備抽回（取消送審）的計畫 */
   const [withdrawTarget, setWithdrawTarget] = useState<SelfDirectedLearningPlan | null>(null);
+  /** 準備永久刪除的垃圾桶計畫 */
+  const [purgeTarget, setPurgeTarget] = useState<SelfDirectedLearningPlan | null>(null);
   const formSectionRef = useRef<HTMLElement | null>(null);
 
   const editingPlan = editingPlanId
@@ -756,6 +758,31 @@ export default function StudentSelfDirectedLearningPage() {
     }
   };
 
+  /** 永久刪除垃圾桶中的計畫（不可復原；連同審查紀錄） */
+  const purgePlan = async (plan: SelfDirectedLearningPlan) => {
+    if (planBusy) return;
+    setPlanBusy(plan.id);
+    try {
+      const response = await fetch("/api/student/self-directed-learning", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "purge", planId: plan.id }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        setToast({ kind: "error", text: data.message || "永久刪除失敗" });
+        return;
+      }
+      setPurgeTarget(null);
+      setToast({ kind: "success", text: data.message || "已永久刪除" });
+      await load();
+    } catch {
+      setToast({ kind: "error", text: "永久刪除失敗" });
+    } finally {
+      setPlanBusy(null);
+    }
+  };
+
   /** 抽回審核中的計畫：回到草稿匣，開放撰寫期間內可修改後重新送出 */
   const withdrawPlan = async (plan: SelfDirectedLearningPlan) => {
     if (planBusy) return;
@@ -1127,14 +1154,24 @@ export default function StudentSelfDirectedLearningPage() {
               </button>
             )}
             {options.restorable && (
-              <button
-                type="button"
-                className="btn-theme text-primary rounded px-3 py-1.5 text-xs"
-                disabled={busy}
-                onClick={() => void changePlanDeleted(plan, false)}
-              >
-                {busy ? "處理中…" : "還原"}
-              </button>
+              <>
+                <button
+                  type="button"
+                  className="btn-theme text-primary rounded px-3 py-1.5 text-xs"
+                  disabled={busy}
+                  onClick={() => void changePlanDeleted(plan, false)}
+                >
+                  {busy ? "處理中…" : "還原"}
+                </button>
+                <button
+                  type="button"
+                  className="btn-danger rounded px-3 py-1.5 text-xs"
+                  disabled={busy}
+                  onClick={() => setPurgeTarget(plan)}
+                >
+                  永久刪除
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -2171,6 +2208,45 @@ export default function StudentSelfDirectedLearningPage() {
                 onClick={() => void withdrawPlan(withdrawTarget)}
               >
                 {planBusy === withdrawTarget.id ? "抽回中…" : "抽回修改"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {purgeTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          style={{ backgroundColor: "color-mix(in srgb, var(--bg) 75%, transparent)" }}
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="sdl-purge-title"
+        >
+          <div className="border-themed bg-card w-full max-w-md rounded-lg border p-5 shadow-lg">
+            <p id="sdl-purge-title" className="text-t1 text-base font-semibold">
+              永久刪除這份計畫？
+            </p>
+            <p className="text-t2 mt-2 text-sm">
+              《{purgeTarget.topic || "（未命名計畫）"}》將從垃圾桶永久刪除，
+              包含計畫內容與相關審查紀錄，<strong>無法復原</strong>。
+            </p>
+            <p className="text-danger mt-1 text-xs">確定要永久刪除嗎？</p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                className="btn-theme px-4 py-2 text-sm"
+                disabled={planBusy !== null}
+                onClick={() => setPurgeTarget(null)}
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                className="btn-danger rounded px-4 py-2 text-sm"
+                disabled={planBusy !== null}
+                onClick={() => void purgePlan(purgeTarget)}
+              >
+                {planBusy === purgeTarget.id ? "刪除中…" : "永久刪除"}
               </button>
             </div>
           </div>

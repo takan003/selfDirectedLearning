@@ -553,6 +553,53 @@ export async function setStudentPlanDeleted(input: {
   return { ok: true, plan: next };
 }
 
+export type PurgePlanResult =
+  | { ok: true; plan: SelfDirectedLearningPlan }
+  | { ok: false; status: 400 | 403 | 404 | 409; message: string };
+
+/**
+ * 永久刪除垃圾桶中的計畫（不可復原）：
+ * - 僅限本人、且已移至垃圾桶的草稿／退回修改。
+ * - 一併刪除該計畫的審查紀錄與仍指向它的送審鎖定文件。
+ */
+export async function purgeStudentPlan(input: {
+  planId: string;
+  studentUid: string;
+}): Promise<PurgePlanResult> {
+  const planRef = plansRef().doc(input.planId);
+  const snap = await planRef.get();
+  if (!snap.exists) return { ok: false, status: 404, message: "查無此計畫" };
+  const plan = readPlan(input.planId, (snap.data() || {}) as Record<string, unknown>);
+  if (plan.studentUid !== input.studentUid) {
+    return { ok: false, status: 403, message: "無權刪除此計畫" };
+  }
+  if (!plan.deletedAt) {
+    return { ok: false, status: 409, message: "只能永久刪除垃圾桶中的計畫" };
+  }
+  if (plan.status === "submitted" || plan.status === "approved") {
+    return { ok: false, status: 409, message: "審核中或已通過的計畫不可刪除" };
+  }
+
+  const db = getAdminDb();
+  // 單次 batch 上限 500；審查紀錄通常很少，保留 400 筆的餘裕
+  const reviews = await db
+    .collection(SELF_DIRECTED_LEARNING_REVIEWS_COLLECTION)
+    .where("planId", "==", plan.id)
+    .limit(400)
+    .get();
+  const batch = db.batch();
+  for (const review of reviews.docs) batch.delete(review.ref);
+
+  const lockRef = submissionLockRef(plan.period, plan.studentUid);
+  const lockSnap = await lockRef.get();
+  const lock = (lockSnap.exists ? lockSnap.data() : null) as Record<string, unknown> | null;
+  if (lock && lock.submittedPlanId === plan.id) batch.delete(lockRef);
+
+  batch.delete(planRef);
+  await batch.commit();
+  return { ok: true, plan };
+}
+
 export type WithdrawPlanResult =
   | { ok: true; plan: SelfDirectedLearningPlan }
   | { ok: false; status: 400 | 403 | 404 | 409; message: string };

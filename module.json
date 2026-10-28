@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.88",
+    "version": "0.0.89",
     "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -50,6 +50,7 @@
     "self_directed_learning_plan_archived",
     "self_directed_learning_plan_trashed",
     "self_directed_learning_plan_restored",
+    "self_directed_learning_plan_purged",
     "self_directed_learning_plan_records_saved"
   ],
   "dataCollections": [
@@ -60,6 +61,14 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.89",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "垃圾桶新增「永久刪除」：可將垃圾桶中的草稿／退回修改計畫連同相關審查紀錄永久刪除，操作前顯示二次確認，刪除後無法復原；按鈕使用 CSS 主題危險色",
+        "永久刪除僅限本人且已移至垃圾桶的計畫；伺服器同步檢核狀態與 deletedAt，並新增稽核動作 self_directed_learning_plan_purged"
+      ]
+    },
     {
       "version": "0.0.88",
       "releasedAt": "2026-10-28",
