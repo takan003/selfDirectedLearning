@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.87",
+    "version": "0.0.88",
     "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -60,6 +60,15 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.88",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "管理規則新增「草稿匣件數上限」：可設定每位學生最多保留的草稿件數（1–100 件，預設 20 件，含退回修改）",
+        "達到上限後仍可編輯既有草稿，但學生端「發想新計畫」按鈕會停用並顯示提示；刪除不需要的草稿或由管理員調高上限後即可再新增",
+        "伺服器同步檢核新增草稿與從垃圾桶還原草稿，避免繞過上限"
+      ]
+    },
     {
       "version": "0.0.87",
       "releasedAt": "2026-10-28",

@@ -88,6 +88,9 @@ export interface FlexibleSlot {
  *  僅以防濫用為由保留伺服器硬上限 */
 export const MAX_PLAN_WEEKS = 104;
 
+/** 草稿匣件數上限的硬上限（管理端可設定 1–100 件） */
+export const MAX_DRAFT_PLANS = 100;
+
 /** 週數填寫形式：full＝全學期（空白週數都須填寫，週數自動判斷）；flexible＝彈性（至少下限週數） */
 export type WeekMode = "full" | "flexible";
 
@@ -131,6 +134,8 @@ export interface SelfDirectedLearningSettings {
   weekMode: WeekMode;
   /** 彈性形式的下限週數（建議至少 6 週；全學期形式不使用） */
   minWeeks: number;
+  /** 每位學生草稿匣可保留的件數上限（含退回修改；僅限制新增，既有草稿仍可編輯） */
+  maxDrafts: number;
   /** 校內彈性學習節次行程 */
   slots: FlexibleSlot[];
   /** 開放場域 */
@@ -159,6 +164,7 @@ export const DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS: SelfDirectedLearningSettin
   resultDeadlineAt: null,
   weekMode: "full",
   minWeeks: 6,
+  maxDrafts: 20,
   slots: [],
   venues: [],
   venueEditable: true,
@@ -261,6 +267,10 @@ export function normalizeSettings(raw: unknown): SelfDirectedLearningSettings {
     typeof source.minWeeks === "number" && Number.isInteger(source.minWeeks)
       ? source.minWeeks
       : DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS.minWeeks;
+  const maxDraftsRaw =
+    typeof source.maxDrafts === "number" && Number.isInteger(source.maxDrafts)
+      ? source.maxDrafts
+      : DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS.maxDrafts;
   return {
     enabled:
       typeof source.enabled === "boolean"
@@ -273,6 +283,7 @@ export function normalizeSettings(raw: unknown): SelfDirectedLearningSettings {
     resultDeadlineAt: asEpoch(source.resultDeadlineAt),
     weekMode: source.weekMode === "flexible" ? "flexible" : "full",
     minWeeks: Math.min(Math.max(minWeeksRaw, 1), MAX_PLAN_WEEKS),
+    maxDrafts: Math.min(Math.max(maxDraftsRaw, 1), MAX_DRAFT_PLANS),
     slots,
     venues: asStringArray(source.venues, 60, 80),
     venueEditable:
@@ -344,6 +355,17 @@ export function parseSettingsInput(raw: unknown): ParseResult {
   }
   if ("minWeeks" in body && typeof body.minWeeks === "number" && !Number.isInteger(body.minWeeks)) {
     return { ok: false, message: "下限週數必須是整數" };
+  }
+  if ("maxDrafts" in body) {
+    const value = body.maxDrafts;
+    if (
+      typeof value !== "number" ||
+      !Number.isInteger(value) ||
+      value < 1 ||
+      value > MAX_DRAFT_PLANS
+    ) {
+      return { ok: false, message: `草稿匣件數上限必須是 1–${MAX_DRAFT_PLANS} 的整數` };
+    }
   }
   if ("publishAnnouncement" in body && typeof body.publishAnnouncement !== "boolean") {
     return { ok: false, message: "系統公告同步設定格式錯誤" };

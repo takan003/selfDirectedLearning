@@ -801,6 +801,8 @@ export default function StudentSelfDirectedLearningPage() {
     !otherSubmittedPlan &&
     !currentApproved;
   const canStartNew = !formOpen && !loading;
+  /** 草稿匣（含退回修改）是否已達管理端設定上限 */
+  const draftLimitReached = draftCount >= settings.maxDrafts;
 
   const formActionButtons = (
     <>
@@ -1465,8 +1467,14 @@ export default function StudentSelfDirectedLearningPage() {
               {canStartNew && (
                 <button
                   type="button"
-                  className="btn-primary btn-theme px-4 py-2 text-sm"
+                  className="btn-primary btn-theme px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                   onClick={startNewPlan}
+                  disabled={draftLimitReached}
+                  title={
+                    draftLimitReached
+                      ? `草稿匣已達上限（${settings.maxDrafts} 件，含退回修改）`
+                      : ""
+                  }
                 >
                   發想新計畫
                 </button>
@@ -1513,11 +1521,13 @@ export default function StudentSelfDirectedLearningPage() {
                 </span>
               )}
             </div>
-            {currentApproved || windowState !== "open" ? (
+            {draftLimitReached || currentApproved || windowState !== "open" ? (
               <span className="text-t3 text-xs">
-                {currentApproved
-                  ? "本學期已有正式計畫，無法再送出；仍可發想草稿。"
-                  : "仍可發想與儲存草稿；送出審核需在開放期間內。"}
+                {draftLimitReached
+                  ? `草稿匣已達上限（${settings.maxDrafts} 件，含退回修改），請先刪除不需要的草稿或請管理員調整上限。`
+                  : currentApproved
+                    ? "本學期已有正式計畫，無法再送出；仍可發想草稿。"
+                    : "仍可發想與儲存草稿；送出審核需在開放期間內。"}
               </span>
             ) : null}
           </div>

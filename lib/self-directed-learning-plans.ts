@@ -263,6 +263,21 @@ export async function saveStudentPlan(input: {
     };
   }
 
+  // 草稿匣件數上限（含退回修改）：只限制新增，既有草稿仍可編輯／送審
+  if (!target && input.action === "save") {
+    const draftBoxCount = studentPlans.filter(
+      (plan) =>
+        !plan.deletedAt && (plan.status === "draft" || plan.status === "returned")
+    ).length;
+    if (draftBoxCount >= input.settings.maxDrafts) {
+      return {
+        ok: false,
+        status: 409,
+        message: `草稿匣已達上限（${input.settings.maxDrafts} 件），請先刪除不需要的草稿，或請管理員調整上限`,
+      };
+    }
+  }
+
   if (input.action === "submit") {
     const { openAt, closeAt } = input.settings;
     if (openAt === null || closeAt === null) {
@@ -490,6 +505,8 @@ export async function setStudentPlanDeleted(input: {
   planId: string;
   studentUid: string;
   deleted: boolean;
+  /** 草稿匣件數上限（還原草稿時檢查；未提供＝不檢查） */
+  maxDrafts?: number;
   now?: number;
 }): Promise<PlanTrashResult> {
   const snap = await plansRef().doc(input.planId).get();
@@ -509,6 +526,20 @@ export async function setStudentPlanDeleted(input: {
     if (plan.deletedAt) return { ok: true, plan };
   } else if (!plan.deletedAt) {
     return { ok: true, plan };
+  }
+  if (!input.deleted && typeof input.maxDrafts === "number") {
+    const activePlans = await getStudentPlans(plan.studentUid);
+    const draftBoxCount = activePlans.filter(
+      (item) =>
+        !item.deletedAt && (item.status === "draft" || item.status === "returned")
+    ).length;
+    if (draftBoxCount >= input.maxDrafts) {
+      return {
+        ok: false,
+        status: 409,
+        message: `草稿匣已達上限（${input.maxDrafts} 件），請先刪除不需要的草稿，或請管理員調整上限`,
+      };
+    }
   }
   const now = input.now ?? Date.now();
   const next: SelfDirectedLearningPlan = {

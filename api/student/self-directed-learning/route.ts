@@ -231,6 +231,7 @@ export async function POST(request: NextRequest) {
         planId,
         studentUid: student.uid,
         deleted,
+        maxDrafts: settings.maxDrafts,
       });
       if (!trashResult.ok) {
         return NextResponse.json(
