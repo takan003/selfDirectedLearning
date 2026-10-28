@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.85",
+    "version": "0.0.86",
     "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -60,6 +60,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.86",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "分開式的執行成果紀錄表：週次欄比照計畫表顯示時段、日期與節次，欄位標題同步改為「週次／日期／節次」，內容垂直置中"
+      ]
+    },
     {
       "version": "0.0.85",
       "releasedAt": "2026-10-28",

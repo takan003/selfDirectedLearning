@@ -46,6 +46,33 @@ function blockedNamesOf(week: PrintPreviewWeek): string {
   ].join("、");
 }
 
+/** 週次欄內容：週次、時段、日期與節次（主表與成果紀錄表共用） */
+function WeekInfo({ week }: { week: PrintPreviewWeek }) {
+  return (
+    <>
+      <div className="sdl-print-week">第 {week.week} 週</div>
+      <div className="sdl-print-timing">
+        {TIMING_SHORT_LABELS[week.timing] ?? week.timing}
+      </div>
+      {week.slots.length === 0 ? (
+        <div className="sdl-print-slots">—</div>
+      ) : (
+        week.slots.map((slot) => (
+          <div key={`${slot.date}-${slot.day}`} className="sdl-print-slots">
+            <div>
+              {monthDayText(slot.date)} {WEEKDAY_LABELS[slot.day - 1]}
+            </div>
+            <div>
+              {slot.periods.length > 0 ? slot.periods.join("、") : "—"}
+              {slot.blockedBy && <span>（{slot.blockedBy}）</span>}
+            </div>
+          </div>
+        ))
+      )}
+    </>
+  );
+}
+
 /**
  * 紙張樣式：列印預覽刻意固定為白底黑字（與螢幕主題無關），
  * 確保深色主題下預覽與實際列印仍是紙張閱讀的樣子。
@@ -281,25 +308,7 @@ export function PrintPreviewSheet({ payload }: { payload: PrintPreviewPayload })
               <Fragment key={week.week}>
                 <tr>
                   <td className="sdl-print-week-cell" rowSpan={showRecord ? 3 : 1}>
-                    <div className="sdl-print-week">第 {week.week} 週</div>
-                    <div className="sdl-print-timing">
-                      {TIMING_SHORT_LABELS[week.timing] ?? week.timing}
-                    </div>
-                    {week.slots.length === 0 ? (
-                      <div className="sdl-print-slots">—</div>
-                    ) : (
-                      week.slots.map((slot) => (
-                        <div key={`${slot.date}-${slot.day}`} className="sdl-print-slots">
-                          <div>
-                            {monthDayText(slot.date)} {WEEKDAY_LABELS[slot.day - 1]}
-                          </div>
-                          <div>
-                            {slot.periods.length > 0 ? slot.periods.join("、") : "—"}
-                            {slot.blockedBy && <span>（{slot.blockedBy}）</span>}
-                          </div>
-                        </div>
-                      ))
-                    )}
+                    <WeekInfo week={week} />
                   </td>
                   <td>
                     {week.blocked ? (
@@ -344,8 +353,8 @@ export function PrintPreviewSheet({ payload }: { payload: PrintPreviewPayload })
           <table className="sdl-print-weeks">
             <thead>
               <tr>
-                <th scope="col" style={{ width: "14%" }}>
-                  週次
+                <th scope="col" style={{ width: "22%" }}>
+                  週次／日期／節次
                 </th>
                 <th scope="col">執行成果</th>
               </tr>
@@ -355,8 +364,8 @@ export function PrintPreviewSheet({ payload }: { payload: PrintPreviewPayload })
                 .filter((week) => week.record)
                 .map((week) => (
                   <tr key={`record-${week.week}`}>
-                    <td>
-                      <span className="sdl-print-week">第 {week.week} 週</span>
+                    <td className="sdl-print-week-cell">
+                      <WeekInfo week={week} />
                     </td>
                     <td>
                       <RichTextContent html={week.record} className="text-sm" />
