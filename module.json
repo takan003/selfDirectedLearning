@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.79",
+    "version": "0.0.80",
     "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -60,6 +60,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.80",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "列印預覽的表格欄位標題改為水平置中：週次／日期／節次、學習安排、場地，以及融入式的「執行成果紀錄」標題列與分開式的成果表頭"
+      ]
+    },
     {
       "version": "0.0.79",
       "releasedAt": "2026-10-28",

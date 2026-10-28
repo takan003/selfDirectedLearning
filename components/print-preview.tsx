@@ -98,6 +98,9 @@ const PRINT_SHEET_STYLES = `
   background: #f3f4f6;
   font-weight: 600;
 }
+.sdl-print-weeks th {
+  text-align: center;
+}
 .sdl-print-meta th {
   width: 14%;
   white-space: nowrap;
@@ -123,6 +126,10 @@ const PRINT_SHEET_STYLES = `
   font-size: 12px;
   font-weight: 600;
   color: #111827;
+  text-align: center;
+}
+.sdl-print-weeks td.sdl-print-record-title-cell {
+  text-align: center;
 }
 .sdl-print-record-body {
   font-size: 12px;
