@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.92",
+    "version": "0.0.93",
     "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -62,6 +62,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.93",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "「高中三年最低審核份數」加上 CSS 主題危險色套色：danger 左側強調框、danger 標題與淡 danger 底色"
+      ]
+    },
     {
       "version": "0.0.92",
       "releasedAt": "2026-10-28",

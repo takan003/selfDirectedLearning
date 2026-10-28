@@ -614,9 +614,17 @@ export default function SelfDirectedLearningSettingsPage({
             </span>
           </label>
 
-          {/* 高中三年最低審核份數：放在總開關下方，使用主題主色左框 */}
-          <div className="border-themed bg-surface border-l-primary space-y-2 rounded-md border border-l-4 p-3">
-            <span className="text-t1 block text-sm font-medium">高中三年最低審核份數</span>
+          {/* 高中三年最低審核份數：放在總開關下方，使用主題危險色套色 */}
+          <div
+            className="border-themed bg-surface space-y-2 rounded-md border border-l-4 p-3"
+            style={{
+              borderLeftColor: "var(--danger)",
+              backgroundColor: "color-mix(in srgb, var(--danger) 6%, var(--bg2))",
+            }}
+          >
+            <span className="text-danger block text-sm font-medium">
+              高中三年最低審核份數
+            </span>
             <label className="text-t2 block space-y-1 text-sm">
               <span>
                 每位學生高中三年至少送出的計畫份數（0–{MAX_MIN_REVIEW_PLANS}；0＝不設定）
