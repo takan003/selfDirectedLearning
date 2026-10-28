@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.101",
+    "version": "0.0.102",
     "releasedAt": "2026-10-29"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -62,6 +62,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.102",
+      "releasedAt": "2026-10-29",
+      "notes": [
+        "學生端「我的計畫」上方的說明改為條列，讓學生清楚知道：每學期僅能送審 1 份正式計畫、可自行提升為正式（個人可有多份）、就學期間至少需幾份經學校審查通過（依管理端設定）、開放期間外仍可存草稿"
+      ]
+    },
     {
       "version": "0.0.101",
       "releasedAt": "2026-10-29",

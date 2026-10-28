@@ -1623,15 +1623,21 @@ export default function StudentSelfDirectedLearningPage() {
                 </span>
               )}
             </div>
-            {draftLimitReached || otherApprovedPlan || windowState !== "open" ? (
-              <span className="text-t3 text-xs">
-                {draftLimitReached
-                  ? `草稿匣已達上限（${settings.maxDrafts} 件，含退回修改），請先刪除不需要的草稿或請管理員調整上限。`
-                  : otherApprovedPlan
-                    ? "本學期已有通過審核的正式計畫，無法再送出其他計畫；仍可發想草稿或提升為正式。"
-                    : "仍可發想與儲存草稿；送出審核需在開放期間內。"}
-              </span>
-            ) : null}
+            <ul className="text-t3 list-disc space-y-0.5 pl-4 text-xs">
+              <li>每學期僅能送審 1 份正式計畫，經學校審核通過後即為正式計畫。</li>
+              <li>你可以自行將草稿提升為正式計畫，個人可同時擁有多份正式計畫。</li>
+              {settings.minApprovedPlans > 0 && (
+                <li>
+                  就學期間至少需 {settings.minApprovedPlans} 份正式計畫經學校審查通過。
+                </li>
+              )}
+              <li>開放期間外仍可發想與儲存草稿；送出審核需在開放期間內。</li>
+              {draftLimitReached && (
+                <li className="text-danger">
+                  草稿匣已達上限（{settings.maxDrafts} 件，含退回修改），請先刪除不需要的草稿或請管理員調整上限。
+                </li>
+              )}
+            </ul>
           </div>
         </div>
 
