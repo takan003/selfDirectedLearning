@@ -339,6 +339,14 @@ export default function StudentSelfDirectedLearningPage() {
   /** 送出審核一律歸為本學期的計畫，因此以目前學期檢核「僅一件審核中」 */
   const otherSubmittedPlan =
     submittedPlans.find((plan) => plan.period === currentPeriod) ?? null;
+  /** 本學期已送審過的其他計畫（含退回、抽回）：一學期僅能送審 1 份 */
+  const otherEverSubmittedPlan =
+    activePlans.find(
+      (plan) =>
+        plan.period === currentPeriod &&
+        plan.id !== editingPlanId &&
+        (plan.firstSubmittedAt ?? plan.submittedAt) !== null
+    ) ?? null;
   /** 目前學期已正式（學校通過或學生自行提升）的計畫（執行成果紀錄的對象） */
   const recordPlan = currentFormal;
   /** 可寫週次（有設定節次時：該週至少一個時段未衝堂；未設定節次時：全部視為可寫） */
@@ -864,6 +872,7 @@ export default function StudentSelfDirectedLearningPage() {
     saving === null &&
     rangeValid &&
     !otherSubmittedPlan &&
+    !otherEverSubmittedPlan &&
     !otherApprovedPlan;
   const canStartNew = !formOpen && !loading;
   /** 草稿匣（含退回修改）是否已達管理端設定上限 */
@@ -889,9 +898,11 @@ export default function StudentSelfDirectedLearningPage() {
             ? "本學期已有通過審核的正式計畫，無法再送出其他計畫"
             : otherSubmittedPlan
               ? "本學期已有計畫在審核中，請等待審查結果或先抽回後再送出"
-              : withinWindow
-                ? ""
-                : WINDOW_LABEL[windowState]
+              : otherEverSubmittedPlan
+                ? "本學期只能送審 1 份計畫，請改為編輯已送審的計畫"
+                : withinWindow
+                  ? ""
+                  : WINDOW_LABEL[windowState]
         }
       >
         {saving === "submit" ? "送出中…" : "送出審核"}
@@ -1758,14 +1769,18 @@ export default function StudentSelfDirectedLearningPage() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p
                 className={
-                  otherApprovedPlan || otherSubmittedPlan ? "text-danger text-xs" : "text-t3 text-xs"
+                  otherApprovedPlan || otherSubmittedPlan || otherEverSubmittedPlan
+                    ? "text-danger text-xs"
+                    : "text-t3 text-xs"
                 }
               >
                 {otherApprovedPlan
                   ? "本學期已有通過審核的正式計畫，無法再送出其他計畫（仍可儲存草稿）。"
                   : otherSubmittedPlan
                     ? "本學期已有計畫在審核中：請等待審查結果，或先抽回該計畫後再送出（仍可儲存草稿）。"
-                    : "表單較長，可隨時儲存草稿或送出審核。"}
+                    : otherEverSubmittedPlan
+                      ? "本學期只能送審 1 份計畫：請改為編輯已送審的計畫後重新送出（仍可儲存草稿）。"
+                      : "表單較長，可隨時儲存草稿或送出審核。"}
               </p>
               <div className="flex w-full flex-wrap justify-end gap-3 sm:w-auto">
                 {formActionButtons}

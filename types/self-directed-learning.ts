@@ -586,7 +586,10 @@ export interface SelfDirectedLearningPlan {
   status: PlanStatus;
   /** 移至垃圾桶的時間（epoch ms）；null＝不在垃圾桶 */
   deletedAt: number | null;
+  /** 送出審核的時間（目前審核中的計畫才有值；抽回後清空） */
   submittedAt: number | null;
+  /** 第一次送出審核的時間（一旦送出就不再清除；用於「每學期僅能送審 1 份」） */
+  firstSubmittedAt: number | null;
   /** 學生自行提升為正式計畫的時間（epoch ms）；null＝尚未自行提升 */
   selfApprovedAt: number | null;
   updatedAt: number;
@@ -1046,7 +1049,7 @@ export function stripHtmlToText(input: string): string {
 }
 
 export type PlanParseResult =
-  | { ok: true; value: Omit<SelfDirectedLearningPlan, "id" | "period" | "studentUid" | "studentName" | "grade" | "classCode" | "className" | "status" | "deletedAt" | "submittedAt" | "selfApprovedAt" | "updatedAt"> }
+  | { ok: true; value: Omit<SelfDirectedLearningPlan, "id" | "period" | "studentUid" | "studentName" | "grade" | "classCode" | "className" | "status" | "deletedAt" | "submittedAt" | "firstSubmittedAt" | "selfApprovedAt" | "updatedAt"> }
   | { ok: false; message: string };
 
 /** 學生計畫草稿輸入驗證（送審與草稿共用；草稿寬鬆、送審才套週數形式與每週必填） */
