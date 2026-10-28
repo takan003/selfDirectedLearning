@@ -655,20 +655,30 @@ export default function SelfDirectedLearningSettingsPage({
             <p className="text-t3 text-xs">
               依高級中等學校總綱規定，每位學生須完成至少18小時的自主學習。
             </p>
-            <label className="border-themed flex items-start gap-2 border-t pt-2 text-sm text-t2">
-              <input
-                type="checkbox"
-                className="mt-0.5 h-4 w-4 cursor-pointer"
-                checked={settings.showHoursToStudent}
-                onChange={(event) => patch({ showHoursToStudent: event.target.checked })}
-              />
-              <span>
-                顯示給學生
-                <span className="text-t3 block text-xs">
-                  開啟後，學生端會顯示高中三年最低時數目標；目前僅供參考，不代表實際完成時數已檢核。
-                </span>
-              </span>
-            </label>
+            <div className="border-themed space-y-2 border-t pt-2">
+              <span className="text-t2 block text-sm">顯示對象</span>
+              <label className="text-t2 flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 cursor-pointer"
+                  checked={settings.showHoursToStudent}
+                  onChange={(event) => patch({ showHoursToStudent: event.target.checked })}
+                />
+                <span>顯示給學生</span>
+              </label>
+              <label className="text-t2 flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 cursor-pointer"
+                  checked={settings.showHoursToParent}
+                  onChange={(event) => patch({ showHoursToParent: event.target.checked })}
+                />
+                <span>顯示給家長</span>
+              </label>
+              <p className="text-t3 text-xs">
+                開啟後，對應角色會看到高中三年最低時數目標；目前僅供參考，不代表實際完成時數已檢核。
+              </p>
+            </div>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">

@@ -39,6 +39,8 @@ export default function ParentSelfDirectedLearningPage() {
   const [toast, setToast] = useState<ToastMessage | null>(null);
   /** 總開關關閉：只顯示維護說明 */
   const [maintenance, setMaintenance] = useState(false);
+  /** 管理端是否允許家長看到三年時數目標 */
+  const [hoursTarget, setHoursTarget] = useState({ hours: 0, show: false });
 
   const load = useCallback(async () => {
     try {
@@ -53,6 +55,11 @@ export default function ParentSelfDirectedLearningPage() {
       setPlan((data.plan as SelfDirectedLearningPlan | null) ?? null);
       setLatestReview((data.latestReview as PlanReview | null) ?? null);
       setInstructions(typeof data.instructions === "string" ? data.instructions : "");
+      setHoursTarget({
+        hours:
+          typeof data.minSelfDirectedHours === "number" ? data.minSelfDirectedHours : 0,
+        show: Boolean(data.showHoursToParent),
+      });
     } catch {
       setToast({ kind: "error", text: "讀取資料失敗" });
     } finally {
@@ -91,6 +98,17 @@ export default function ParentSelfDirectedLearningPage() {
           </p>
         )}
       </header>
+
+      {hoursTarget.show && hoursTarget.hours > 0 && (
+        <section
+          className="border-themed bg-card flex flex-wrap items-center justify-between gap-2 rounded-lg border p-4"
+          aria-label="高中三年自主學習時數目標"
+        >
+          <span className="text-t1 text-sm font-medium">高中三年自主學習時數目標</span>
+          <span className="text-t2 text-sm">至少 {hoursTarget.hours} 小時</span>
+          <span className="text-t3 text-xs">僅供參考；實際完成時數由學校另行檢核。</span>
+        </section>
+      )}
 
       {stripHtmlToText(instructions).trim() && (
         <details className="border border-themed bg-card rounded-lg">

@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.96",
+    "version": "0.0.97",
     "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -62,6 +62,14 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.97",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "管理端的顯示對象改為兩個獨立勾選：顯示給學生、顯示給家長（預設皆關閉）",
+        "家長端開啟後會顯示高中三年最低時數目標，並標示「僅供參考；實際完成時數由學校另行檢核」"
+      ]
+    },
     {
       "version": "0.0.96",
       "releasedAt": "2026-10-28",

@@ -143,6 +143,8 @@ export interface SelfDirectedLearningSettings {
   minSelfDirectedHours: number;
   /** 是否在學生端顯示高中三年最低時數目標（預設 false；僅參考，不代表已檢核） */
   showHoursToStudent: boolean;
+  /** 是否在家長端顯示高中三年最低時數目標（預設 false；僅參考，不代表已檢核） */
+  showHoursToParent: boolean;
   /** 校內彈性學習節次行程 */
   slots: FlexibleSlot[];
   /** 開放場域 */
@@ -174,6 +176,7 @@ export const DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS: SelfDirectedLearningSettin
   maxDrafts: 20,
   minSelfDirectedHours: 18,
   showHoursToStudent: false,
+  showHoursToParent: false,
   slots: [],
   venues: [],
   venueEditable: true,
@@ -306,6 +309,10 @@ export function normalizeSettings(raw: unknown): SelfDirectedLearningSettings {
       typeof source.showHoursToStudent === "boolean"
         ? source.showHoursToStudent
         : DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS.showHoursToStudent,
+    showHoursToParent:
+      typeof source.showHoursToParent === "boolean"
+        ? source.showHoursToParent
+        : DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS.showHoursToParent,
     slots,
     venues: asStringArray(source.venues, 60, 80),
     venueEditable:
@@ -414,6 +421,9 @@ export function parseSettingsInput(raw: unknown): ParseResult {
   }
   if ("showHoursToStudent" in body && typeof body.showHoursToStudent !== "boolean") {
     return { ok: false, message: "學生端時數顯示設定格式錯誤" };
+  }
+  if ("showHoursToParent" in body && typeof body.showHoursToParent !== "boolean") {
+    return { ok: false, message: "家長端時數顯示設定格式錯誤" };
   }
   return { ok: true, value };
 }
