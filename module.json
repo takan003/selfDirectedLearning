@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.89",
+    "version": "0.0.90",
     "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -50,6 +50,7 @@
     "self_directed_learning_plan_archived",
     "self_directed_learning_plan_trashed",
     "self_directed_learning_plan_restored",
+    "self_directed_learning_plan_self_approved",
     "self_directed_learning_plan_purged",
     "self_directed_learning_plan_records_saved"
   ],
@@ -61,6 +62,16 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.90",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "新增「提升為正式」：草稿、審核中或退回修改的計畫，學生可自行提升為正式；提升後可依既有每週時間開始填寫執行成果，不必等待學校審核通過",
+        "學校審核仍會保留；之後被退回不影響已提升的正式狀態與成果；同一學期可有多份自行提升的正式計畫，但送審仍限一份、學校審核通過的正式計畫仍以一份為原則",
+        "學生端顯示「正式（自主提升）」標記，教職員審核頁標示「已由學生提升為正式」，列印頁尾區分自主提升與學校通過",
+        "送審、提升與審核通過時的衝突檢核同步調整；審核中或學校已通過的計畫仍不可移至垃圾桶"
+      ]
+    },
     {
       "version": "0.0.89",
       "releasedAt": "2026-10-28",

@@ -524,6 +524,8 @@ export interface PrintPreviewPayload {
   reflection: string;
   /** 來源：draft＝撰寫中的草稿、approved＝已通過的計畫與執行成果紀錄 */
   source: "draft" | "approved";
+  /** 是否由學生自行提升為正式（頁尾文案用） */
+  formalByStudent?: boolean;
   /** 執行成果紀錄呈現方式（分開式／融入式） */
   layout: PrintLayout;
   generatedAt: number;
@@ -557,7 +559,19 @@ export interface SelfDirectedLearningPlan {
   /** 移至垃圾桶的時間（epoch ms）；null＝不在垃圾桶 */
   deletedAt: number | null;
   submittedAt: number | null;
+  /** 學生自行提升為正式計畫的時間（epoch ms）；null＝尚未自行提升 */
+  selfApprovedAt: number | null;
   updatedAt: number;
+}
+
+/** 正式計畫：學校審核通過，或學生自行提升為正式 */
+export function isFormalPlan(
+  plan: Pick<SelfDirectedLearningPlan, "status" | "selfApprovedAt">
+): boolean {
+  return (
+    plan.status === "approved" ||
+    (typeof plan.selfApprovedAt === "number" && plan.selfApprovedAt > 0)
+  );
 }
 
 /** 單週審查意見（富文本；只存有填寫的週次） */
@@ -1004,7 +1018,7 @@ export function stripHtmlToText(input: string): string {
 }
 
 export type PlanParseResult =
-  | { ok: true; value: Omit<SelfDirectedLearningPlan, "id" | "period" | "studentUid" | "studentName" | "grade" | "classCode" | "className" | "status" | "deletedAt" | "submittedAt" | "updatedAt"> }
+  | { ok: true; value: Omit<SelfDirectedLearningPlan, "id" | "period" | "studentUid" | "studentName" | "grade" | "classCode" | "className" | "status" | "deletedAt" | "submittedAt" | "selfApprovedAt" | "updatedAt"> }
   | { ok: false; message: string };
 
 /** 學生計畫草稿輸入驗證（送審與草稿共用；草稿寬鬆、送審才套週數形式與每週必填） */

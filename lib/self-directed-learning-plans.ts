@@ -10,6 +10,7 @@ import {
   SELF_DIRECTED_LEARNING_PLANS_COLLECTION,
   SELF_DIRECTED_LEARNING_REVIEWS_COLLECTION,
   capRichHtmlLength,
+  isFormalPlan,
   normalizeWeekNotes,
   periodLabelOf,
   planDocIdOf,
@@ -106,6 +107,10 @@ function readPlan(id: string, raw: Record<string, unknown>): SelfDirectedLearnin
     status,
     deletedAt: typeof raw.deletedAt === "number" ? raw.deletedAt : null,
     submittedAt: typeof raw.submittedAt === "number" ? raw.submittedAt : null,
+    selfApprovedAt:
+      typeof raw.selfApprovedAt === "number" && raw.selfApprovedAt > 0
+        ? raw.selfApprovedAt
+        : null,
     updatedAt: typeof raw.updatedAt === "number" ? raw.updatedAt : 0,
   };
 }
@@ -241,10 +246,14 @@ export async function saveStudentPlan(input: {
     input.action === "submit" ? currentPeriod : target?.period || currentPeriod;
   const studentPlans = await getStudentPlans(input.student.uid);
   const approvedElsewhere = studentPlans.find(
-    (plan) => plan.period === period && plan.status === "approved" && plan.id !== requestedId
+    (plan) =>
+      plan.period === period &&
+      !plan.deletedAt &&
+      plan.status === "approved" &&
+      plan.id !== requestedId
   );
   if (approvedElsewhere && input.action === "submit") {
-    return { ok: false, status: 409, message: "本學期已有正式計畫，無法再送出計畫" };
+    return { ok: false, status: 409, message: "本學期已有通過審核的正式計畫，無法再送出計畫" };
   }
 
   // 同一學期同時僅能有一件計畫在審核中（可保留多筆草稿）
@@ -307,6 +316,7 @@ export async function saveStudentPlan(input: {
     status: input.action === "submit" ? "submitted" : "draft",
     deletedAt: null,
     submittedAt: input.action === "submit" ? now : target?.submittedAt ?? null,
+    selfApprovedAt: target?.selfApprovedAt ?? null,
     updatedAt: now,
   };
 
@@ -418,8 +428,12 @@ export async function savePlanRecords(input: {
   if (plan.deletedAt) {
     return { ok: false, status: 409, message: "此計畫在垃圾桶，無法填寫執行成果" };
   }
-  if (plan.status !== "approved") {
-    return { ok: false, status: 409, message: "計畫通過審核後才能填寫執行成果紀錄" };
+  if (!isFormalPlan(plan)) {
+    return {
+      ok: false,
+      status: 409,
+      message: "計畫提升為正式或通過審核後才能填寫執行成果紀錄",
+    };
   }
   if (plan.period !== periodLabelOf(await getCurrentPeriod())) {
     return { ok: false, status: 409, message: "只能填寫本學期計畫的執行成果紀錄" };
@@ -551,6 +565,42 @@ export async function setStudentPlanDeleted(input: {
     .doc(plan.id)
     .set({ deletedAt: next.deletedAt, updatedAt: now }, { merge: true });
   return { ok: true, plan: next };
+}
+
+export type PromotePlanResult =
+  | { ok: true; plan: SelfDirectedLearningPlan }
+  | { ok: false; status: 400 | 403 | 404 | 409; message: string };
+
+/**
+ * 學生自行把本學期計畫提升為正式（不必等學校審核通過，即可開始按時寫成果）。
+ * - 草稿、審核中、退回修改皆可提升。
+ * - 同一學期可有多份自行提升的正式計畫；送審仍限一份，學校審核通過的正式計畫仍以一份為原則。
+ * - 學校審核保留；之後被退回不影響已提升的正式狀態。
+ */
+export async function promoteStudentPlan(input: {
+  planId: string;
+  studentUid: string;
+}): Promise<PromotePlanResult> {
+  const planRef = plansRef().doc(input.planId);
+  const snap = await planRef.get();
+  if (!snap.exists) return { ok: false, status: 404, message: "查無此計畫" };
+  const plan = readPlan(input.planId, (snap.data() || {}) as Record<string, unknown>);
+  if (plan.studentUid !== input.studentUid) {
+    return { ok: false, status: 403, message: "無權修改此計畫" };
+  }
+  if (plan.deletedAt) {
+    return { ok: false, status: 409, message: "此計畫在垃圾桶，請先還原後再提升" };
+  }
+  if (isFormalPlan(plan)) return { ok: true, plan };
+
+  const currentPeriod = periodLabelOf(await getCurrentPeriod());
+  if (plan.period !== currentPeriod) {
+    return { ok: false, status: 409, message: "只能提升本學期的計畫" };
+  }
+
+  const now = Date.now();
+  await planRef.set({ selfApprovedAt: now, updatedAt: now }, { merge: true });
+  return { ok: true, plan: { ...plan, selfApprovedAt: now, updatedAt: now } };
 }
 
 export type PurgePlanResult =
@@ -878,7 +928,7 @@ export async function applyReview(input: {
       const conflict = approvedSnap.docs.some((doc) => {
         if (doc.id === current.id) return false;
         const data = (doc.data() || {}) as Record<string, unknown>;
-        return data.period === current.period && data.status === "approved";
+        return data.period === current.period && !data.deletedAt && data.status === "approved";
       });
       if (conflict) return { kind: "conflict" as const };
     }
