@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.97",
+    "version": "0.0.98",
     "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -62,6 +62,14 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.98",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "審核人員的檢視頁只顯示送審中（submitted）的計畫；已通過、退回修改與草稿都不再顯示",
+        "移除審核人員的「我的班級」切換；兼導師且非審核人員者仍可瀏覽全班計畫，伺服器同步擋下審核人員的全班清單請求"
+      ]
+    },
     {
       "version": "0.0.97",
       "releasedAt": "2026-10-28",
