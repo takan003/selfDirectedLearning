@@ -91,6 +91,9 @@ export const MAX_PLAN_WEEKS = 104;
 /** 草稿匣件數上限的硬上限（管理端可設定 1–100 件） */
 export const MAX_DRAFT_PLANS = 100;
 
+/** 高中三年最低審核份數的上限（管理端可設定 0–6 份；0＝不設定） */
+export const MAX_MIN_REVIEW_PLANS = 6;
+
 /** 週數填寫形式：full＝全學期（空白週數都須填寫，週數自動判斷）；flexible＝彈性（至少下限週數） */
 export type WeekMode = "full" | "flexible";
 
@@ -136,6 +139,8 @@ export interface SelfDirectedLearningSettings {
   minWeeks: number;
   /** 每位學生草稿匣可保留的件數上限（含退回修改；僅限制新增，既有草稿仍可編輯） */
   maxDrafts: number;
+  /** 高中三年最低審核份數（0＝不設定；1–6 份） */
+  minReviewPlans: number;
   /** 校內彈性學習節次行程 */
   slots: FlexibleSlot[];
   /** 開放場域 */
@@ -165,6 +170,7 @@ export const DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS: SelfDirectedLearningSettin
   weekMode: "full",
   minWeeks: 6,
   maxDrafts: 20,
+  minReviewPlans: 0,
   slots: [],
   venues: [],
   venueEditable: true,
@@ -271,6 +277,10 @@ export function normalizeSettings(raw: unknown): SelfDirectedLearningSettings {
     typeof source.maxDrafts === "number" && Number.isInteger(source.maxDrafts)
       ? source.maxDrafts
       : DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS.maxDrafts;
+  const minReviewPlansRaw =
+    typeof source.minReviewPlans === "number" && Number.isInteger(source.minReviewPlans)
+      ? source.minReviewPlans
+      : DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS.minReviewPlans;
   return {
     enabled:
       typeof source.enabled === "boolean"
@@ -284,6 +294,7 @@ export function normalizeSettings(raw: unknown): SelfDirectedLearningSettings {
     weekMode: source.weekMode === "flexible" ? "flexible" : "full",
     minWeeks: Math.min(Math.max(minWeeksRaw, 1), MAX_PLAN_WEEKS),
     maxDrafts: Math.min(Math.max(maxDraftsRaw, 1), MAX_DRAFT_PLANS),
+    minReviewPlans: Math.min(Math.max(minReviewPlansRaw, 0), MAX_MIN_REVIEW_PLANS),
     slots,
     venues: asStringArray(source.venues, 60, 80),
     venueEditable:
@@ -365,6 +376,20 @@ export function parseSettingsInput(raw: unknown): ParseResult {
       value > MAX_DRAFT_PLANS
     ) {
       return { ok: false, message: `草稿匣件數上限必須是 1–${MAX_DRAFT_PLANS} 的整數` };
+    }
+  }
+  if ("minReviewPlans" in body) {
+    const value = body.minReviewPlans;
+    if (
+      typeof value !== "number" ||
+      !Number.isInteger(value) ||
+      value < 0 ||
+      value > MAX_MIN_REVIEW_PLANS
+    ) {
+      return {
+        ok: false,
+        message: `高中三年最低審核份數必須是 0–${MAX_MIN_REVIEW_PLANS} 的整數`,
+      };
     }
   }
   if ("publishAnnouncement" in body && typeof body.publishAnnouncement !== "boolean") {

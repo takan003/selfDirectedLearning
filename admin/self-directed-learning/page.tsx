@@ -7,6 +7,7 @@ import { RichTextEditor } from "../../components/rich-text-editor";
 import {
   DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS,
   MAX_DRAFT_PLANS,
+  MAX_MIN_REVIEW_PLANS,
   WEEKDAY_LABELS,
   openStateOf,
   reviewStateOf,
@@ -130,6 +131,7 @@ export default function SelfDirectedLearningSettingsPage({
   /** 下限週數輸入框的暫存字串：允許清空後重打，失焦時回復現值 */
   const [minWeeksInput, setMinWeeksInput] = useState<string | null>(null);
   const [maxDraftsInput, setMaxDraftsInput] = useState<string | null>(null);
+  const [minReviewPlansInput, setMinReviewPlansInput] = useState<string | null>(null);
 
   /** 班級候選（主程式年段班級設定） */
   const [classOptions, setClassOptions] = useState<ClassOption[]>([]);
@@ -503,6 +505,13 @@ export default function SelfDirectedLearningSettingsPage({
       !Number.isInteger(Number(maxDraftsInput)) ||
       Number(maxDraftsInput) < 1 ||
       Number(maxDraftsInput) > MAX_DRAFT_PLANS);
+  /** 高中三年最低審核份數是否不合法（0–6 的整數） */
+  const minReviewPlansInvalid =
+    minReviewPlansInput !== null &&
+    (minReviewPlansInput.trim() === "" ||
+      !Number.isInteger(Number(minReviewPlansInput)) ||
+      Number(minReviewPlansInput) < 0 ||
+      Number(minReviewPlansInput) > MAX_MIN_REVIEW_PLANS);
 
   /** 重新讀取／儲存設定：標題列（上）與頁尾（下）共用同一組按鈕 */
   const actionButtons = (
@@ -519,13 +528,17 @@ export default function SelfDirectedLearningSettingsPage({
         type="button"
         className="btn-primary btn-theme h-10 px-6 text-sm cursor-pointer disabled:opacity-50"
         onClick={() => void save()}
-        disabled={loading || saving || minWeeksInvalid || maxDraftsInvalid}
+        disabled={
+          loading || saving || minWeeksInvalid || maxDraftsInvalid || minReviewPlansInvalid
+        }
         title={
           minWeeksInvalid
             ? "下限週數超過可寫週數，請先調整"
             : maxDraftsInvalid
               ? `草稿匣件數上限必須是 1–${MAX_DRAFT_PLANS} 的整數`
-              : ""
+              : minReviewPlansInvalid
+                ? `高中三年最低審核份數必須是 0–${MAX_MIN_REVIEW_PLANS} 的整數`
+                : ""
         }
       >
         {saving ? "儲存中…" : "儲存設定"}
@@ -749,6 +762,40 @@ export default function SelfDirectedLearningSettingsPage({
             </label>
             <p className="text-t3 text-xs">
               僅限制新增草稿；已達上限時仍可編輯既有草稿或刪除後再新增。退回修改的計畫也計入件數。
+            </p>
+          </div>
+
+          {/* 高中三年最低審核份數 */}
+          <div className="space-y-2">
+            <span className="text-t1 block text-sm font-medium">高中三年最低審核份數</span>
+            <label className="text-t2 block space-y-1 text-sm">
+              <span>
+                每位學生高中三年至少送出的計畫份數（0–{MAX_MIN_REVIEW_PLANS}；0＝不設定）
+              </span>
+              <input
+                type="number"
+                min={0}
+                max={MAX_MIN_REVIEW_PLANS}
+                className="input-theme w-32 rounded px-3 py-2 text-sm"
+                value={minReviewPlansInput ?? String(settings.minReviewPlans)}
+                onChange={(event) => {
+                  const text = event.target.value;
+                  setMinReviewPlansInput(text);
+                  const parsed = Number(text);
+                  if (
+                    text.trim() !== "" &&
+                    Number.isInteger(parsed) &&
+                    parsed >= 0 &&
+                    parsed <= MAX_MIN_REVIEW_PLANS
+                  ) {
+                    patch({ minReviewPlans: parsed });
+                  }
+                }}
+                onBlur={() => setMinReviewPlansInput(null)}
+              />
+            </label>
+            <p className="text-t3 text-xs">
+              0＝不設定。此設定目前僅保存，作為後續高中三年累計送審進度與檢核的依據。
             </p>
           </div>
         </div>
