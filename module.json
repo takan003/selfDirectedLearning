@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.86",
+    "version": "0.0.87",
     "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -60,6 +60,15 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.87",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "新增「發想新計畫」：學生可隨時在草稿匣建立、編輯與儲存草稿，不受開放撰寫期間或本學期已有正式計畫限制",
+        "送出審核仍須在開放撰寫期間內，且每學期僅能有一件正式計畫、同時僅能有一件審核中；已有正式計畫或審核中計畫時，仍可繼續發想草稿",
+        "相關按鈕與提示文字改為「發想新計畫」，並說明草稿可自由發想、送出才受期限與件數限制"
+      ]
+    },
     {
       "version": "0.0.86",
       "releasedAt": "2026-10-28",

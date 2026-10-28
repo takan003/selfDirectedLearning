@@ -193,7 +193,7 @@ function newPlanDocId(period: string, studentUid: string, now: number): string {
 
 /**
  * 儲存草稿／送出審核。
- * - 未帶 planId＝新增計畫（僅限開放撰寫期間，且同一學期已有正式計畫時不可新增）。
+ * - 未帶 planId＝新增草稿（不限開放期間；送出審核時才檢查期限與每學期件數）。
  * - 帶 planId＝編輯既有草稿（草稿／退回修改可編輯；審核中／已通過不可編輯）。
  * - 同一學期可有多筆草稿，但同時僅能有一件在審核中（送審時檢查）。
  * - 正式計畫（approved）每學期僅一份；送出審核與審核通過時都會檢查。
@@ -243,8 +243,8 @@ export async function saveStudentPlan(input: {
   const approvedElsewhere = studentPlans.find(
     (plan) => plan.period === period && plan.status === "approved" && plan.id !== requestedId
   );
-  if (approvedElsewhere && (!target || input.action === "submit")) {
-    return { ok: false, status: 409, message: "本學期已有正式計畫，無法再新增或送出計畫" };
+  if (approvedElsewhere && input.action === "submit") {
+    return { ok: false, status: 409, message: "本學期已有正式計畫，無法再送出計畫" };
   }
 
   // 同一學期同時僅能有一件計畫在審核中（可保留多筆草稿）
@@ -261,10 +261,6 @@ export async function saveStudentPlan(input: {
       status: 409,
       message: "本學期已有計畫在審核中，請等待審查結果或先抽回該計畫後再送出",
     };
-  }
-
-  if (!target && openStateOf(input.settings, now) !== "open") {
-    return { ok: false, status: 400, message: "目前非開放撰寫期間，無法新增計畫" };
   }
 
   if (input.action === "submit") {

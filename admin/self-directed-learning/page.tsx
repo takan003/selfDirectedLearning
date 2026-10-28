@@ -1291,7 +1291,7 @@ export default function SelfDirectedLearningSettingsPage({
         <div className="space-y-2 px-4 pb-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-t3 text-xs">
-              給學生發起新計畫、編輯草稿時的撰寫說明；可使用工具列格式化與編號清單。
+              給學生發想新計畫、編輯草稿時的撰寫說明；可使用工具列格式化與編號清單。
             </p>
             <button
               type="button"

@@ -141,7 +141,7 @@ export interface SelfDirectedLearningSettings {
   reviewers: ReviewerEntry[];
   /** 自主學習實施說明（給學生、家長的總說明） */
   instructions: string;
-  /** 自主學習計畫撰寫說明（學生發起新計畫或編輯草稿時的撰寫說明） */
+  /** 自主學習計畫撰寫說明（學生發想新計畫或編輯草稿時的撰寫說明） */
   writingInstructions: string;
   /** 儲存設定時是否同步發布（或更新）系統公告（由管理人員勾選，預設不自動發送） */
   publishAnnouncement: boolean;

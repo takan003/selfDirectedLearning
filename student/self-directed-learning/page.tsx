@@ -286,7 +286,7 @@ export default function StudentSelfDirectedLearningPage() {
   const [openDetailPlans, setOpenDetailPlans] = useState<Record<string, boolean>>({});
   /** 學生姓名／班級（列印預覽表頭用） */
   const [studentInfo, setStudentInfo] = useState<StudentInfo | null>(null);
-  /** 撰寫計畫區塊是否展開（預設隱藏；發起新計畫或編輯草稿才顯示） */
+  /** 撰寫計畫區塊是否展開（預設隱藏；發想新計畫或編輯草稿才顯示） */
   const [formOpen, setFormOpen] = useState(false);
   /** 正在編輯的草稿 id；null＝新計畫 */
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
@@ -800,7 +800,7 @@ export default function StudentSelfDirectedLearningPage() {
     rangeValid &&
     !otherSubmittedPlan &&
     !currentApproved;
-  const canStartNew = withinWindow && !currentApproved && !formOpen && !loading;
+  const canStartNew = !formOpen && !loading;
 
   const formActionButtons = (
     <>
@@ -1468,7 +1468,7 @@ export default function StudentSelfDirectedLearningPage() {
                   className="btn-primary btn-theme px-4 py-2 text-sm"
                   onClick={startNewPlan}
                 >
-                  發起新計畫
+                  發想新計畫
                 </button>
               )}
             </div>
@@ -1513,9 +1513,13 @@ export default function StudentSelfDirectedLearningPage() {
                 </span>
               )}
             </div>
-            {currentApproved && (
-              <span className="text-t3 text-xs">本學期已有正式計畫；如需修改請聯絡審核人員。</span>
-            )}
+            {currentApproved || windowState !== "open" ? (
+              <span className="text-t3 text-xs">
+                {currentApproved
+                  ? "本學期已有正式計畫，無法再送出；仍可發想草稿。"
+                  : "仍可發想與儲存草稿；送出審核需在開放期間內。"}
+              </span>
+            ) : null}
           </div>
         </div>
 
@@ -1573,7 +1577,7 @@ export default function StudentSelfDirectedLearningPage() {
 
           {planTab === "drafts" &&
             (draftCount === 0 ? (
-              renderEmptyState("草稿匣目前是空的。", "按「發起新計畫」開始撰寫。")
+              renderEmptyState("草稿匣目前是空的。", "按「發想新計畫」開始撰寫。")
             ) : (
               <div className="space-y-5">
                 {draftPlans.length > 0 &&
@@ -1637,9 +1641,9 @@ export default function StudentSelfDirectedLearningPage() {
                 }
               >
                 {currentApproved
-                  ? "本學期已有通過審核的正式計畫，無法再送出其他計畫。"
+                  ? "本學期已有通過審核的正式計畫，無法再送出其他計畫（仍可儲存草稿）。"
                   : otherSubmittedPlan
-                    ? "本學期已有計畫在審核中：請等待審查結果，或先抽回該計畫後再送出。"
+                    ? "本學期已有計畫在審核中：請等待審查結果，或先抽回該計畫後再送出（仍可儲存草稿）。"
                     : "表單較長，可隨時儲存草稿或送出審核。"}
               </p>
               <div className="flex w-full flex-wrap justify-end gap-3 sm:w-auto">
