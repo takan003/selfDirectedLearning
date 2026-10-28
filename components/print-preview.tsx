@@ -95,7 +95,7 @@ const PRINT_SHEET_STYLES = `
 }
 .sdl-print-meta th,
 .sdl-print-weeks th {
-  background: #f3f4f6;
+  background: #e5e7eb;
   font-weight: 600;
 }
 .sdl-print-weeks th {
@@ -128,7 +128,7 @@ const PRINT_SHEET_STYLES = `
   color: #374151;
 }
 .sdl-print-weeks th.sdl-print-record-title-cell {
-  background: #e5e7eb;
+  background: #f3f4f6;
 }
 .sdl-print-record-body {
   font-size: 12px;

@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.83",
+    "version": "0.0.84",
     "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -60,6 +60,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.84",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "列印預覽表頭底色反轉：一般表頭改為較深的淺灰，融入式的「執行成果紀錄」標題列改為較淺的淺灰"
+      ]
+    },
     {
       "version": "0.0.83",
       "releasedAt": "2026-10-28",
