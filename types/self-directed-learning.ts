@@ -91,8 +91,8 @@ export const MAX_PLAN_WEEKS = 104;
 /** 草稿匣件數上限的硬上限（管理端可設定 1–100 件） */
 export const MAX_DRAFT_PLANS = 100;
 
-/** 高中三年最低自主學習時數的上限（管理端可設定 0–99 小時；0＝不設定） */
-export const MAX_MIN_SELF_DIRECTED_HOURS = 99;
+/** 就學期間（高中三年）學校審查通過最低份數的上限（管理端可設定 0–6 份；0＝不設定） */
+export const MAX_MIN_APPROVED_PLANS = 6;
 
 /** 週數填寫形式：full＝全學期（空白週數都須填寫，週數自動判斷）；flexible＝彈性（至少下限週數） */
 export type WeekMode = "full" | "flexible";
@@ -139,8 +139,8 @@ export interface SelfDirectedLearningSettings {
   minWeeks: number;
   /** 每位學生草稿匣可保留的件數上限（含退回修改；僅限制新增，既有草稿仍可編輯） */
   maxDrafts: number;
-  /** 高中三年最低自主學習時數（0＝不設定；1–99 小時；預設 18） */
-  minSelfDirectedHours: number;
+  /** 就學期間（高中三年）學校審查通過的最低份數（0＝不設定；0–6 份） */
+  minApprovedPlans: number;
   /** 校內彈性學習節次行程 */
   slots: FlexibleSlot[];
   /** 開放場域 */
@@ -170,7 +170,7 @@ export const DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS: SelfDirectedLearningSettin
   weekMode: "full",
   minWeeks: 6,
   maxDrafts: 20,
-  minSelfDirectedHours: 18,
+  minApprovedPlans: 0,
   slots: [],
   venues: [],
   venueEditable: true,
@@ -277,11 +277,10 @@ export function normalizeSettings(raw: unknown): SelfDirectedLearningSettings {
     typeof source.maxDrafts === "number" && Number.isInteger(source.maxDrafts)
       ? source.maxDrafts
       : DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS.maxDrafts;
-  const minSelfDirectedHoursRaw =
-    typeof source.minSelfDirectedHours === "number" &&
-    Number.isInteger(source.minSelfDirectedHours)
-      ? source.minSelfDirectedHours
-      : DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS.minSelfDirectedHours;
+  const minApprovedPlansRaw =
+    typeof source.minApprovedPlans === "number" && Number.isInteger(source.minApprovedPlans)
+      ? source.minApprovedPlans
+      : DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS.minApprovedPlans;
   return {
     enabled:
       typeof source.enabled === "boolean"
@@ -295,9 +294,9 @@ export function normalizeSettings(raw: unknown): SelfDirectedLearningSettings {
     weekMode: source.weekMode === "flexible" ? "flexible" : "full",
     minWeeks: Math.min(Math.max(minWeeksRaw, 1), MAX_PLAN_WEEKS),
     maxDrafts: Math.min(Math.max(maxDraftsRaw, 1), MAX_DRAFT_PLANS),
-    minSelfDirectedHours: Math.min(
-      Math.max(minSelfDirectedHoursRaw, 0),
-      MAX_MIN_SELF_DIRECTED_HOURS
+    minApprovedPlans: Math.min(
+      Math.max(minApprovedPlansRaw, 0),
+      MAX_MIN_APPROVED_PLANS
     ),
     slots,
     venues: asStringArray(source.venues, 60, 80),
@@ -382,17 +381,17 @@ export function parseSettingsInput(raw: unknown): ParseResult {
       return { ok: false, message: `草稿匣件數上限必須是 1–${MAX_DRAFT_PLANS} 的整數` };
     }
   }
-  if ("minSelfDirectedHours" in body) {
-    const value = body.minSelfDirectedHours;
+  if ("minApprovedPlans" in body) {
+    const value = body.minApprovedPlans;
     if (
       typeof value !== "number" ||
       !Number.isInteger(value) ||
       value < 0 ||
-      value > MAX_MIN_SELF_DIRECTED_HOURS
+      value > MAX_MIN_APPROVED_PLANS
     ) {
       return {
         ok: false,
-        message: `高中三年最低自主學習時數必須是 0–${MAX_MIN_SELF_DIRECTED_HOURS} 的整數`,
+        message: `就學期間學校審查通過最低份數必須是 0–${MAX_MIN_APPROVED_PLANS} 的整數`,
       };
     }
   }

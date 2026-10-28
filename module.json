@@ -13,8 +13,8 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.100",
-    "releasedAt": "2026-10-28"
+    "version": "0.0.101",
+    "releasedAt": "2026-10-29"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
   "managerPermissions": [
@@ -62,6 +62,14 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.101",
+      "releasedAt": "2026-10-29",
+      "notes": [
+        "管理規則的「高中三年最低自主學習時數」改為「就學期間，學校審查通過最低份數」（0–6 份，0＝不設定）",
+        "說明改為兩點條列：總綱規定每人至少 18 小時自主學習；學校可要求最低審查通過份數，確保學生做完最低規範"
+      ]
+    },
     {
       "version": "0.0.100",
       "releasedAt": "2026-10-28",
