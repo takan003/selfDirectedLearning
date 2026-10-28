@@ -6,7 +6,7 @@
 地點須在學校規範內。
 
 1. 開發者：[takan003](https://github.com/takan003)（`https://github.com/takan003/selfDirectedLearning`）
-2. 版本：0.0.77（`contractVersion` 1、`minHostVersion` 0.580）
+2. 版本：0.0.100（`contractVersion` 1、`minHostVersion` 0.580）
 3. 四身分入口：管理員（設定與總覽）、學生（填報送審）、教職員（審核／兼導師瀏覽全班）、家長（檢視）
 
 ## 功能摘要
@@ -156,3 +156,5 @@
 
 撰寫前說明書見宿主 `docs/選用功能模組開發者指南.md`；契約規格見
 `docs/主程式模組與功能模組.md`；需求與決策過程見 `docs/開發規劃書.md`。
+
+本模組由 takan003 持續維護，功能建議與問題回報請於模組 repo 開 issue。 
