@@ -1631,10 +1631,10 @@ export default function StudentSelfDirectedLearningPage() {
               <li>
                 每學期只能送審 1 份
                 {settings.minApprovedPlans > 0
-                  ? `；就學期間至少要有 ${settings.minApprovedPlans} 份經學校審查通過。`
-                  : "。"}
+                  ? `；就學期間至少要有 ${settings.minApprovedPlans} 份經學校審查通過`
+                  : ""}
+                ；送審依學校公告的審核期間。
               </li>
-              <li>送審要在開放期間內，審核依學校公告的審核期間。</li>
               {draftLimitReached && (
                 <li className="text-danger">
                   草稿匣已滿（{settings.maxDrafts} 件），請先刪除不需要的草稿。
