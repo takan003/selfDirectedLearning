@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.93",
+    "version": "0.0.94",
     "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -62,6 +62,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.94",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "「高中三年最低審核份數」的說明改為：依高級中等學校總綱規定，每位學生須完成至少 18 小時的自主學習，建議設定至少審核 1 份"
+      ]
+    },
     {
       "version": "0.0.93",
       "releasedAt": "2026-10-28",

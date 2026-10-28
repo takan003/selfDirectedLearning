@@ -652,7 +652,7 @@ export default function SelfDirectedLearningSettingsPage({
               />
             </label>
             <p className="text-t3 text-xs">
-              0＝不設定。此設定目前僅保存，作為後續高中三年累計送審進度與檢核的依據。
+              依高級中等學校總綱規定，每位學生須完成至少18小時的自主學習，建議設定至少審核1份。
             </p>
           </div>
 
