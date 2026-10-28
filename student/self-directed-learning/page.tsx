@@ -1624,21 +1624,20 @@ export default function StudentSelfDirectedLearningPage() {
               )}
             </div>
             <ul className="text-t3 list-disc space-y-0.5 pl-4 text-xs">
-              <li>學生可先擬訂計畫；尚未完成的可暫存在「草稿匣」，隨時可以繼續編輯。</li>
-              <li>計畫完成後，可自行提升為「正式計畫」；個人可同時擁有多份正式計畫。</li>
+              <li>計畫可先存在「草稿匣」慢慢寫，完成後提升為「正式計畫」（可同時有多份）。</li>
               <li>
-                成為正式計畫後，該週規劃時間過了即可填寫「執行成果紀錄」；最後一週結束後可填寫「學習反思心得」。
+                正式計畫的規劃時間過了，就能寫「執行成果紀錄」；最後一週結束後，還能寫「學習反思心得」。
               </li>
               <li>
+                每學期只能送審 1 份
                 {settings.minApprovedPlans > 0
-                  ? `學校規定就學期間至少需 ${settings.minApprovedPlans} 份正式計畫經審查通過。`
-                  : "學校目前未設定最低審查份數（0＝不設定）。"}
+                  ? `；就學期間至少要有 ${settings.minApprovedPlans} 份經學校審查通過。`
+                  : "。"}
               </li>
-              <li>送審需在學校開放的撰寫期間內；審核依學校設定的審核期間辦理。</li>
-              <li>每學期僅能送審 1 份正式計畫（模組固定規則）。</li>
+              <li>送審要在開放期間內，審核依學校公告的審核期間。</li>
               {draftLimitReached && (
                 <li className="text-danger">
-                  草稿匣已達上限（{settings.maxDrafts} 件，含退回修改），請先刪除不需要的草稿或請管理員調整上限。
+                  草稿匣已滿（{settings.maxDrafts} 件），請先刪除不需要的草稿。
                 </li>
               )}
             </ul>
