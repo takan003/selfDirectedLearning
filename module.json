@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.84",
+    "version": "0.0.85",
     "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -60,6 +60,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.85",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "修正富文本編輯器：空內容按下項目符號／編號清單等結構功能後，提示語仍顯示並蓋住清單符號的問題；內容含清單、引用等結構時即隱藏提示語"
+      ]
+    },
     {
       "version": "0.0.84",
       "releasedAt": "2026-10-28",
