@@ -26,6 +26,7 @@ import {
   type PlanTiming,
   type PlanWeek,
   type PlanReview,
+  type PrintLayout,
   type PrintPreviewPayload,
   type RecordWindow,
   type SelfDirectedLearningPlan,
@@ -279,6 +280,8 @@ export default function StudentSelfDirectedLearningPage() {
   const [recordsBusy, setRecordsBusy] = useState<string | null>(null);
   /** 是否展開所有「執行成果紀錄」編輯區（預設收合，避免版面過長） */
   const [recordsExpanded, setRecordsExpanded] = useState(false);
+  /** 列印預覽成果紀錄呈現方式（分開式／融入式） */
+  const [printLayout, setPrintLayout] = useState<PrintLayout>("separate");
   /** 已展開「查看計畫與撰寫成果」的計畫（浮動按鈕只在展開時出現） */
   const [openDetailPlans, setOpenDetailPlans] = useState<Record<string, boolean>>({});
   /** 學生姓名／班級（列印預覽表頭用） */
@@ -657,12 +660,14 @@ export default function StudentSelfDirectedLearningPage() {
       learningGoals: plan ? plan.learningGoals : draft.learningGoals,
       reflection: plan?.reflection ?? "",
       source: plan ? "approved" : "draft",
+      layout: printLayout,
       generatedAt: Date.now(),
       weeks: weeks.map((week) => {
         const scheduleRow = weekScheduleByNo.get(week.week);
         const slots = scheduleRow?.slots ?? [];
         return {
           week: week.week,
+          timing: week.timing,
           content: week.content,
           venue: week.venue,
           slots: slots.map((slot) => ({
@@ -1011,6 +1016,37 @@ export default function StudentSelfDirectedLearningPage() {
         >
           預覽列印（計畫與成果）
         </button>
+        <div
+          role="group"
+          aria-label="列印成果紀錄呈現方式"
+          className="border border-themed bg-card text-t1 flex flex-wrap items-center gap-3 rounded px-3 py-2 text-xs"
+        >
+          <span className="text-t3">列印方式</span>
+          <label
+            className="flex cursor-pointer items-center gap-1"
+            title="執行成果紀錄另列於表格下方"
+          >
+            <input
+              type="checkbox"
+              className="h-3.5 w-3.5"
+              checked={printLayout === "separate"}
+              onChange={() => setPrintLayout("separate")}
+            />
+            分開式
+          </label>
+          <label
+            className="flex cursor-pointer items-center gap-1"
+            title="執行成果紀錄融入當週學習安排"
+          >
+            <input
+              type="checkbox"
+              className="h-3.5 w-3.5"
+              checked={printLayout === "integrated"}
+              onChange={() => setPrintLayout("integrated")}
+            />
+            融入式
+          </label>
+        </div>
         <button
           type="button"
           className="btn-theme rounded px-4 py-2 text-xs"

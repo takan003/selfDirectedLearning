@@ -2,10 +2,17 @@
 
 import {
   WEEKDAY_LABELS,
+  type PlanTiming,
   type PrintPreviewPayload,
   type PrintPreviewWeek,
 } from "../types/self-directed-learning";
 import { RichTextContent } from "./rich-text-editor";
+
+/** 表格內的時段短標籤（與計畫表週次欄一致） */
+const TIMING_SHORT_LABELS: Record<PlanTiming, string> = {
+  flexible: "彈性學習",
+  afterSchool: "課餘",
+};
 
 /** 學期識別（如 115-1）轉為易讀文字 */
 function periodText(period: string): string {
@@ -105,6 +112,22 @@ const PRINT_SHEET_STYLES = `
   font-weight: 600;
   white-space: nowrap;
 }
+.sdl-print-timing {
+  margin-top: 2px;
+  font-size: 11px;
+  color: #374151;
+}
+.sdl-print-record {
+  margin-top: 6px;
+  padding-top: 4px;
+  border-top: 1px dashed #9ca3af;
+}
+.sdl-print-record-title {
+  margin: 0 0 2px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #374151;
+}
 .sdl-print-slots {
   margin-top: 2px;
   font-size: 11px;
@@ -198,6 +221,7 @@ const PRINT_SHEET_STYLES = `
 `;
 
 export function PrintPreviewSheet({ payload }: { payload: PrintPreviewPayload }) {
+  const layout = payload.layout;
   return (
     <div className="sdl-print-sheet">
       <style>{PRINT_SHEET_STYLES}</style>
@@ -251,6 +275,9 @@ export function PrintPreviewSheet({ payload }: { payload: PrintPreviewPayload })
               <tr key={week.week}>
                 <td>
                   <div className="sdl-print-week">第 {week.week} 週</div>
+                  <div className="sdl-print-timing">
+                    {TIMING_SHORT_LABELS[week.timing] ?? week.timing}
+                  </div>
                   {week.slots.length === 0 ? (
                     <div className="sdl-print-slots">—</div>
                   ) : (
@@ -281,6 +308,12 @@ export function PrintPreviewSheet({ payload }: { payload: PrintPreviewPayload })
                   ) : (
                     <RichTextContent html={week.content} className="text-sm" />
                   )}
+                  {layout === "integrated" && week.record && (
+                    <div className="sdl-print-record">
+                      <p className="sdl-print-record-title">執行成果紀錄</p>
+                      <RichTextContent html={week.record} className="text-sm" />
+                    </div>
+                  )}
                 </td>
                 <td>{week.venue || "—"}</td>
               </tr>
@@ -289,7 +322,7 @@ export function PrintPreviewSheet({ payload }: { payload: PrintPreviewPayload })
         </tbody>
       </table>
 
-      {payload.weeks.some((week) => week.record) && (
+      {layout === "separate" && payload.weeks.some((week) => week.record) && (
         <>
           <h2 className="sdl-print-section">執行成果紀錄</h2>
           <table className="sdl-print-weeks">

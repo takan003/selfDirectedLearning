@@ -21,6 +21,7 @@ function isPreviewPayload(value: unknown): value is PrintPreviewPayload {
     typeof payload.generatedAt !== "number" ||
     (payload.reflection !== undefined && typeof payload.reflection !== "string") ||
     (payload.source !== undefined && payload.source !== "draft" && payload.source !== "approved") ||
+    (payload.layout !== "separate" && payload.layout !== "integrated") ||
     !Array.isArray(payload.weeks)
   ) {
     return false;
@@ -30,6 +31,7 @@ function isPreviewPayload(value: unknown): value is PrintPreviewPayload {
     const week = item as Record<string, unknown>;
     if (
       typeof week.week !== "number" ||
+      (week.timing !== "flexible" && week.timing !== "afterSchool") ||
       typeof week.content !== "string" ||
       typeof week.venue !== "string" ||
       typeof week.blocked !== "boolean" ||

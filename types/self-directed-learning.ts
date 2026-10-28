@@ -475,6 +475,8 @@ export interface PrintPreviewSlot {
 
 export interface PrintPreviewWeek {
   week: number;
+  /** 安排時段（與計畫表週次欄一致，列印時顯示短標籤） */
+  timing: PlanTiming;
   content: string;
   venue: string;
   slots: PrintPreviewSlot[];
@@ -482,6 +484,9 @@ export interface PrintPreviewWeek {
   /** 該週執行成果紀錄（富文本；未填寫＝空字串） */
   record: string;
 }
+
+/** 列印預覽成果紀錄呈現方式：separate＝表格下方另列、integrated＝融入當週學習安排 */
+export type PrintLayout = "separate" | "integrated";
 
 /** 列印預覽內容（目前編輯中的草稿；不必先儲存） */
 export interface PrintPreviewPayload {
@@ -497,6 +502,8 @@ export interface PrintPreviewPayload {
   reflection: string;
   /** 來源：draft＝撰寫中的草稿、approved＝已通過的計畫與執行成果紀錄 */
   source: "draft" | "approved";
+  /** 執行成果紀錄呈現方式（分開式／融入式） */
+  layout: PrintLayout;
   generatedAt: number;
   weeks: PrintPreviewWeek[];
 }

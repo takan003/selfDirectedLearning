@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.77",
+    "version": "0.0.78",
     "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -60,6 +60,14 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.78",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "「預覽列印（計畫與成果）」按鈕旁新增列印方式選項：可勾選「分開式」（預設，執行成果紀錄另列於表格下方）或「融入式」（執行成果紀錄直接併入當週學習安排），按預覽列印時依選項輸出",
+        "列印預覽的週次欄比照計畫表，補上時段短標籤（彈性學習／課餘），與日期、節次分行顯示"
+      ]
+    },
     {
       "version": "0.0.77",
       "releasedAt": "2026-10-28",
