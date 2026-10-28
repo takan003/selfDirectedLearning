@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.78",
+    "version": "0.0.79",
     "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -60,6 +60,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.79",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "融入式的執行成果紀錄改為跨「學習安排／場地」兩欄的獨立列：標題列使用實線框線與底色，成果內容另列於下方"
+      ]
+    },
     {
       "version": "0.0.78",
       "releasedAt": "2026-10-28",
