@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.80",
+    "version": "0.0.81",
     "releasedAt": "2026-10-28"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -60,6 +60,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.81",
+      "releasedAt": "2026-10-28",
+      "notes": [
+        "列印預覽的表頭改為水平、垂直皆置中：基本資料列標題（學生、班級、主題、學群、指導老師、學習目標）與週次表頭（週次／日期／節次、學習安排、場地）"
+      ]
+    },
     {
       "version": "0.0.80",
       "releasedAt": "2026-10-28",

@@ -100,10 +100,13 @@ const PRINT_SHEET_STYLES = `
 }
 .sdl-print-weeks th {
   text-align: center;
+  vertical-align: middle;
 }
 .sdl-print-meta th {
   width: 14%;
   white-space: nowrap;
+  text-align: center;
+  vertical-align: middle;
 }
 .sdl-print-weeks thead {
   display: table-header-group;
@@ -127,6 +130,7 @@ const PRINT_SHEET_STYLES = `
   font-weight: 600;
   color: #111827;
   text-align: center;
+  vertical-align: middle;
 }
 .sdl-print-weeks td.sdl-print-record-title-cell {
   text-align: center;
