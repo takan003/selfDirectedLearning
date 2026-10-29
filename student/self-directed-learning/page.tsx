@@ -1657,20 +1657,17 @@ export default function StudentSelfDirectedLearningPage() {
             </div>
             <ul className="text-t3 list-disc space-y-0.5 pl-4 text-xs">
               <li>
-                計畫可先存在「草稿匣」慢慢寫（不受送審期間限制）；完成後可提升為「正式計畫」，
-                自行提升的正式計畫可同時有多份；學校審核通過的正式計畫每學期僅 1 份。
+                草稿可慢慢寫，完成後再轉為「正式計畫」；學校審核通過的正式計畫，每學期僅 1 份。
               </li>
               <li>
-                正式計畫（學校審核通過或自行提升）且屬本學期，該週規劃時間過了才能寫「執行成果紀錄」；
-                最後一週結束後可寫「學習反思心得」；學校審核通過的計畫須在成果撰寫截止時間前完成，
-                自行提升者不受截止時間限制。
+                正式計畫須等該週結束後才能寫「執行成果紀錄」，全部週次結束後才能寫「學習反思心得」。
               </li>
               <li>
-                每學期只能送審 1 份計畫；第一次送出後只能重送同一份（退回或抽回都算已送審）
+                每學期僅能送審 1 份，送出後只能重送同一份
                 {settings.minApprovedPlans > 0
-                  ? `；就學期間至少要有 ${settings.minApprovedPlans} 份經學校審查通過`
+                  ? `；就學期間至少需 ${settings.minApprovedPlans} 份經學校審查通過`
                   : ""}
-                ；送出須在學校公告的送審期間內。
+                ；送審須在公告期間內。
               </li>
               {draftLimitReached && (
                 <li className="text-danger">
