@@ -310,6 +310,11 @@ export default function StudentSelfDirectedLearningPage() {
   const [purgeTarget, setPurgeTarget] = useState<SelfDirectedLearningPlan | null>(null);
   /** 準備提升為正式計畫的草稿／審核中計畫 */
   const [promoteTarget, setPromoteTarget] = useState<SelfDirectedLearningPlan | null>(null);
+  /** 提升前檢核未通過：列出未填寫欄位並阻止提升 */
+  const [promoteBlocked, setPromoteBlocked] = useState<{
+    plan: SelfDirectedLearningPlan;
+    issues: string[];
+  } | null>(null);
   const formSectionRef = useRef<HTMLElement | null>(null);
 
   const editingPlan = editingPlanId
@@ -396,6 +401,41 @@ export default function StudentSelfDirectedLearningPage() {
     () => new Map(weekSchedule.map((row) => [row.week, row])),
     [weekSchedule]
   );
+  /** 提升為正式前的必填檢核：列出尚未填寫的欄位（空陣列＝可提升） */
+  const promoteIssuesOf = (plan: SelfDirectedLearningPlan): string[] => {
+    const issues: string[] = [];
+    if (!plan.topic.trim()) issues.push("主題");
+    if (!plan.studyGroup.trim()) issues.push("學群");
+    if (!stripHtmlToText(plan.learningGoals).trim()) issues.push("學習目標");
+    if (plan.weeks.length === 0) {
+      issues.push("逐週課程安排");
+    } else {
+      if (settings.weekMode === "flexible" && plan.weeks.length < settings.minWeeks) {
+        issues.push(
+          `逐週課程安排（至少 ${settings.minWeeks} 週，目前 ${plan.weeks.length} 週）`
+        );
+      }
+      if (settings.weekMode === "full" && fullWeeks !== null && plan.weeks.length !== fullWeeks) {
+        issues.push(`逐週課程安排（須填滿 ${fullWeeks} 週，目前 ${plan.weeks.length} 週）`);
+      }
+      const writableWeeks = plan.weeks.filter(
+        (week) => weekScheduleByNo.get(week.week)?.writable !== false
+      );
+      const missingContent = writableWeeks
+        .filter((week) => !stripHtmlToText(week.content).trim())
+        .map((week) => week.week);
+      if (missingContent.length > 0) {
+        issues.push(`第 ${missingContent.join("、")} 週的學習內容`);
+      }
+      const missingVenue = writableWeeks
+        .filter((week) => !week.venue.trim())
+        .map((week) => week.week);
+      if (missingVenue.length > 0) {
+        issues.push(`第 ${missingVenue.join("、")} 週的場地`);
+      }
+    }
+    return issues;
+  };
   /** 列印預覽分頁與最近一次送出的預覽內容 */
   const previewWindowRef = useRef<Window | null>(null);
   const printPayloadRef = useRef<PrintPreviewPayload | null>(null);
@@ -1222,7 +1262,14 @@ export default function StudentSelfDirectedLearningPage() {
                   style={{ color: "var(--primary)", borderColor: "var(--primary)" }}
                   disabled={busy}
                   title="提升後可立即按時填寫成果；學校審核仍會保留"
-                  onClick={() => setPromoteTarget(plan)}
+                  onClick={() => {
+                    const issues = promoteIssuesOf(plan);
+                    if (issues.length > 0) {
+                      setPromoteBlocked({ plan, issues });
+                      return;
+                    }
+                    setPromoteTarget(plan);
+                  }}
                 >
                   提升為正式
                 </button>
@@ -2369,6 +2416,54 @@ export default function StudentSelfDirectedLearningPage() {
               >
                 {planBusy === promoteTarget.id ? "提升中…" : "提升為正式"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {promoteBlocked && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          style={{ backgroundColor: "color-mix(in srgb, var(--bg) 75%, transparent)" }}
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="sdl-promote-blocked-title"
+        >
+          <div className="border-themed bg-card w-full max-w-md rounded-lg border p-5 shadow-lg">
+            <p id="sdl-promote-blocked-title" className="text-danger text-base font-semibold">
+              尚未填寫完成，無法提升為正式計畫
+            </p>
+            <p className="text-t2 mt-2 text-sm">
+              《{promoteBlocked.plan.topic || "（未命名計畫）"}》還有下列欄位未填寫：
+            </p>
+            <ul className="text-t2 mt-2 list-disc space-y-1 pl-5 text-sm">
+              {promoteBlocked.issues.map((issue) => (
+                <li key={issue}>{issue}</li>
+              ))}
+            </ul>
+            <p className="text-t3 mt-2 text-xs">請先按「編輯」補齊並儲存，再提升為正式計畫。</p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                className="btn-theme px-4 py-2 text-sm"
+                onClick={() => setPromoteBlocked(null)}
+              >
+                知道了
+              </button>
+              {(promoteBlocked.plan.status === "draft" ||
+                promoteBlocked.plan.status === "returned") && (
+                <button
+                  type="button"
+                  className="btn-primary btn-theme px-4 py-2 text-sm"
+                  onClick={() => {
+                    const plan = promoteBlocked.plan;
+                    setPromoteBlocked(null);
+                    startEditPlan(plan);
+                  }}
+                >
+                  前往編輯
+                </button>
+              )}
             </div>
           </div>
         </div>
