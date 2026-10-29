@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.116",
+    "version": "0.0.117",
     "releasedAt": "2026-10-29"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -62,6 +62,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.117",
+      "releasedAt": "2026-10-29",
+      "notes": [
+        "學生端「我的計畫」改為一次只能展開一份計畫：開啟某份「查看計畫與撰寫成果」時，其他已展開的計畫會自動收合，避免同時出現兩份展開內容"
+      ]
+    },
     {
       "version": "0.0.116",
       "releasedAt": "2026-10-29",

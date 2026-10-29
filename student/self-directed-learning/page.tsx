@@ -284,7 +284,7 @@ export default function StudentSelfDirectedLearningPage() {
   const [recordsExpanded, setRecordsExpanded] = useState(false);
   /** 列印預覽成果紀錄呈現方式（分開式／融入式） */
   const [printLayout, setPrintLayout] = useState<PrintLayout>("separate");
-  /** 已展開「查看計畫與撰寫成果」的計畫（浮動按鈕只在展開時出現） */
+  /** 已展開「查看計畫與撰寫成果」的計畫（同一時間只會有一份；浮動按鈕只在展開時出現） */
   const [openDetailPlans, setOpenDetailPlans] = useState<Record<string, boolean>>({});
   /** 自主學習實施說明是否展開（開啟撰寫表單時自動收合） */
   const [instructionsOpen, setInstructionsOpen] = useState(true);
@@ -1434,9 +1434,12 @@ export default function StudentSelfDirectedLearningPage() {
           open={!formOpen && Boolean(openDetailPlans[plan.id])}
           onToggle={(event) => {
             const open = event.currentTarget.open;
-            setOpenDetailPlans((prev) =>
-              prev[plan.id] === open ? prev : { ...prev, [plan.id]: open }
-            );
+            setOpenDetailPlans((prev) => {
+              // 同一時間只允許一份計畫展開：開啟時清掉其他計畫的展開狀態
+              if (open) return { [plan.id]: true };
+              if (!prev[plan.id]) return prev;
+              return { ...prev, [plan.id]: false };
+            });
           }}
         >
           <summary className="text-t2 flex cursor-pointer items-center gap-1 text-xs">
