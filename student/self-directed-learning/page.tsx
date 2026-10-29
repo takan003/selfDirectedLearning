@@ -975,7 +975,7 @@ export default function StudentSelfDirectedLearningPage() {
         : "var(--t3)";
   /** 草稿匣（含退回修改）是否已達管理端設定上限 */
   const draftLimitReached = draftCount >= settings.maxDrafts;
-  /** 文件匣（審核中＋已通過＋自主提升）是否已達管理端設定上限；編輯中的計畫已占位時不重複計算 */
+  /** 文件匣（審核中＋已通過＋自行提升）是否已達管理端設定上限；編輯中的計畫已占位時不重複計算 */
   const editingDocumentCount =
     editingPlan && (isFormalPlan(editingPlan) || editingPlan.status === "submitted") ? 1 : 0;
   const documentLimitReached =
@@ -1302,7 +1302,7 @@ export default function StudentSelfDirectedLearningPage() {
                   className="border-themed bg-card text-success rounded-full border px-2 py-0.5 text-xs"
                   title="學生自行提升為正式；學校審核仍會保留，退回不影響正式狀態"
                 >
-                  正式（自主提升）
+                  正式（自行提升）
                 </span>
               )}
             </div>
@@ -1858,7 +1858,7 @@ export default function StudentSelfDirectedLearningPage() {
                   renderPlanGroup("正式計畫（學校通過）", approvedPlans, {}, "")}
                 {selfPromotedPlans.length > 0 &&
                   renderPlanGroup(
-                    "正式計畫（自主提升）",
+                    "正式計畫（自行提升）",
                     selfPromotedPlans,
                     { editable: !formOpen, trashable: !formOpen },
                     ""

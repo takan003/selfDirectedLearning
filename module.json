@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.110",
+    "version": "0.0.111",
     "releasedAt": "2026-10-29"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -62,6 +62,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.111",
+      "releasedAt": "2026-10-29",
+      "notes": [
+        "統一用語：學生端與家長端的「自主提升」一律改為「自行提升」，避免與「自主學習」混淆。"
+      ]
+    },
     {
       "version": "0.0.110",
       "releasedAt": "2026-10-29",
