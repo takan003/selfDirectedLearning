@@ -1857,8 +1857,8 @@ export default function StudentSelfDirectedLearningPage() {
             })}
           </div>
           <p className="text-t3 text-xs">
-            文件匣、草稿匣的可保存份數上限由學校設定（目前 文件匣 {settings.maxDocumentPlans} 份、
-            草稿匣 {settings.maxDrafts} 份）；垃圾桶最多保留 {TRASH_RETENTION_DAYS} 天，逾期自動刪除。
+            文件匣、草稿匣的可保存份數為 文件匣 {settings.maxDocumentPlans} 份、草稿匣{" "}
+            {settings.maxDrafts} 份；垃圾桶最多保留 {TRASH_RETENTION_DAYS} 天，逾期自動刪除。
           </p>
 
           {planTab === "documents" &&
