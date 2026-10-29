@@ -19,6 +19,7 @@ import {
   PRINT_PREVIEW_DATA,
   PRINT_PREVIEW_READY,
   STUDY_GROUPS,
+  TRASH_RETENTION_DAYS,
   WEEKDAY_LABELS,
   openStateOf,
   stripHtmlToText,
@@ -1827,6 +1828,12 @@ export default function StudentSelfDirectedLearningPage() {
                   : tab.key === "drafts"
                     ? draftCount
                     : trashedPlans.length;
+              const hint =
+                tab.key === "documents"
+                  ? `文件匣：正式與審核中的計畫，上限 ${settings.maxDocumentPlans} 份（學校設定）`
+                  : tab.key === "drafts"
+                    ? `草稿匣：草稿與退回修改，上限 ${settings.maxDrafts} 份（學校設定）`
+                    : `垃圾桶：最多保留 ${TRASH_RETENTION_DAYS} 天，逾期自動刪除`;
               return (
                 <button
                   key={tab.key}
@@ -1839,6 +1846,7 @@ export default function StudentSelfDirectedLearningPage() {
                       : "text-t2 border-transparent hover:text-t1"
                   }`}
                   style={active ? { borderBottomColor: "var(--primary)" } : undefined}
+                  title={hint}
                   onClick={() => setPlanTab(tab.key)}
                 >
                   <span className={active ? "text-primary" : "text-t3"}>{tab.icon}</span>
@@ -1848,6 +1856,10 @@ export default function StudentSelfDirectedLearningPage() {
               );
             })}
           </div>
+          <p className="text-t3 text-xs">
+            文件匣、草稿匣的可保存份數上限由學校設定（目前 文件匣 {settings.maxDocumentPlans} 份、
+            草稿匣 {settings.maxDrafts} 份）；垃圾桶最多保留 {TRASH_RETENTION_DAYS} 天，逾期自動刪除。
+          </p>
 
           {planTab === "documents" &&
             (documentCount === 0 ? (
