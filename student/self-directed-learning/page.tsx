@@ -312,9 +312,12 @@ export default function StudentSelfDirectedLearningPage() {
   const [promoteTarget, setPromoteTarget] = useState<SelfDirectedLearningPlan | null>(null);
   /** 提升前檢核未通過：列出未填寫欄位並阻止提升 */
   const [promoteBlocked, setPromoteBlocked] = useState<{
-    plan: SelfDirectedLearningPlan;
+    planId: string | null;
+    planName: string;
     issues: string[];
   } | null>(null);
+  /** 表單內「提升為正式」進行中 */
+  const [formPromoting, setFormPromoting] = useState(false);
   const formSectionRef = useRef<HTMLElement | null>(null);
 
   const editingPlan = editingPlanId
@@ -402,7 +405,9 @@ export default function StudentSelfDirectedLearningPage() {
     [weekSchedule]
   );
   /** 提升為正式前的必填檢核：列出尚未填寫的欄位（空陣列＝可提升） */
-  const promoteIssuesOf = (plan: SelfDirectedLearningPlan): string[] => {
+  const promoteIssuesOf = (
+    plan: Pick<SelfDirectedLearningPlan, "topic" | "studyGroup" | "learningGoals" | "weeks">
+  ): string[] => {
     const issues: string[] = [];
     if (!plan.topic.trim()) issues.push("主題");
     if (!plan.studyGroup.trim()) issues.push("學群");
@@ -791,6 +796,58 @@ export default function StudentSelfDirectedLearningPage() {
     }
   };
 
+  /** 表單內「提升為正式」：先檢核目前填寫內容，通過後儲存再提升 */
+  const promoteFromForm = async () => {
+    if (!editingPlan || saving !== null || formPromoting || planBusy !== null) return;
+    const issues = promoteIssuesOf(draft);
+    if (issues.length > 0) {
+      setPromoteBlocked({
+        planId: editingPlan.id,
+        planName: draft.topic.trim() || "（未命名計畫）",
+        issues,
+      });
+      return;
+    }
+    setFormPromoting(true);
+    setSaving("save");
+    try {
+      const saveResponse = await fetch("/api/student/self-directed-learning", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "save", draft, planId: editingPlanId ?? undefined }),
+      });
+      const saveData = await saveResponse.json();
+      const saved = saveData.plan as SelfDirectedLearningPlan | undefined;
+      if (!saveResponse.ok || !saveData.success || !saved) {
+        setToast({ kind: "error", text: saveData.message || "儲存失敗，無法提升" });
+        return;
+      }
+      const promoteResponse = await fetch("/api/student/self-directed-learning", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "promote", planId: saved.id }),
+      });
+      const promoteData = await promoteResponse.json();
+      if (!promoteResponse.ok || !promoteData.success) {
+        setToast({ kind: "error", text: promoteData.message || "提升失敗" });
+        return;
+      }
+      setFormOpen(false);
+      setEditingPlanId(null);
+      setPlanTab("documents");
+      setToast({
+        kind: "success",
+        text: promoteData.message || "已提升為正式計畫，可開始按時填寫成果",
+      });
+      await load();
+    } catch {
+      setToast({ kind: "error", text: "提升失敗" });
+    } finally {
+      setSaving(null);
+      setFormPromoting(false);
+    }
+  };
+
   /** 假性刪除／還原：只影響草稿與退回修改，正式與審核中的計畫由伺服器擋下 */
   const changePlanDeleted = async (plan: SelfDirectedLearningPlan, deleted: boolean) => {
     if (planBusy) return;
@@ -923,6 +980,10 @@ export default function StudentSelfDirectedLearningPage() {
     editingPlan && (isFormalPlan(editingPlan) || editingPlan.status === "submitted") ? 1 : 0;
   const documentLimitReached =
     documentCount - editingDocumentCount >= settings.maxDocumentPlans;
+  /** 提升檢核未通過時對應的計畫（供「前往編輯」使用） */
+  const promoteBlockedPlan = promoteBlocked?.planId
+    ? plans.find((plan) => plan.id === promoteBlocked.planId) ?? null
+    : null;
   const canSubmit =
     withinWindow &&
     !locked &&
@@ -944,6 +1005,25 @@ export default function StudentSelfDirectedLearningPage() {
       >
         {saving === "save" ? "儲存中…" : "儲存草稿"}
       </button>
+      {editingPlan &&
+        (editingPlan.status === "draft" || editingPlan.status === "returned") &&
+        !isFormalPlan(editingPlan) &&
+        editingPlan.period === currentPeriod && (
+          <button
+            type="button"
+            className="btn-theme px-6 py-3 text-base"
+            style={{ color: "var(--primary)", borderColor: "var(--primary)" }}
+            disabled={locked || saving !== null || loading || documentLimitReached}
+            onClick={() => void promoteFromForm()}
+            title={
+              documentLimitReached
+                ? `文件匣已達上限（${settings.maxDocumentPlans} 件，含審核中與已通過）`
+                : "檢核必填欄位後，儲存並提升為正式計畫"
+            }
+          >
+            {formPromoting ? "提升中…" : "提升為正式"}
+          </button>
+        )}
       <button
         type="button"
         className="btn-primary btn-theme px-6 py-3 text-base"
@@ -1265,7 +1345,11 @@ export default function StudentSelfDirectedLearningPage() {
                   onClick={() => {
                     const issues = promoteIssuesOf(plan);
                     if (issues.length > 0) {
-                      setPromoteBlocked({ plan, issues });
+                      setPromoteBlocked({
+                        planId: plan.id,
+                        planName: plan.topic || "（未命名計畫）",
+                        issues,
+                      });
                       return;
                     }
                     setPromoteTarget(plan);
@@ -2434,14 +2518,14 @@ export default function StudentSelfDirectedLearningPage() {
               尚未填寫完成，無法提升為正式計畫
             </p>
             <p className="text-t2 mt-2 text-sm">
-              《{promoteBlocked.plan.topic || "（未命名計畫）"}》還有下列欄位未填寫：
+              《{promoteBlocked.planName}》還有下列欄位未填寫：
             </p>
             <ul className="text-t2 mt-2 list-disc space-y-1 pl-5 text-sm">
               {promoteBlocked.issues.map((issue) => (
                 <li key={issue}>{issue}</li>
               ))}
             </ul>
-            <p className="text-t3 mt-2 text-xs">請先按「編輯」補齊並儲存，再提升為正式計畫。</p>
+            <p className="text-t3 mt-2 text-xs">請先補齊並儲存後，再提升為正式計畫。</p>
             <div className="mt-4 flex justify-end gap-2">
               <button
                 type="button"
@@ -2450,13 +2534,12 @@ export default function StudentSelfDirectedLearningPage() {
               >
                 知道了
               </button>
-              {(promoteBlocked.plan.status === "draft" ||
-                promoteBlocked.plan.status === "returned") && (
+              {promoteBlockedPlan && promoteBlockedPlan.id !== editingPlanId && (
                 <button
                   type="button"
                   className="btn-primary btn-theme px-4 py-2 text-sm"
                   onClick={() => {
-                    const plan = promoteBlocked.plan;
+                    const plan = promoteBlockedPlan;
                     setPromoteBlocked(null);
                     startEditPlan(plan);
                   }}

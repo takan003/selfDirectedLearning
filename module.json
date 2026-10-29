@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.109",
+    "version": "0.0.110",
     "releasedAt": "2026-10-29"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -62,6 +62,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.110",
+      "releasedAt": "2026-10-29",
+      "notes": [
+        "撰寫計畫表單新增「提升為正式」按鈕：先檢核目前填寫內容的必填欄位，通過後自動儲存並提升；有缺漏同樣以 modal 列出並阻止。"
+      ]
+    },
     {
       "version": "0.0.109",
       "releasedAt": "2026-10-29",
