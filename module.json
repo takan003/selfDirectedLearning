@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.117",
+    "version": "0.0.118",
     "releasedAt": "2026-10-29"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -52,7 +52,8 @@
     "self_directed_learning_plan_restored",
     "self_directed_learning_plan_self_approved",
     "self_directed_learning_plan_purged",
-    "self_directed_learning_plan_records_saved"
+    "self_directed_learning_plan_records_saved",
+    "self_directed_learning_plan_parent_visibility_changed"
   ],
   "dataCollections": [
     "selfDirectedLearningSettings",
@@ -62,6 +63,15 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.118",
+      "releasedAt": "2026-10-29",
+      "notes": [
+        "新增「家長檢視」開關：學生的每一份正式計畫（學校通過或自行提升）都可自行決定是否讓家長看到，學生端計畫卡片提供「隱藏家長檢視／開放家長檢視」按鈕，並在隱藏時顯示「家長不可見」標記",
+        "家長端只會顯示學生開放的計畫；若子女有計畫但全部設為不開放，改為提示「子女目前未將自主學習計畫開放給家長檢視」",
+        "計畫新增 `parentVisible` 欄位（預設 true，舊資料視為開放），並新增稽核動作 `self_directed_learning_plan_parent_visibility_changed`"
+      ]
+    },
     {
       "version": "0.0.117",
       "releasedAt": "2026-10-29",

@@ -895,6 +895,33 @@ export default function StudentSelfDirectedLearningPage() {
     }
   };
 
+  /** 設定某一份正式計畫是否讓家長檢視 */
+  const setParentVisibility = async (plan: SelfDirectedLearningPlan, visible: boolean) => {
+    if (planBusy) return;
+    setPlanBusy(plan.id);
+    try {
+      const response = await fetch("/api/student/self-directed-learning", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "parentVisibility", planId: plan.id, visible }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        setToast({ kind: "error", text: data.message || "設定失敗" });
+        return;
+      }
+      setToast({
+        kind: "success",
+        text: data.message || (visible ? "已開放家長檢視" : "已取消家長檢視"),
+      });
+      await load();
+    } catch {
+      setToast({ kind: "error", text: "設定失敗" });
+    } finally {
+      setPlanBusy(null);
+    }
+  };
+
   /** 永久刪除垃圾桶中的計畫（不可復原；連同審查紀錄） */
   const purgePlan = async (plan: SelfDirectedLearningPlan) => {
     if (planBusy) return;
@@ -1322,6 +1349,14 @@ export default function StudentSelfDirectedLearningPage() {
                   正式（自行提升）
                 </span>
               )}
+              {isFormalPlan(plan) && plan.parentVisible === false && (
+                <span
+                  className="border-themed bg-card text-t3 rounded-full border px-2 py-0.5 text-xs"
+                  title="家長端不會顯示這份計畫"
+                >
+                  家長不可見
+                </span>
+              )}
             </div>
             <p className="text-t3 text-xs">
               {periodText(plan.period)}・{plan.studyGroup || "未填學群"}・指導老師：
@@ -1375,6 +1410,30 @@ export default function StudentSelfDirectedLearningPage() {
                   提升為正式
                 </button>
               )}
+            {isFormalPlan(plan) && (
+              <button
+                type="button"
+                className="btn-theme rounded px-3 py-1.5 text-xs"
+                style={
+                  plan.parentVisible === false
+                    ? { color: "var(--primary)", borderColor: "var(--primary)" }
+                    : undefined
+                }
+                disabled={busy}
+                title={
+                  plan.parentVisible === false
+                    ? "目前家長看不到這份計畫，點此開放檢視"
+                    : "目前家長看得到這份計畫，點此隱藏"
+                }
+                onClick={() => void setParentVisibility(plan, plan.parentVisible === false)}
+              >
+                {busy
+                  ? "處理中…"
+                  : plan.parentVisible === false
+                    ? "開放家長檢視"
+                    : "隱藏家長檢視"}
+              </button>
+            )}
             {options.editable && (plan.status === "draft" || plan.status === "returned") && (
               <button
                 type="button"
