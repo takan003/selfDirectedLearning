@@ -1224,6 +1224,9 @@ export default function StudentSelfDirectedLearningPage() {
   ) => {
     const review = reviews[plan.id];
     const busy = planBusy === plan.id;
+    /** 學生自行提升為正式：流程狀態仍是草稿／退回，但畫面不再標示「草稿」，避免與正式標籤互相矛盾 */
+    const selfPromoted = isFormalPlan(plan) && plan.status !== "approved";
+    const showStatusBadge = !(selfPromoted && plan.status !== "submitted");
     /** 已通過且為本學期的計畫：在「查看計畫與撰寫成果」上下提供成果操作按鈕 */
     const showRecordActions = isFormalPlan(plan) && plan.period === currentPeriod;
     const recordActionButtons = (target: SelfDirectedLearningPlan) => (
@@ -1291,13 +1294,15 @@ export default function StudentSelfDirectedLearningPage() {
               <h4 className="text-t1 text-base font-semibold break-words">
                 {plan.topic || "（未命名草稿）"}
               </h4>
-              <span
-                className={`border-themed bg-card rounded-full border px-2 py-0.5 text-xs ${statusClass(
-                  plan.status
-                )}`}
-              >
-                {PLAN_STATUS_LABELS[plan.status]}
-              </span>
+              {showStatusBadge && (
+                <span
+                  className={`border-themed bg-card rounded-full border px-2 py-0.5 text-xs ${statusClass(
+                    plan.status
+                  )}`}
+                >
+                  {PLAN_STATUS_LABELS[plan.status]}
+                </span>
+              )}
               {isFormalPlan(plan) && plan.status !== "approved" && (
                 <span
                   className="border-themed bg-card text-success rounded-full border px-2 py-0.5 text-xs"
