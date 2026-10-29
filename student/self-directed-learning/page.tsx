@@ -286,6 +286,8 @@ export default function StudentSelfDirectedLearningPage() {
   const [printLayout, setPrintLayout] = useState<PrintLayout>("separate");
   /** 已展開「查看計畫與撰寫成果」的計畫（浮動按鈕只在展開時出現） */
   const [openDetailPlans, setOpenDetailPlans] = useState<Record<string, boolean>>({});
+  /** 自主學習實施說明是否展開（開啟撰寫表單時自動收合） */
+  const [instructionsOpen, setInstructionsOpen] = useState(true);
   /** 學生姓名／班級（列印預覽表頭用） */
   const [studentInfo, setStudentInfo] = useState<StudentInfo | null>(null);
   /** 撰寫計畫區塊是否展開（預設隱藏；發想新計畫或編輯草稿才顯示） */
@@ -616,7 +618,15 @@ export default function StudentSelfDirectedLearningPage() {
     });
   };
 
+  /** 開啟撰寫表單時，收合上方所有已展開的區塊（實施說明、計畫詳情與成果編輯區），讓表單成為唯一焦點 */
+  const collapseSectionsAboveForm = () => {
+    setInstructionsOpen(false);
+    setOpenDetailPlans({});
+    setRecordsExpanded(false);
+  };
+
   const startNewPlan = () => {
+    collapseSectionsAboveForm();
     setEditingPlanId(null);
     setCustomStudyGroup(false);
     setCustomVenueWeeks(new Set());
@@ -642,6 +652,7 @@ export default function StudentSelfDirectedLearningPage() {
 
   const startEditPlan = (plan: SelfDirectedLearningPlan) => {
     if (plan.status !== "draft" && plan.status !== "returned") return;
+    collapseSectionsAboveForm();
     setEditingPlanId(plan.id);
     setCustomStudyGroup(
       plan.studyGroup !== "" && !(STUDY_GROUPS as readonly string[]).includes(plan.studyGroup)
@@ -1420,6 +1431,7 @@ export default function StudentSelfDirectedLearningPage() {
 
         <details
           className="border-themed border-t pt-2"
+          open={!formOpen && Boolean(openDetailPlans[plan.id])}
           onToggle={(event) => {
             const open = event.currentTarget.open;
             setOpenDetailPlans((prev) =>
@@ -1698,7 +1710,13 @@ export default function StudentSelfDirectedLearningPage() {
       {stripHtmlToText(settings.instructions).trim() && (
         <div className="overflow-hidden rounded-lg border border-themed bg-card shadow-sm">
           <div className="bg-primary" style={{ height: "0.25rem" }} />
-          <details open>
+          <details
+            open={instructionsOpen && !formOpen}
+            onToggle={(event) => {
+              const open = event.currentTarget.open;
+              setInstructionsOpen(open);
+            }}
+          >
             <summary className="text-t1 border-themed bg-surface flex cursor-pointer items-start justify-between gap-3 border-b px-5 py-4">
               <span className="flex items-start gap-3">
                 <span className="text-primary mt-0.5">
