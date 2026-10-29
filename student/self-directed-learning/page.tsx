@@ -1038,7 +1038,7 @@ export default function StudentSelfDirectedLearningPage() {
         )}
       <button
         type="button"
-        className="btn-primary btn-theme px-6 py-3 text-base"
+        className="btn-primary px-6 py-3 text-base"
         disabled={!canSubmit || loading}
         onClick={() => void submit("submit")}
         title={
@@ -1289,7 +1289,7 @@ export default function StudentSelfDirectedLearningPage() {
         </button>
         <button
           type="button"
-          className="btn-primary btn-theme rounded px-4 py-2 text-xs disabled:opacity-50"
+          className="btn-primary rounded px-4 py-2 text-xs disabled:opacity-50"
           disabled={recordsBusy === target.id || !canSaveRecordsOf(target)}
           onClick={() => void saveRecords(target)}
         >
@@ -1756,15 +1756,26 @@ export default function StudentSelfDirectedLearningPage() {
               {canStartNew && (
                 <button
                   type="button"
-                  className="btn-primary btn-theme px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                  className="btn-primary inline-flex items-center gap-2 rounded px-4 py-2.5 text-sm font-medium shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
                   onClick={startNewPlan}
                   disabled={draftLimitReached}
                   title={
                     draftLimitReached
                       ? `草稿匣已達上限（${settings.maxDrafts} 件，含退回修改）`
-                      : ""
+                      : "建立新的自主學習計畫草稿"
                   }
                 >
+                  <svg
+                    className="h-4 w-4 shrink-0"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
                   發想新計畫
                 </button>
               )}
@@ -2440,7 +2451,7 @@ export default function StudentSelfDirectedLearningPage() {
               </button>
               <button
                 type="button"
-                className="btn-primary btn-theme px-4 py-2 text-sm"
+                className="btn-primary px-4 py-2 text-sm"
                 onClick={() => {
                   applyWeekRange(rangeSwap.start, rangeSwap.end);
                   setRangeSwap(null);
@@ -2529,7 +2540,7 @@ export default function StudentSelfDirectedLearningPage() {
               </button>
               <button
                 type="button"
-                className="btn-primary btn-theme px-4 py-2 text-sm"
+                className="btn-primary px-4 py-2 text-sm"
                 disabled={planBusy !== null}
                 onClick={() => void promotePlan(promoteTarget)}
               >
@@ -2572,7 +2583,7 @@ export default function StudentSelfDirectedLearningPage() {
               {promoteBlockedPlan && promoteBlockedPlan.id !== editingPlanId && (
                 <button
                   type="button"
-                  className="btn-primary btn-theme px-4 py-2 text-sm"
+                  className="btn-primary px-4 py-2 text-sm"
                   onClick={() => {
                     const plan = promoteBlockedPlan;
                     setPromoteBlocked(null);
