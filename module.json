@@ -13,7 +13,7 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.119",
+    "version": "0.0.120",
     "releasedAt": "2026-10-31"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
@@ -63,6 +63,15 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.120",
+      "releasedAt": "2026-10-31",
+      "notes": [
+        "學生「發想新計畫」改為自由發想：可安排 6–21 週、週次依序第 1～N 週，不綁學校行事曆、不檢核衝堂，也不再顯示日期與節次",
+        "送出審核時才依現行學校規範自動補齊或調整週數（全學期形式補足學期總週數、彈性形式補足下限並以學期總週數為上限），再檢核每週學習安排與場地",
+        "計畫詳情與列印預覽同步移除日期／節次欄位；管理端設定與成果紀錄開放時間維持不變"
+      ]
+    },
     {
       "version": "0.0.119",
       "releasedAt": "2026-10-31",
