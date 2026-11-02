@@ -129,9 +129,14 @@ export const MAINTENANCE_HINT =
   "本功能正在維護資料，期間暫停填報與檢視，開放時間將另行公告。";
 
 /** selfDirectedLearningSettings/global 單文件設定 */
+export const DOCUMENT_EXPORT_LABELS = { googleDocs: "Google Docs", canva: "Canva", word: "Word" } as const;
+export type DocumentExportPlatform = keyof typeof DOCUMENT_EXPORT_LABELS;
+export type DocumentExportServices = Record<DocumentExportPlatform, boolean>;
+
 export interface SelfDirectedLearningSettings {
   /** 功能總開關（false＝關閉維護中：學生／教職員／家長只見維護說明，寫入 API 一律擋下） */
   enabled: boolean;
+  documentExports: DocumentExportServices;
   /** 送審期間開始（epoch ms；null＝尚未設定；僅限制送出審核，草稿與正式建立不受限） */
   openAt: number | null;
   /** 送審期間截止（epoch ms；null＝尚未設定；僅限制送出審核） */
@@ -173,6 +178,7 @@ export interface SelfDirectedLearningSettings {
 
 export const DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS: SelfDirectedLearningSettings = {
   enabled: true,
+  documentExports: { googleDocs: false, canva: false, word: false },
   openAt: null,
   closeAt: null,
   reviewStartAt: null,
@@ -238,6 +244,8 @@ function asReviewerStudents(value: unknown): ReviewerStudentRef[] {
 /** 讀 Firestore 原始資料後正規化（防欄位缺漏／型別損毀） */
 export function normalizeSettings(raw: unknown): SelfDirectedLearningSettings {
   const source = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const exports = source.documentExports && typeof source.documentExports === "object"
+    ? source.documentExports as Record<string, unknown> : {};
   const slots: FlexibleSlot[] = Array.isArray(source.slots)
     ? source.slots
         .map((item): FlexibleSlot | null => {
@@ -298,6 +306,11 @@ export function normalizeSettings(raw: unknown): SelfDirectedLearningSettings {
       ? source.minApprovedPlans
       : DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS.minApprovedPlans;
   return {
+    documentExports: {
+      googleDocs: exports.googleDocs === true,
+      canva: exports.canva === true,
+      word: exports.word === true,
+    },
     enabled:
       typeof source.enabled === "boolean"
         ? source.enabled
@@ -347,6 +360,14 @@ export type ParseResult = { ok: true; value: SelfDirectedLearningSettings } | { 
 export function parseSettingsInput(raw: unknown): ParseResult {
   if (!raw || typeof raw !== "object") return { ok: false, message: "請求內容格式錯誤" };
   const body = raw as Record<string, unknown>;
+  if ("documentExports" in body) {
+    const services = body.documentExports;
+    if (!services || typeof services !== "object" || Array.isArray(services) ||
+      Object.keys(DOCUMENT_EXPORT_LABELS).some((key) =>
+        !(key in services) || typeof (services as Record<string, unknown>)[key] !== "boolean")) {
+      return { ok: false, message: "文件匯出服務開關格式錯誤" };
+    }
+  }
   const openAt = asEpoch(body.openAt);
   const closeAt = asEpoch(body.closeAt);
   const reviewStartAt = asEpoch(body.reviewStartAt);

@@ -883,7 +883,7 @@ export default function StudentSelfDirectedLearningPage() {
 
   const formActionButtons = (
     <>
-      <DocumentExportControls getPayload={() => buildPreviewPayload(undefined, true)} onToast={setToast} />
+      <DocumentExportControls services={settings.documentExports} getPayload={() => buildPreviewPayload(undefined, true)} onToast={setToast} />
       <button
         type="button"
         className="btn-theme px-6 py-3 text-base"
@@ -1117,7 +1117,7 @@ export default function StudentSelfDirectedLearningPage() {
     const showRecordActions = isFormalPlan(plan) && plan.period === currentPeriod;
     const recordActionButtons = (target: SelfDirectedLearningPlan) => (
       <div className="mt-2 flex flex-wrap justify-end gap-2">
-        <DocumentExportControls getPayload={() => buildPreviewPayload(target, true)} onToast={setToast} />
+        <DocumentExportControls services={settings.documentExports} getPayload={() => buildPreviewPayload(target, true)} onToast={setToast} />
         <button
           type="button"
           className="btn-theme rounded px-4 py-2 text-xs"

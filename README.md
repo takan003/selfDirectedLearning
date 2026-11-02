@@ -6,10 +6,19 @@
 指導教師；送出審核時才依學校現行規範調整週數並檢核場地等必填項目。
 
 1. 開發者：[takan003](https://github.com/takan003)（`https://github.com/takan003/selfDirectedLearning`）
-2. 版本：0.0.121（`contractVersion` 1、`minHostVersion` 0.580）
+2. 版本：0.0.128（`contractVersion` 1、`minHostVersion` 0.580）
 3. 四身分入口：管理員（設定與總覽）、學生（填報送審）、教職員（審核／兼導師瀏覽全班）、家長（檢視）
 
 ## 功能摘要
+
+1. **文件下載／匯出服務開關**：管理規則頁可分別設定 Google Docs、Canva、Word，
+   按「儲存設定」持久化；新安裝及舊設定缺少欄位時一律預設關閉。學生編輯與成果匯出的
+   選單只列出開放服務，全部關閉時不顯示匯出控制，原列印功能保留。
+   Word 提供真正的 .docx 下載，不需外部帳號或憑證。啟用 Google Docs／Canva 前仍須完成下方平台設定。
+1. **開關檢查**：線上平台開啟匯出對話框時重新核對設定，Google Docs 在授權後、傳送內容前再核對；
+   Canva 授權、回呼、匯入與工作查詢均檢查開關。沿用既有設定快取與儲存後失效機制。
+   已送往外部平台的工作及既有副本不會因關閉而撤銷；Google token 為瀏覽器直接取得，
+   此開關控制本網站的匯出流程，不是撤銷 Google 帳號授權。
 
 1. **管理端**（`/admin/self-directed-learning`）：「管理規則」頁設定功能總開關（關閉即全站
    維護中）、送審起訖（僅限制送出審核，草稿與正式建立不受限）、審核起訖（審核頁顯示期限、剩餘天數與逾期提醒，僅供督促、逾期仍可審核）、週數填寫形式（全學期全填／彈性下限）、下限週數、
@@ -144,13 +153,22 @@
 
 ## Google Docs 匯出（第一階段）
 
+管理規則頁提供預設收合的「Google Docs／Canva 匯出：啟用準備與設定」，
+供管理人員查閱平台後台、環境變數、本機與正式回呼、常見問題及上線驗收清單；
+此區只顯示通用說明，不讀取、顯示或儲存部署憑證。
+
 1. 學生撰寫表單與正式計畫的成果操作列提供「匯出格式／平台」下拉選單，選擇 Google Docs
-   後按「匯出」。目前僅開放 Google Docs，Canva、Word 為後續階段；預覽列印與成果分開式／
+   後按「匯出」。另提供 Canva 匯入與 Word（.docx）下載；預覽列印與成果分開式／
    融入式保留，匯出亦沿用目前選擇的呈現方式。
-1. 每次匯出須確認資料傳送並主動選擇自己的 Google 帳號；建立的是當下的可編輯副本，
+1. 每次 Google Docs 匯出須確認資料傳送並主動選擇自己的 Google 帳號；建立的是當下的可編輯副本，
    包含畫面中尚未儲存的計畫、逐週成果及心得。外部編輯不回寫校內、不改變審核狀態、
    不自動公開分享；每次重做會建立新文件，請保留成功視窗中的文件連結或於自己的 Drive 查找。
-1. 保留基本文字格式及表格，Google 轉檔後字型、分頁可能不同；不保證與列印預覽逐頁相同。
+1. 匯出確認視窗提供「文件風格」下拉選單：基本款（接近網頁內容，不加裝飾配色）、
+   清爽正式（預設，深藍標題與淺藍表頭）、黑白簡約（灰階、方便列印）、
+   作品集（深綠配色與較多留白）。各風格保留相同內容、基本文字格式及可編輯表格，
+   沿用成果分開式／融入式；不另提供剪貼簿按鈕。
+   既有文件不會自動更新，需重新匯出建立新版副本。
+   Google 轉檔後字型、分頁可能不同；不保證與列印預覽逐頁相同。
    校內不保存 Google 文件網址或憑證，未新增 Firestore 讀寫。存取 token 僅在此次操作的
    記憶體中使用，不寫入 cookie、瀏覽器儲存空間或校內伺服器。
 
@@ -170,6 +188,8 @@
    不要求讀取整個 Drive；不儲存 refresh token。
 1. 學校 Workspace 若限制第三方應用程式，須由管理員允許此用戶端及權限；
    使用者拒絕授權、學校封鎖、未啟用 API 或 popup 被擋時，系統會明確顯示失敗，不改下載其他格式。
+1. Google 拒絕建立文件時，會依原因顯示簡短中文處理提示，區分 API 未啟用、空間不足、
+   權限不足、學校政策或配額問題，不顯示原始長訊息或錯誤代碼。
 1. 網路中斷、逾時或異常回應不自動重試，以免重複建立。請先檢查自己的 Google Drive，
    確認是否已有副本後再決定是否重做；分享設定沿用 Google／學校政策，程式不修改 permissions。
 
@@ -181,6 +201,65 @@
 回歸測試（工作區根目錄執行，不連線 Google、不使用真實學生資料）：
 `node selfDirectedLearning\scripts\test-document-export.mjs`。
 主程式不在相鄰目錄時，於指令最後加上主程式絕對路徑。
+
+## Word 下載（第三階段）
+
+1. 管理人員在「文件下載／匯出服務」開啟 Word 並儲存，學生重新載入頁面，
+   選擇「Word（.docx）」、按「匯出」，選擇四種文件風格之一，再按「下載 Word（.docx）」。
+   不需 Microsoft、Google 或 Canva 帳號授權；三個服務開關仍預設全部關閉。
+1. 下載為原生 OOXML／ZIP 格式，不是改副檔名的 HTML。包含學生姓名、班級、計畫、
+   逐週安排、成果及心得與畫面中尚未儲存的內容，支援成果分開式／融入式。
+   保留基本粗斜體、底線、刪除線、換行與可編輯表格；清單轉為項目文字，
+   不保證保留所有原始字型、文字顏色與分頁，請用 Word 或相容軟體確認。
+1. 校內伺服器即時產生並回傳，不另存匯出內容、不傳送第三方、不更動原計畫。
+   檔名會移除不適合下載的控制字元與特殊符號；收到成功提示後請查看瀏覽器下載項目。
+   身分、模組與 Word 開關於下載請求時驗證，另有 CSRF、請求大小及限流限制。
+   Word 不另發下載前的檢查請求；連線失敗會顯示中文提示並保留下載按鈕供手動重試。
+
+## Canva 匯出（第二階段）
+
+1. 在相同的「匯出格式／平台」選單選 Canva，選擇文件風格並確認資料傳送後，按
+   「授權 Canva 並匯入」。登入自己的 Canva 帳號並同意權限，返回原視窗等待匯入，
+   完成後按「開啟 Canva 設計」。若 Canva 產生多份設計，會逐一提供連結。
+1. Canva 不接受 HTML 匯入，因此由後端將此次快照產生為標準 DOCX，再以官方
+   Design import API 上傳；保留基本粗體、斜體、底線、刪除線、換行與可編輯表格，
+   清單轉為項目文字。四種風格提供基礎配色與字級，不保證 Canva 保留全部原始富文字樣式、
+   字型與分頁；Google Docs、Word 下載與校內列印不受影響。
+1. 不自動公開分享、不回寫校內，也不額外讀取或儲存計畫文件。既有登入與模組啟用檢查
+   沿用宿主。授權碼僅供後端交換；secret、access token 不回傳前端 JSON、不記錄到 log。
+   PKCE verifier、token、工作識別以使用者及用途綁定的加密 HttpOnly／SameSite=Lax cookie
+   暫存，最多 10 分鐘（HTTPS 使用 Secure），不保存 refresh token、不新增 Firestore 集合。
+
+<details>
+<summary>Canva 開發者與部署設定</summary>
+
+1. 在 [Canva Developer Portal](https://www.canva.com/developers/) 建立應用程式，
+   啟用 Outside Canva 的 Canva REST APIs；公開讓學生使用前，依 Canva 當時規定完成
+   審核／發布與測試人員設定。Private 應用程式有 Enterprise 團隊限制，不等同一般校內網站。
+1. Scopes 只選 `design:content:write`。Redirect URLs 加入
+   `http://127.0.0.1:3000/api/student/self-directed-learning/canva/callback`。
+   本機請從 `http://127.0.0.1:3000` 開啟網站並重新登入；
+   不要從 localhost 開始後回到 127.0.0.1，兩者 cookie 不共用。
+   伺服器以 Host／代理來源標頭核對 origin，避免 Next.js 正規化 loopback URL 造成誤判。
+1. 在宿主 `.env.local` 設定 `CANVA_CLIENT_ID`、`CANVA_CLIENT_SECRET`、
+   `CANVA_REDIRECT_URI`，後者須與 Developer Portal 的回呼網址完全一致。
+   不使用 `NEXT_PUBLIC_` 前綴，不提交 secret；修改後重啟 dev server，部署時重建。
+   並確保宿主 `SESSION_SECRET` 至少 32 字元，供用途隔離的 cookie 加密金鑰衍生。
+1. 正式環境改為學校 HTTPS origin 加上相同回呼路徑；授權起點與回呼須同 origin。
+   若原有 Google 登入需支援本機 127.0.0.1，亦須在該供應者允許該來源，
+   或使用既有帳密登入。Google Docs 的用戶端 JavaScript 來源設定與 Canva 分開。
+1. 授權等待最多 3 分鐘，可按取消；匯入送出後最多輪詢 2 分鐘，期間不重送匯入。
+   逾時／斷網／未知結果時先查看自己的 Canva 專案，再決定是否重新匯出，避免重複建立。
+   授權有效期短，逾時請重新操作；同一瀏覽器請勿同時進行多個 Canva 匯出。
+1. 所有匯入與查詢走後端固定 Canva API 網址，無須放寬宿主 CSP；
+   不提供公開文件下載 URL，不額外列出學生既有設計。文件快照上限 1 MB、53 週。
+
+</details>
+
+參考：[Canva OAuth](https://www.canva.dev/docs/apps/rest-apis/authentication/)、
+[Design import](https://www.canva.dev/docs/apps/rest-apis/reference/design-imports/)。
+回歸測試沿用上方 `test-document-export.mjs`，使用合成資料與模擬 Canva API，
+不以學生資料自動呼叫外部服務。
 
 ## 開發環境
 
