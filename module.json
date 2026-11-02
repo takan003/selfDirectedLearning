@@ -13,8 +13,8 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.120",
-    "releasedAt": "2026-10-31"
+    "version": "0.0.121",
+    "releasedAt": "2026-11-02"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
   "managerPermissions": [
@@ -63,6 +63,15 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.121",
+      "releasedAt": "2026-11-02",
+      "notes": [
+        "新增匯出格式／平台下拉選單，第一階段提供 Google Docs；Canva 與 Word 顯示為後續階段，原列印功能保留。",
+        "學生確認資料傳送並授權自己的 Google 帳號後，建立可編輯文件副本，包含計畫、逐週成果及心得與尚未儲存的內容；不公開分享、不回寫校內資料。",
+        "採 drive.file 最小權限、token 僅供本次使用，提供取消授權、權限不足、網路及逾時的明確錯誤，附回歸測試與 Google Cloud 設定說明。"
+      ]
+    },
     {
       "version": "0.0.120",
       "releasedAt": "2026-10-31",

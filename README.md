@@ -6,7 +6,7 @@
 指導教師；送出審核時才依學校現行規範調整週數並檢核場地等必填項目。
 
 1. 開發者：[takan003](https://github.com/takan003)（`https://github.com/takan003/selfDirectedLearning`）
-2. 版本：0.0.106（`contractVersion` 1、`minHostVersion` 0.580）
+2. 版本：0.0.121（`contractVersion` 1、`minHostVersion` 0.580）
 3. 四身分入口：管理員（設定與總覽）、學生（填報送審）、教職員（審核／兼導師瀏覽全班）、家長（檢視）
 
 ## 功能摘要
@@ -141,6 +141,46 @@
    形式與全學期／下限週數、文件匣與草稿匣件數上限、就學期間學校審查通過最低份數、節次行程、場域、審核人員與說明並儲存（儲存即同步公告與行事曆）。
 4. 草稿可隨時發想；送出審核需在送審期間內。教職員審核資格來自第 3 步的審核人員名單（管理員恆可審）。
    總開關關閉期間，非管理端一律只見「目前此功能關閉維護中」，資料不受影響。
+
+## Google Docs 匯出（第一階段）
+
+1. 學生撰寫表單與正式計畫的成果操作列提供「匯出格式／平台」下拉選單，選擇 Google Docs
+   後按「匯出」。目前僅開放 Google Docs，Canva、Word 為後續階段；預覽列印與成果分開式／
+   融入式保留，匯出亦沿用目前選擇的呈現方式。
+1. 每次匯出須確認資料傳送並主動選擇自己的 Google 帳號；建立的是當下的可編輯副本，
+   包含畫面中尚未儲存的計畫、逐週成果及心得。外部編輯不回寫校內、不改變審核狀態、
+   不自動公開分享；每次重做會建立新文件，請保留成功視窗中的文件連結或於自己的 Drive 查找。
+1. 保留基本文字格式及表格，Google 轉檔後字型、分頁可能不同；不保證與列印預覽逐頁相同。
+   校內不保存 Google 文件網址或憑證，未新增 Firestore 讀寫。存取 token 僅在此次操作的
+   記憶體中使用，不寫入 cookie、瀏覽器儲存空間或校內伺服器。
+
+<details>
+<summary>Google Cloud 設定與故障排除</summary>
+
+1. 使用主程式既有的 `NEXT_PUBLIC_GOOGLE_CLIENT_ID`（OAuth 網頁應用程式用戶端 ID，
+   不是 client secret）；沿用 Google 登入的用戶端即可，但登入權限不等於 Drive 權限。
+   設定公開環境變數後須重新啟動開發伺服器或重建部署。
+1. 在該用戶端所屬 Google Cloud 專案啟用 **Google Drive API**。
+   本階段使用 Drive 的 HTML 匯入轉 Google 文件，不需要另外啟用 Google Docs API。
+1. OAuth 用戶端的「已授權的 JavaScript 來源」加入實際網站 origin（本機為
+   `http://localhost:3000`）；此流程採 Google Identity Services token model，不需要新增
+   OAuth callback route 或 redirect URI。
+1. OAuth 同意畫面加入 `https://www.googleapis.com/auth/drive.file`，依 Google 規定設定
+   應用程式受眾、發布狀態、測試使用者與必要的驗證。僅請求此應用程式建立／開啟之檔案權限，
+   不要求讀取整個 Drive；不儲存 refresh token。
+1. 學校 Workspace 若限制第三方應用程式，須由管理員允許此用戶端及權限；
+   使用者拒絕授權、學校封鎖、未啟用 API 或 popup 被擋時，系統會明確顯示失敗，不改下載其他格式。
+1. 網路中斷、逾時或異常回應不自動重試，以免重複建立。請先檢查自己的 Google Drive，
+   確認是否已有副本後再決定是否重做；分享設定沿用 Google／學校政策，程式不修改 permissions。
+
+</details>
+
+參考：[GIS token model](https://developers.google.com/identity/oauth2/web/guides/use-token-model)、
+[Drive 匯入轉檔](https://developers.google.com/workspace/drive/api/guides/manage-uploads#import_to_google_docs_types)。
+
+回歸測試（工作區根目錄執行，不連線 Google、不使用真實學生資料）：
+`node selfDirectedLearning\scripts\test-document-export.mjs`。
+主程式不在相鄰目錄時，於指令最後加上主程式絕對路徑。
 
 ## 開發環境
 

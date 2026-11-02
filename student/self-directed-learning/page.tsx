@@ -6,6 +6,7 @@ import AdSense from "@/components/AdSense";
 import Copyright from "@/components/Copyright";
 import Toast, { type ToastMessage } from "@/components/Toast";
 import DisclosureArrow from "@/components/DisclosureArrow";
+import DocumentExportControls from "../../components/document-export-controls";
 import { RichTextContent, RichTextEditor } from "../../components/rich-text-editor";
 import { fetchSettings } from "@/lib/settings-client";
 import { logout } from "@/lib/session";
@@ -577,7 +578,10 @@ export default function StudentSelfDirectedLearningPage() {
    * - 不帶參數＝目前撰寫中的草稿（含尚未儲存的變更）
    * - 帶入計畫＝已通過的計畫內容＋執行成果紀錄＋學習反思心得
    */
-  const openPrintPreview = (plan?: SelfDirectedLearningPlan) => {
+  const buildPreviewPayload = (
+    plan?: SelfDirectedLearningPlan,
+    includeUnsavedRecords = false
+  ): PrintPreviewPayload => {
     const weeks = plan ? plan.weeks : draft.weeks;
     const payload: PrintPreviewPayload = {
       period: plan?.period || currentPeriod,
@@ -587,7 +591,9 @@ export default function StudentSelfDirectedLearningPage() {
       studyGroup: plan ? plan.studyGroup : draft.studyGroup,
       advisor: plan ? plan.advisor : draft.advisor,
       learningGoals: plan ? plan.learningGoals : draft.learningGoals,
-      reflection: plan?.reflection ?? "",
+      reflection: plan && includeUnsavedRecords
+        ? reflectionDrafts[plan.id] ?? plan.reflection
+        : plan?.reflection ?? "",
       source: plan ? "approved" : "draft",
       formalByStudent: Boolean(plan?.selfApprovedAt && plan.status !== "approved"),
       layout: printLayout,
@@ -599,9 +605,15 @@ export default function StudentSelfDirectedLearningPage() {
         venue: week.venue,
         slots: [],
         blocked: false,
-        record: plan?.executionRecords.find((item) => item.week === week.week)?.note ?? "",
+        record: (plan && includeUnsavedRecords ? recordDrafts[plan.id]?.[week.week] : undefined)
+          ?? plan?.executionRecords.find((item) => item.week === week.week)?.note ?? "",
       })),
     };
+    return payload;
+  };
+
+  const openPrintPreview = (plan?: SelfDirectedLearningPlan) => {
+    const payload = buildPreviewPayload(plan);
     printPayloadRef.current = payload;
     const preview = window.open("/student/self-directed-learning/print", "_blank");
     if (!preview) {
@@ -871,6 +883,7 @@ export default function StudentSelfDirectedLearningPage() {
 
   const formActionButtons = (
     <>
+      <DocumentExportControls getPayload={() => buildPreviewPayload(undefined, true)} onToast={setToast} />
       <button
         type="button"
         className="btn-theme px-6 py-3 text-base"
@@ -1104,6 +1117,7 @@ export default function StudentSelfDirectedLearningPage() {
     const showRecordActions = isFormalPlan(plan) && plan.period === currentPeriod;
     const recordActionButtons = (target: SelfDirectedLearningPlan) => (
       <div className="mt-2 flex flex-wrap justify-end gap-2">
+        <DocumentExportControls getPayload={() => buildPreviewPayload(target, true)} onToast={setToast} />
         <button
           type="button"
           className="btn-theme rounded px-4 py-2 text-xs"
