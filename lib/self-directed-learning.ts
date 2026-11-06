@@ -1,8 +1,9 @@
 import "server-only";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { listCalendarEvents } from "@/lib/calendar";
+import { getSchoolClassesSetting, getSchoolPeriodsSetting, getSchoolSpaceStructure } from "@/lib/module-host-data";
 import { cachedRead, invalidateReadCache } from "@/lib/read-cache";
-import { getCacheTtlSeconds, getCurrentPeriod } from "@/lib/settings-server";
+import { getCacheTtlSeconds, getCurrentPeriod, readSystemDoc } from "@/lib/settings-server";
 import { isActiveEntry, loadPeriodEntries } from "@/lib/roster";
 import {
   DEFAULT_SELF_DIRECTED_LEARNING_SETTINGS,
@@ -32,104 +33,6 @@ function settingsRef() {
   return getAdminDb()
     .collection(SELF_DIRECTED_LEARNING_SETTINGS_COLLECTION)
     .doc(SELF_DIRECTED_LEARNING_SETTINGS_DOC_ID);
-}
-
-/** 主程式課表作息的預設上課星期（週一至週五） */
-const DEFAULT_SCHOOL_DAYS = [1, 2, 3, 4, 5] as const;
-const PERIOD_TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
-
-interface RawSchoolPeriodRow {
-  code: string;
-  period: number;
-  name: string;
-  /** 開始 `HH:MM` */
-  start: string;
-  /** 結束 `HH:MM` */
-  end: string;
-}
-
-/** 課表作息內建預設（與主程式一致：每日八節＋午休；文件不存在時使用） */
-const DEFAULT_PERIODS: RawSchoolPeriodRow[] = [
-  { code: "P1", period: 1, name: "第一節", start: "08:00", end: "08:50" },
-  { code: "P2", period: 2, name: "第二節", start: "09:20", end: "10:10" },
-  { code: "P3", period: 3, name: "第三節", start: "10:20", end: "11:10" },
-  { code: "P4", period: 4, name: "第四節", start: "11:20", end: "12:10" },
-  { code: "N", period: 0, name: "午休", start: "12:40", end: "13:10" },
-  { code: "P5", period: 5, name: "第五節", start: "13:20", end: "14:10" },
-  { code: "P6", period: 6, name: "第六節", start: "14:20", end: "15:10" },
-  { code: "P7", period: 7, name: "第七節", start: "15:20", end: "16:10" },
-  { code: "P8", period: 8, name: "第八節", start: "16:20", end: "17:10" },
-];
-
-function defaultPeriods(): RawSchoolPeriodRow[] {
-  return DEFAULT_PERIODS.map((row) => ({ ...row }));
-}
-
-function readSchoolDays(value: unknown): number[] {
-  if (!Array.isArray(value)) return [...DEFAULT_SCHOOL_DAYS];
-  const days = new Set<number>();
-  for (const item of value) {
-    const day = Number(item);
-    if (Number.isInteger(day) && day >= 1 && day <= 7) days.add(day);
-  }
-  if (days.size === 0) return [...DEFAULT_SCHOOL_DAYS];
-  return [...days].sort((a, b) => a - b);
-}
-
-/** 讀回主程式課表作息（寬容）：文件缺漏時用內建八節＋午休（與主程式一致） */
-function readSchoolPeriods(raw: unknown): {
-  schoolDays: number[];
-  periods: RawSchoolPeriodRow[];
-} {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    return { schoolDays: [...DEFAULT_SCHOOL_DAYS], periods: defaultPeriods() };
-  }
-  const record = raw as Record<string, unknown>;
-  if (!Array.isArray(record.periods)) {
-    return { schoolDays: [...DEFAULT_SCHOOL_DAYS], periods: defaultPeriods() };
-  }
-  const periods: RawSchoolPeriodRow[] = [];
-  for (const item of record.periods.slice(0, 50)) {
-    if (!item || typeof item !== "object" || Array.isArray(item)) continue;
-    const row = item as Record<string, unknown>;
-    const code = typeof row.code === "string" ? row.code.trim() : "";
-    const name = typeof row.name === "string" ? row.name.trim() : "";
-    const start = typeof row.start === "string" ? row.start.trim() : "";
-    const end = typeof row.end === "string" ? row.end.trim() : "";
-    const period = typeof row.period === "number" ? row.period : NaN;
-    if (!code || !name || code.length > 20 || name.length > 40) continue;
-    if (!Number.isInteger(period)) continue;
-    if (!PERIOD_TIME_PATTERN.test(start) || !PERIOD_TIME_PATTERN.test(end)) continue;
-    periods.push({ code, period, name, start, end });
-  }
-  return { schoolDays: readSchoolDays(record.schoolDays), periods };
-}
-
-interface RawSpaceUnit {
-  code: string;
-  name: string;
-  floor: string;
-  parent: string | null;
-}
-
-/** 讀回主程式樓層空間（寬容）：只取需要的欄位，供葉子空間場域候選使用 */
-function readSpaceUnits(raw: unknown): RawSpaceUnit[] {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return [];
-  const data = raw as Record<string, unknown>;
-  if (!Array.isArray(data.units)) return [];
-  const units: RawSpaceUnit[] = [];
-  for (const item of data.units) {
-    if (!item || typeof item !== "object" || Array.isArray(item)) continue;
-    const unit = item as Record<string, unknown>;
-    const code = typeof unit.code === "string" ? unit.code.trim() : "";
-    const name = typeof unit.name === "string" ? unit.name.trim() : "";
-    if (!code || !name) continue;
-    const floor = typeof unit.floor === "string" ? unit.floor.trim() : "";
-    const parent =
-      typeof unit.parent === "string" && unit.parent.trim() ? unit.parent.trim() : null;
-    units.push({ code, name, floor, parent });
-  }
-  return units;
 }
 
 /** 讀設定（缺檔即建預設值：lazy init） */
@@ -184,8 +87,7 @@ function pickWindow(
  */
 export async function getSemesterWindow(): Promise<SemesterWindow | null> {
   return cachedRead(SEMESTER_WINDOW_CACHE_KEY, await settingsTtlMs(), async () => {
-    const snap = await getAdminDb().collection("settings").doc("system").get();
-    const data = (snap.exists ? snap.data() : {}) as Record<string, unknown>;
+    const data = (await readSystemDoc()) ?? {};
     return (
       pickWindow(data, "classDayStart", "classDayEnd") ??
       pickWindow(data, "semesterStart", "semesterEnd") ??
@@ -222,10 +124,9 @@ export interface SchoolScheduleOptions {
 /** 學校作息候選：主程式「學校基本設定 → 課表作息時間」（文件缺漏時回內建預設） */
 export async function getSchoolScheduleOptions(): Promise<SchoolScheduleOptions> {
   return cachedRead(PERIOD_OPTIONS_CACHE_KEY, await settingsTtlMs(), async () => {
-    const snap = await getAdminDb().collection("settings").doc("schoolPeriods").get();
-    const setting = readSchoolPeriods(snap.exists ? snap.data() : null);
+    const setting = await getSchoolPeriodsSetting();
     return {
-      schoolDays: setting.schoolDays.length ? [...setting.schoolDays] : [...DEFAULT_SCHOOL_DAYS],
+      schoolDays: [...setting.schoolDays],
       periods: setting.periods.map((row) => ({
         code: row.code,
         name: row.name,
@@ -405,8 +306,7 @@ export async function getAvailableWeeks(
 /** 場域候選清單：主程式「學校基本設定 → 樓層空間設定」的葉子空間（無下層者） */
 export async function getSpaceOptions(): Promise<SpaceOption[]> {
   return cachedRead(SPACE_OPTIONS_CACHE_KEY, await settingsTtlMs(), async () => {
-    const snap = await getAdminDb().collection("settings").doc("spaces").get();
-    const units = readSpaceUnits(snap.exists ? snap.data() : null);
+    const units = (await getSchoolSpaceStructure()).units;
     const hasChild = new Set(
       units.filter((unit) => unit.parent !== null).map((unit) => unit.parent as string)
     );
@@ -421,24 +321,16 @@ const CLASS_OPTIONS_CACHE_KEY = "selfDirectedLearning:classOptions";
 /** 班級候選：讀主程式「學校基本設定 → 年段班級設定」（settings/schoolClasses），單文件快取 */
 export async function getClassOptions(): Promise<ClassOption[]> {
   return cachedRead(CLASS_OPTIONS_CACHE_KEY, await settingsTtlMs(), async () => {
-    const snap = await getAdminDb().collection("settings").doc("schoolClasses").get();
-    if (!snap.exists) return [];
-    const data = (snap.data() || {}) as Record<string, unknown>;
-    const grades = Array.isArray(data.grades) ? data.grades : [];
+    const setting = await getSchoolClassesSetting();
     const options: ClassOption[] = [];
-    for (const gradeItem of grades) {
-      if (!gradeItem || typeof gradeItem !== "object") continue;
-      const grade = gradeItem as Record<string, unknown>;
-      const gradeName = typeof grade.name === "string" ? grade.name.trim().slice(0, 20) : "";
-      const classes = Array.isArray(grade.classes) ? grade.classes : [];
-      for (const classItem of classes) {
-        if (!classItem || typeof classItem !== "object") continue;
-        const cls = classItem as Record<string, unknown>;
-        const code = typeof cls.code === "string" ? cls.code.trim().slice(0, 20) : "";
+    for (const grade of setting.grades) {
+      const gradeName = grade.name.trim().slice(0, 20);
+      for (const cls of grade.classes) {
+        const code = cls.code.trim().slice(0, 20);
         if (!code) continue;
         options.push({
           code,
-          name: typeof cls.name === "string" ? cls.name.trim().slice(0, 40) : "",
+          name: cls.name.trim().slice(0, 40),
           grade: gradeName,
         });
         if (options.length >= 300) return options;

@@ -6,15 +6,15 @@
   "description": "自主學習計畫的申請、審核與進度紀錄。",
   "href": "/admin/self-directed-learning",
   "contractVersion": 1,
-  "minHostVersion": "0.580",
+  "minHostVersion": "0.632",
   "license": "MIT",
   "repository": "https://github.com/takan003/selfDirectedLearning",
   "keywords": ["自主學習", "學習計畫"],
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.147",
-    "releasedAt": "2026-11-03"
+    "version": "0.0.148",
+    "releasedAt": "2026-11-06"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
   "managerPermissions": [
@@ -67,6 +67,14 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.148",
+      "releasedAt": "2026-11-06",
+      "notes": [
+        "學校設定改走主程式唯讀公開面（module-host-data／readSystemDoc），不再直接存取 settings 集合。",
+        "文件匯出測試補上新的宿主公開面 mock。"
+      ]
+    },
     {
       "version": "0.0.147",
       "releasedAt": "2026-11-03",

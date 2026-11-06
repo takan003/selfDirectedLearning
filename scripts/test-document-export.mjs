@@ -162,7 +162,12 @@ test("admin API persists independent switches, invalidates settings cache and en
       },
       invalidateReadCache: () => { cached = undefined; },
     },
-    "@/lib/settings-server": { getCacheTtlSeconds: async () => 60 },
+    "@/lib/settings-server": { getCacheTtlSeconds: async () => 60, readSystemDoc: async () => null },
+    "@/lib/module-host-data": {
+      getSchoolPeriodsSetting: async () => ({ schoolDays: [1, 2, 3, 4, 5], periods: [] }),
+      getSchoolSpaceStructure: async () => ({ levelCount: 0, levelLabels: [], units: [] }),
+      getSchoolClassesSetting: async () => ({ grades: [], nameStyle: "local" }),
+    },
     "@/lib/roster": {},
     "../types/self-directed-learning": types,
   });
