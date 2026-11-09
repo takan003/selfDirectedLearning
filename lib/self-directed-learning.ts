@@ -1,5 +1,5 @@
 import "server-only";
-import { getAdminDb } from "@/lib/firebase-admin";
+import { scopedDb } from "@/lib/module-db";
 import { listCalendarEvents } from "@/lib/calendar";
 import { getSchoolClassesSetting, getSchoolPeriodsSetting, getSchoolSpaceStructure } from "@/lib/module-host-data";
 import { cachedRead, invalidateReadCache } from "@/lib/read-cache";
@@ -30,7 +30,7 @@ async function settingsTtlMs(): Promise<number> {
 }
 
 function settingsRef() {
-  return getAdminDb()
+  return scopedDb("selfDirectedLearning")
     .collection(SELF_DIRECTED_LEARNING_SETTINGS_COLLECTION)
     .doc(SELF_DIRECTED_LEARNING_SETTINGS_DOC_ID);
 }

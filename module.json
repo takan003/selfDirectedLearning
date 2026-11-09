@@ -13,8 +13,8 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.148",
-    "releasedAt": "2026-11-06"
+    "version": "0.0.149",
+    "releasedAt": "2026-11-09"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
   "managerPermissions": [
@@ -63,10 +63,19 @@
     "selfDirectedLearningSettings",
     "selfDirectedLearningPlans",
     "selfDirectedLearningReviews",
-    "selfDirectedLearningLocks"
+    "selfDirectedLearningLocks",
+    "rosterStudents"
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.149",
+      "releasedAt": "2026-11-09",
+      "notes": [
+        "資料存取改用主程式 scopedDb；名冊核心集合改為唯讀，並補上 rosterStudents 宣告。",
+        "既有 API、資料結構與使用者操作不變。"
+      ]
+    },
     {
       "version": "0.0.148",
       "releasedAt": "2026-11-06",

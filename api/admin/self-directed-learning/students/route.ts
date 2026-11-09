@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAdminDb } from "@/lib/firebase-admin";
+import { scopedDb } from "@/lib/module-db";
 import { requireModulePermission, toAuthResponse } from "@/lib/dal";
 import { enforceRateLimit, RATE } from "@/lib/rate-limit";
 import { getCurrentPeriod } from "@/lib/settings-server";
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     }
 
     const period = await getCurrentPeriod();
-    const snap = await getAdminDb()
+    const snap = await scopedDb("selfDirectedLearning")
       .collection(rosterCollection("student"))
       .where("academicYear", "==", period.academicYear)
       .where("semester", "==", period.semester)

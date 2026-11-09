@@ -1,5 +1,5 @@
 import "server-only";
-import { getAdminDb } from "@/lib/firebase-admin";
+import { scopedDb } from "@/lib/module-db";
 import { getCurrentPeriod } from "@/lib/settings-server";
 import { isActiveEntry } from "@/lib/roster";
 import { rosterCollection } from "@/types/roster";
@@ -26,7 +26,7 @@ import {
 } from "../types/self-directed-learning";
 
 function plansRef() {
-  return getAdminDb().collection(SELF_DIRECTED_LEARNING_PLANS_COLLECTION);
+  return scopedDb("selfDirectedLearning").collection(SELF_DIRECTED_LEARNING_PLANS_COLLECTION);
 }
 
 /**
@@ -35,7 +35,7 @@ function plansRef() {
  * 杜絕兩分頁同時送審、兩個審核者同時通過的競態。
  */
 function submissionLockRef(period: string, studentUid: string) {
-  return getAdminDb()
+  return scopedDb("selfDirectedLearning")
     .collection(SELF_DIRECTED_LEARNING_LOCKS_COLLECTION)
     .doc(planDocIdOf(period, studentUid));
 }
@@ -150,7 +150,7 @@ function readReview(id: string, raw: Record<string, unknown>): PlanReview {
 
 /** 讀計畫的最新審查意見（where 精準條件＋本機排序，筆數有界） */
 export async function getLatestReview(planId: string): Promise<PlanReview | null> {
-  const snap = await getAdminDb()
+  const snap = await scopedDb("selfDirectedLearning")
     .collection(SELF_DIRECTED_LEARNING_REVIEWS_COLLECTION)
     .where("planId", "==", planId)
     .limit(20)
@@ -169,7 +169,7 @@ export async function getLatestReviews(planIds: string[]): Promise<Record<string
   const latest: Record<string, PlanReview> = {};
   for (let index = 0; index < unique.length; index += 30) {
     const chunk = unique.slice(index, index + 30);
-    const snap = await getAdminDb()
+    const snap = await scopedDb("selfDirectedLearning")
       .collection(SELF_DIRECTED_LEARNING_REVIEWS_COLLECTION)
       .where("planId", "in", chunk)
       .limit(500)
@@ -377,7 +377,7 @@ export async function saveStudentPlan(input: {
   // 送審：以「學生＋學期」鎖定文件序列化，杜絕兩分頁同時送審的競態
   // （上面的檢查是快速回饋；真正把關在交易內重讀鎖定文件與被鎖定的計畫）
   const lockRef = submissionLockRef(period, input.student.uid);
-  const outcome = await getAdminDb().runTransaction(async (tx) => {
+  const outcome = await scopedDb("selfDirectedLearning").runTransaction(async (tx) => {
     const lockSnap = await tx.get(lockRef);
     const lock = (lockSnap.exists ? lockSnap.data() : null) as Record<string, unknown> | null;
     const lockedSubmittedId =
@@ -750,7 +750,7 @@ export async function purgeStudentPlan(input: {
     return { ok: false, status: 409, message: "審核中或已通過的計畫不可刪除" };
   }
 
-  const db = getAdminDb();
+  const db = scopedDb("selfDirectedLearning");
   // 單次 batch 上限 500；審查紀錄通常很少，保留 400 筆的餘裕
   const reviews = await db
     .collection(SELF_DIRECTED_LEARNING_REVIEWS_COLLECTION)
@@ -794,7 +794,7 @@ export async function purgeExpiredStudentTrash(input: {
   );
   if (expired.length === 0) return 0;
 
-  const db = getAdminDb();
+  const db = scopedDb("selfDirectedLearning");
   const ids = expired.map((plan) => plan.id);
   let batch = db.batch();
   let operations = 0;
@@ -851,7 +851,7 @@ export async function withdrawStudentPlan(input: {
   if (openStateOf(input.settings, now) !== "open") {
     return { ok: false, status: 400, message: "目前非送審期間，無法抽回計畫" };
   }
-  const db = getAdminDb();
+  const db = scopedDb("selfDirectedLearning");
   const planRef = plansRef().doc(input.planId);
   const outcome = await db.runTransaction(async (tx) => {
     const snap = await tx.get(planRef);
@@ -1063,7 +1063,7 @@ export async function applyReview(input: {
   /** 審查範圍；未提供＝全校（管理員或未設定範圍的審核人員） */
   scope?: ReviewScope;
 }): Promise<ApplyReviewResult> {
-  const db = getAdminDb();
+  const db = scopedDb("selfDirectedLearning");
   const planRef = plansRef().doc(input.planId);
   // 主程式 Firestore 計讀／計寫 Proxy 會把 `doc()` 的無參數呼叫轉成 `doc(undefined)`，
   // 造成 documentPath 驗證失敗；這裡自行產生合法 id，確保審核可送出。
@@ -1184,7 +1184,7 @@ export async function linkedChildForParent(
   const expectedGrade = typeof parentEntry.grade === "string" ? parentEntry.grade.trim() : "";
   const expectedClass = typeof parentEntry.classCode === "string" ? parentEntry.classCode.trim() : "";
   const period = await getCurrentPeriod();
-  const snapshot = await getAdminDb()
+  const snapshot = await scopedDb("selfDirectedLearning")
     .collection(rosterCollection("student"))
     .where("studentId", "==", studentId)
     .where("academicYear", "==", period.academicYear)
