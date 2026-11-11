@@ -6,7 +6,7 @@
 指導教師；送出審核時才依學校現行規範調整週數並檢核場地等必填項目。
 
 1. 開發者：[takan003](https://github.com/takan003)（`https://github.com/takan003/selfDirectedLearning`）
-2. 版本：0.0.148（`contractVersion` 1、`minHostVersion` 0.632）
+2. 版本：0.0.150（`contractVersion` 1、`minHostVersion` 0.632）
 3. 四身分入口：管理員（設定與總覽）、學生（填報送審）、教職員（審核／兼導師瀏覽全班）、家長（檢視）
 
 ## 功能摘要

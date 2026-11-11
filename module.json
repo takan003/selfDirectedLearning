@@ -1,6 +1,7 @@
 ﻿{
   "value": "selfDirectedLearning",
   "label": "自主學習計畫",
+  "marketName": "自主學習計畫",
   "kind": "optional",
   "status": "live",
   "description": "自主學習計畫的申請、審核與進度紀錄。",
@@ -13,8 +14,8 @@
   "author": {
     "author": "takan003",
     "authorUrl": "https://github.com/takan003",
-    "version": "0.0.149",
-    "releasedAt": "2026-11-09"
+    "version": "0.0.150",
+    "releasedAt": "2026-11-11"
   },
   "provides": { "student": true, "parent": true, "staff": true, "admin": true },
   "managerPermissions": [
@@ -68,6 +69,13 @@
   ],
   "hooks": ["announcements", "calendar"],
   "changelog": [
+    {
+      "version": "0.0.150",
+      "releasedAt": "2026-11-11",
+      "notes": [
+        "module.json 新增選填 marketName（市集卡片名稱可與功能入口 label 分開）；目前與 label 相同，市集顯示不變。"
+      ]
+    },
     {
       "version": "0.0.149",
       "releasedAt": "2026-11-09",
